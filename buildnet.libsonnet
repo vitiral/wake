@@ -16,6 +16,62 @@
     TYPE_MODULE_URL: "module_url",
     TYPE_EXEC: "exec",
     TYPE_REF: "ref",
+    TYPE_REFS: "refs",
+    EXEC_RESERVED: '__exec__.wasm',
+
+    // Reference an output provided by another module as an object.
+    //
+    // > Note: Technically _all_ objects are resolved to a (module,path) pair,
+    // > and are thus refered to as `ref`s.
+    //
+    // - `path`: the path to the reference within mod. If `path_new` is not given,
+    //   the file will be put at the same relative path in the new module.
+    // - `path_new`: where to put the path in the new module.
+    ref(mod, path, path_new=null):: {
+        type: bnet.TYPE_REF,
+        mod: mod,
+        path: path,
+    },
+
+    // Reference multiple outputs provided by another module.
+    //
+    // - `paths` is simply a list of paths to include directly in the local directory.
+    // - `paths_move` is a list of `[path_old, path_new]` pairs, where the `path_old` will
+    //   be taken from `mod` and put in the curent directory at `path_new`.
+    refs(mod, paths=null, paths_move=null):: {
+        assert paths != null 
+            || std.length(paths) > 0 
+            || paths_move != null
+            || std.length(paths_move) > 0
+            : "must provide either paths or paths_move",
+        type: bnet.TYPE_REFS,
+        mod: mod,
+        paths: paths,
+    },
+
+    hash(enc, value):: {
+        type: bnet.TYPE_HASH,
+        enc: enc,
+        value: value,
+    },
+
+    // Path to a single file.
+    file(path):: {
+        assert assert_path(path),
+        path: path,
+        type: bnet.TYPE_FILE,
+    },
+
+    // Path to a directory.
+    //
+    // All sub files and directories will be recursively included.
+    //
+    // returns: list[file]
+    dir(path):: {
+        assert assert_path(path),
+        path: path,
+        type: bnet.TYPE_DIR,
+    },
 
     // Define a module to be built.
     //
@@ -26,59 +82,21 @@
     //   and for publishing and user-reference.
     // - `inputs`: list of files, dirs, module_[path/url/etc] or refs.
     // - `outputs`: Flat Object of files, modules or refs (no dirs).
-    // - `exec`: path or ref to a single `.wasm` target to execute. It
+    // - `exec`: path or ref to a single `.wasm` ref to execute. It
     //   will be executed in a sandbox with the inputs unpackaged in
     //   its local directory and the module manifest piped in as json through
     //   stdin.
     // - 'version': currently a non-enforced version string that can be empty.
     //   Used in the hash.
-    module(name, inputs, outputs, exec=null, version=null):: {
+    module(name, inputs=null, outputs=null, exec=null, version=null):: {
         type: bnet.TYPE_MODULE,
         name: name,
         inputs: inputs,
         outputs: outputs,
 
-        assert exec != '__exec__.wasm',
+        assert exec != bnet.EXEC_RESERVED,
         exec: exec,
         version: version,
-    },
-
-
-    // Use an output provided by another module as an object.
-    ref(mod, path):: {
-        type: bnet.TYPE_REF,
-        path: path,
-    },
-
-    // A path or ref to a single `.wasm` target to execute. It
-    // will be executed in a sandbox as part of a `module` with the inputs
-    // unpackaged in its local directory and the module manifest piped in as
-    // json through stdin.
-    //
-    // You can pass optional args which are included in the command. It is recommended
-    // to keep them extremely short.
-    exec(path, args = null):: {
-        type: bnet.TYPE_EXEC,
-        path: path,
-        args: args,
-    },
-
-    hash(enc, value):: {
-        type: bnet.TYPE_HASH,
-        enc: enc,
-        value: value,
-    },
-
-    file(path):: {
-        assert assert_path(path),
-        path: path,
-        type: bnet.TYPE_FILE,
-    },
-
-    dir(path):: {
-        assert assert_path(path),
-        path: path,
-        type: bnet.TYPE_DIR,
     },
 
     // path to another module
@@ -88,13 +106,46 @@
         type: bnet.TYPE_MODULE_PATH,
     },
 
-    // url to another module to be downloaded
+    // Url to another module.
+    //
+    // The module will be downloaded and its hash verified.
     module_url(url, hash):: {
         assert hash.type == bnet.TYPE_HASH,
         assert std.asciiUpper(hash.enc) in bnet.HASH_ENC_VALID,
         url: url,
         hash: hash,
         type: bnet.TYPE_MODULE_URL,
+    },
+
+    // A ref to a single `.wasm` file to execute, which must be part of the
+    // module. It will be executed in a sandbox as part of a `module` with the
+    // inputs unpackaged in its local directory and the module manifest piped
+    // in as json through stdin.
+    //
+    // You can pass optional args which are included in the command. It is recommended
+    // to keep them extremely short.
+    exec(ref, args = null):: {
+        type: bnet.TYPE_EXEC,
+        ref: ref,
+        args: args,
+    },
+
+    // Execute the exec from within the given module.
+    //
+    // Execution is done _outside_ of the normal build sandbox,
+    // and additional permissions are given -- such as the ability
+    // to create network sockets.
+    //
+    // `effect` has outputs and can be treated as a module by
+    // other `effect` objects. If `is_pure` is `true` then it
+    // can be treated as a module by other modules.
+    effect(name, mod, exec, outputs=null, is_pure=false):: {
+        assert std.isBoolean(is_pure),
+        type: bnet.TYPE_EXEC,
+        name: name,
+        mod: mod,
+        exec: exec,
+        is_pure: is_pure,
     },
 
     example_file: bnet.file("./example-file.txt"),
