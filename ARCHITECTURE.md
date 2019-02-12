@@ -1,38 +1,17 @@
-# REQ-arch
-
-buildnet is architected upon the following pillars:
-
-- `jsonnet` is the configuration language. All behavior from a user's
-  perspective can be imported through the `buildnet.libsonnet` entry point.
-  All configurations are representable in JSON.
-- `wasm` is the sandboxing and execution model. All wasm is executed in a
-  sandbox using `wasmer`.
-- The core is written in `rust`, but could easily be written in any language.
-- It is easy to extend the build system using any language that can compile
-  to `wasm`. Languges which can cross-compile their _compiler_ to `wasm` can
-  use buildnet as both a package manager and a build system.
-
-
-# REQ-user
-partof: REQ-arch
-###
-
-> Because jsonnet does not have API documentation rendering builtin, this
-> artifact will be used as the user documentation.
-
-To use jsonnet, a user first writes a `.jsonnet` file, which looks something
-like `examples/hello.jsonnet  in this library.
-
-The jsonnet file must export only a function, which takes an `env` parameter
-as its first argument and an arbitrary `config` object as its second.
-
-Consult [[REQ-api]] for the full module exported into `env.std`.
-
 # REQ-api
-partof: REQ-arch
-###
+<details>
+<summary><b>metadata</b></summary>
+<b>partof:</b><br>
+<li><a style="font-weight: bold; color: #FF4136" title="REQ-ARCH" href="#REQ-ARCH">REQ-arch</a></li>
+<b>parts:</b> <i>none</i></a><br>
+<b>file:</b> design/purpose.md<br>
+<b>impl:</b> <i>not implemented</i><br>
+<b>spc:</b>0.00&nbsp;&nbsp;<b>tst:</b>0.00<br>
+<hr>
+</details>
 
-## `config(value)` ([[.config]])
+
+## `config(value)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.config</i></b></span>)
 An arbitrary untyped (or type=config) blob of json. Note that the `type`
 keyword is reserved.
 
@@ -41,27 +20,27 @@ buildnet) configuration.
 
 Returns: value + {type: "config"}
 
-## `hash(encoding, value)` ([[.hash]])
+## `hash(encoding, value)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.hash</i></b></span>)
 A hash value of an encoding within HASH_ENC_VARIANTS`.
 
-## `moduleId(hash, is_local)` ([[.moduleId]])
+## `moduleId(hash, is_local)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.moduleId</i></b></span>)
 The moduleId is the internal representation of a module. It is
 what the build system "sees" a module as.
 
-See [[REQ-api.module]] for more info.
+See <a style="font-weight: bold; color: #FF4136" title="REQ-API.MODULE" href="#REQ-API">REQ-api.module</a> for more info.
 
-## `path(components)` ([[.path]])
+## `path(components)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.path</i></b></span>)
 Properly joins the components into a valid path (string).
 
-## `file(path)` ([[.file]])
+## `file(path)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.file</i></b></span>)
 A local file.
 
 The hash will be calculated and included in the object.
 
-## `rfile(path)` ([[.rfile]])
+## `rfile(path)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.rfile</i></b></span>)
 A result file. Only a path, with the hash computed later.
 
-## `dir(include, exclude=null)` ([[.dir]])
+## `dir(include, exclude=null)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.dir</i></b></span>)
 Path to a directory of files to glob-include.
 
 All matching sub files and directories will be recursively included,
@@ -69,18 +48,18 @@ except those listed in `exclude`.
 
 returns: list[file]
 
-## `dump(path, manifest)` ([[.dump]])
+## `dump(path, manifest)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.dump</i></b></span>)
 Dumps the resolved manifest at the path as json. Can be used
 as an input or output.
 
 Returns: `file`
 
-## `load(path)` ([[.load]])
+## `load(path)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.load</i></b></span>)
 Load the path in the module as json into the build system.
 
 Returns: an arbitrary Object.
 
-## `ref(moduleId, output, path)`([[.ref]])
+## `ref(moduleId, output, path)`(<span title="Not Implemented" style="color: #FF4136"><b><i>.ref</i></b></span>)
 
 A reference to an output from another module.
 
@@ -91,7 +70,7 @@ Args:
 - `output`: the output object to reference.
 - `path`: the path to put the output object.
 
-## `exec(...)` ([[.exec]])
+## `exec(...)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.exec</i></b></span>)
 
 A single `.wasm` file and accompaying config and args.
 
@@ -103,7 +82,7 @@ inputs unpackaged in its local directory.
 - `args` extra arguments for the command. It is recommended to keep them
   extremely brief.
 
-## `module(...)` ([[.module]])
+## `module(...)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.module</i></b></span>)
 
 Declare a module, which results in a `moduleId`.
 
@@ -129,7 +108,7 @@ Arguments:
 
 Returns: `moduleId`
 
-## `modulePath(...)` ([[.modulePath]])
+## `modulePath(...)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.modulePath</i></b></span>)
 
 Refer to a module factory by path.
 
@@ -151,7 +130,7 @@ Arguments:
 
 Returns: the resulting moduleId
 
-## `moduleExec(...)` ([[.moduleEffect]])
+## `moduleExec(...)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.moduleEffect</i></b></span>)
 
 Executes a **local** `module`, creating a new module.
 
@@ -174,7 +153,7 @@ Arguments:
 
 Returns: the resulting `moduleId`.
 
-## `sideEffect(...)` ([[.effect]])
+## `sideEffect(...)` (<span title="Not Implemented" style="color: #FF4136"><b><i>.effect</i></b></span>)
 Execute a side effect in an extended sandbox.
 
 This can be included as an output in modules, but cannot be referenced
@@ -186,6 +165,60 @@ It returns a `moduleId`, which contains the specified `outputs`.
 Arguments:
 - `moduleId`: the moduleId to execute.
 - `exec`: the execution and config to use from within that module.
-- `outputs`: see [[REQ-api.module]].
+- `outputs`: see <a style="font-weight: bold; color: #FF4136" title="REQ-API.MODULE" href="#REQ-API">REQ-api.module</a>.
 
 Returns: `moduleId`.
+
+
+# REQ-arch
+<details>
+<summary><b>metadata</b></summary>
+<b>partof:</b> <i>none</i></a><br>
+<b>parts:</b><br>
+<li><a style="font-weight: bold; color: #FF4136" title="REQ-API" href="#REQ-API">REQ-api</a></li>
+<li><a style="font-weight: bold; color: #FF4136" title="REQ-USER" href="#REQ-USER">REQ-user</a></li>
+<b>file:</b> design/purpose.md<br>
+<b>impl:</b> <i>not implemented</i><br>
+<b>spc:</b>0.00&nbsp;&nbsp;<b>tst:</b>0.00<br>
+<hr>
+</details>
+
+
+buildnet is architected upon the following pillars:
+
+- `jsonnet` is the configuration language. All behavior from a user's
+  perspective can be imported through the `buildnet.libsonnet` entry point.
+  All configurations are representable in JSON.
+- `wasm` is the sandboxing and execution model. All wasm is executed in a
+  sandbox using `wasmer`.
+- The core is written in `rust`, but could easily be written in any language.
+- It is easy to extend the build system using any language that can compile
+  to `wasm`. Languges which can cross-compile their _compiler_ to `wasm` can
+  use buildnet as both a package manager and a build system.
+
+
+# REQ-user
+<details>
+<summary><b>metadata</b></summary>
+<b>partof:</b><br>
+<li><a style="font-weight: bold; color: #FF4136" title="REQ-ARCH" href="#REQ-ARCH">REQ-arch</a></li>
+<b>parts:</b> <i>none</i></a><br>
+<b>file:</b> design/purpose.md<br>
+<b>impl:</b> <i>not implemented</i><br>
+<b>spc:</b>0.00&nbsp;&nbsp;<b>tst:</b>0.00<br>
+<hr>
+</details>
+
+
+> Because jsonnet does not have API documentation rendering builtin, this
+> artifact will be used as the user documentation.
+
+To use jsonnet, a user first writes a `.jsonnet` file, which looks something
+like `examples/hello.jsonnet  in this library.
+
+The jsonnet file must export only a function, which takes an `env` parameter
+as its first argument and an arbitrary `config` object as its second.
+
+Consult <a style="font-weight: bold; color: #FF4136" title="REQ-API" href="#REQ-API">REQ-api</a> for the full module exported into `env.std`.
+
+

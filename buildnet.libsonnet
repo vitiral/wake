@@ -17,6 +17,7 @@
     TYPE_DIR: "dir",
     TYPE_MODULE: "module",
     TYPE_MODULE_PATH: "module_path",
+    TYPE_MODULE_PATH: "module_path",
     TYPE_EXEC: "exec",
     TYPE_EFFECT: "effect",
     TYPE_REF: "ref",
@@ -99,7 +100,11 @@
     //   stdin.
     // - 'version': currently a non-enforced version string that can be empty.
     //   Used in the hash.
-    module(name, inputs=null, outputs=null, exec=null, version=null):: {
+    // - `is_local`: if true, the module is built inline. Can only be true if
+    //   all inputs are only of type `[file, dir]` and all outputs are only of
+    //   type `file`. Local modules are the only type of modules that can
+    //   be executed by a `module_effect`.
+    module(name, inputs=null, outputs=null, exec=null, version=null, is_local=false):: {
         type: bnet.TYPE_MODULE,
         name: name,
         inputs: inputs,
@@ -108,25 +113,29 @@
         assert exec != bnet.EXEC_RESERVED,
         exec: exec,
         version: version,
+        is_local: is_local,
     },
 
     // path to another module, with arguments to pass it.
-    module_path(path, env, args=null):: {
+    module_path(env, path, config=null):: {
         type: bnet.TYPE_MODULE_PATH,
         assert assert_path(path),
-        path: path,
-        args: args,
+        // TODO: implemented in native code
+    },
+
+    module_effect(name, module_local, exec, version=null):: {
+        type: bnet.TYPE_MODULE,
+        // TODO: implemented in native code
     },
 
     // A ref to a single `.wasm` file to execute, which must be part of the
     // module. It will be executed in a sandbox as part of a `module` with the
     // inputs unpackaged in its local directory.
     //
-    //
     // - `config` is arbirary json, which will be passed through stdin.
     // - `args` are included in the command. It is recommended to keep them
     //   extremely short.
-    exec(ref, config=null, args = null):: {
+    exec(ref, config=null, args=null):: {
         type: bnet.TYPE_EXEC,
         ref: ref,
         args: args,

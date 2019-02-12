@@ -34,6 +34,8 @@ things like:
 - depend on other effects (i.e. depend on a database being populated)
 - spawn services in the cloud, such as a webserver.
 
+For more information on how buildnet is being designed, check out the
+[ARCHITECTURE](ARCHITECTURE.md) docs.
 
 # LICENSE
 
