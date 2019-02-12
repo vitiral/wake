@@ -15,6 +15,7 @@
     TYPE_MODULE_PATH: "module_path",
     TYPE_MODULE_URL: "module_url",
     TYPE_EXEC: "exec",
+    TYPE_EFFECT: "effect",
     TYPE_REF: "ref",
     TYPE_REFS: "refs",
     EXEC_RESERVED: '__exec__.wasm',
@@ -26,18 +27,19 @@
     //
     // - `path`: the path to the reference within mod. If `path_new` is not given,
     //   the file will be put at the same relative path in the new module.
-    // - `path_new`: where to put the path in the new module.
+    // - `path_new`: specify where to put the path in the new module.
     ref(mod, path, path_new=null):: {
         type: bnet.TYPE_REF,
         mod: mod,
         path: path,
+        path_new: path_new,
     },
 
     // Reference multiple outputs provided by another module.
     //
     // - `paths` is simply a list of paths to include directly in the local directory.
     // - `paths_move` is a list of `[path_old, path_new]` pairs, where the `path_old` will
-    //   be taken from `mod` and put in the curent directory at `path_new`.
+    //   be taken from `mod` and put in the curent module's directory at `path_new`.
     refs(mod, paths=null, paths_move=null):: {
         assert paths != null 
             || std.length(paths) > 0 
@@ -47,6 +49,7 @@
         type: bnet.TYPE_REFS,
         mod: mod,
         paths: paths,
+        paths_move: paths_move,
     },
 
     hash(enc, value):: {
@@ -62,15 +65,17 @@
         type: bnet.TYPE_FILE,
     },
 
-    // Path to a directory.
+    // Path to a directory of files to glob-include.
     //
-    // All sub files and directories will be recursively included.
+    // All matching sub files and directories will be recursively included,
+    // except those listed in `exclude`.
     //
-    // returns: list[file]
-    dir(path):: {
-        assert assert_path(path),
-        path: path,
+    // Conceptually returns: list[file]
+    dir(include, exclude=null):: {
         type: bnet.TYPE_DIR,
+        assert assert_path(path),
+        include: include,
+        exclude: exclude,
     },
 
     // Define a module to be built.
@@ -81,7 +86,7 @@
     // - 'name': the name to give to the module. This is only used as a hash
     //   and for publishing and user-reference.
     // - `inputs`: list of files, dirs, module_[path/url/etc] or refs.
-    // - `outputs`: Flat Object of files, modules or refs (no dirs).
+    // - `outputs`: Flat Object of files, modules or refs.
     // - `exec`: path or ref to a single `.wasm` ref to execute. It
     //   will be executed in a sandbox with the inputs unpackaged in
     //   its local directory and the module manifest piped in as json through
@@ -132,16 +137,29 @@
 
     // Execute the exec from within the given module.
     //
+    // `effect` can be used for:
+    // - spinning up services in the cloud, such as a webserver
+    // - instantiating test harnesses
+    // - running tests
+    // - collecting, storing and analyzing data
+    // - implementing a custom package manager for buildnet
+    //
     // Execution is done _outside_ of the normal build sandbox,
     // and additional permissions are given -- such as the ability
-    // to create network sockets.
+    // to create network sockets. This gives `effect` the ability
+    // to create side-effects.
     //
-    // `effect` has outputs and can be treated as a module by
-    // other `effect` objects. If `is_pure` is `true` then it
-    // can be treated as a module by other modules.
+    // `effect` has outputs and can be treated as a module by other `effect`
+    // objects. If `is_pure` is `true` then it can even be treated as a module
+    // by other modules, allowing (for example) creating custom module "package
+    // managers".
+    //
+    // The outputs can also be useful for creating logs and scripts for
+    // controlling and debugging the resulting `effect`.
+    //
     effect(name, mod, exec, outputs=null, is_pure=false):: {
         assert std.isBoolean(is_pure),
-        type: bnet.TYPE_EXEC,
+        type: bnet.TYPE_EFFECT,
         name: name,
         mod: mod,
         exec: exec,
