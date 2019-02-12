@@ -1,20 +1,24 @@
 # REQ-arch
 
-Buildnet is the web's build tool, which aims to utilize webassembly to
-supercede the need for any other build tools.
+buildnet is architected upon the following pillars:
 
-Its basic architecture is to enable the utmost _simplicity_ in the
-build system. It is inspired from other build tools such as Nix and Bazel,
-but is not related to any of them directly.
+- `jsonnet` is the configuration language. All behavior from a user's
+  perspective can be imported through the `buildnet.libsonnet` entry point.
+  All configurations are representable in JSON.
+- `wasm` is the sandboxing and execution model. All wasm is executed in a
+  sandbox using `wasmer`.
+- The core is written in `rust`, but could easily be written in any language.
+- It is easy to extend the build system using any language that can compile
+  to `wasm`. Languges which can cross-compile their _compiler_ to `wasm` can
+  use buildnet as both a package manager and a build system.
 
-Its tennets are:
 
-- Simplicity: builds are simply inputs and outputs, which is reduced to a
-  _single file_ (which can be a `.nar` directory of files) and a _single json
-  configuration_. Inputs can include other builds.
-- Wasm: the only executable is `.wasm`. The only compilers supported are ones
-  that specify a `.wasm` binary.
-- Json and Jsonnet: everything is jsonnet, which reduces to json.
+# REQ-user
+partof: REQ-arch
+###
 
-## JSONNET Architecture
+> Because jsonnet does not have API documentation rendering builtin, this
+> artifact will be used as the user documentation.
 
+To use jsonnet, a user first writes a `.jsonnet` file, which looks something
+like `examples/hello.jsonnet  in this library.

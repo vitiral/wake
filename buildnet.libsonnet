@@ -1,3 +1,7 @@
+// The buildnet library. The main entry point for users.
+//
+// See:
+// #REQ-jsonnet
 {
     local bnet = self,
 
@@ -13,7 +17,6 @@
     TYPE_DIR: "dir",
     TYPE_MODULE: "module",
     TYPE_MODULE_PATH: "module_path",
-    TYPE_MODULE_URL: "module_url",
     TYPE_EXEC: "exec",
     TYPE_EFFECT: "effect",
     TYPE_REF: "ref",
@@ -65,6 +68,9 @@
         type: bnet.TYPE_FILE,
     },
 
+    // Helper function to create a path from a set of components.
+    path(components):: join("/", components),
+
     // Path to a directory of files to glob-include.
     //
     // All matching sub files and directories will be recursively included,
@@ -104,32 +110,23 @@
         version: version,
     },
 
-    // path to another module
-    module_path(path):: {
+    // path to another module, with arguments to pass it.
+    module_path(path, env, args=null):: {
+        type: bnet.TYPE_MODULE_PATH,
         assert assert_path(path),
         path: path,
-        type: bnet.TYPE_MODULE_PATH,
-    },
-
-    // Url to another module.
-    //
-    // The module will be downloaded and its hash verified.
-    module_url(url, hash):: {
-        assert hash.type == bnet.TYPE_HASH,
-        assert std.asciiUpper(hash.enc) in bnet.HASH_ENC_VALID,
-        url: url,
-        hash: hash,
-        type: bnet.TYPE_MODULE_URL,
+        args: args,
     },
 
     // A ref to a single `.wasm` file to execute, which must be part of the
     // module. It will be executed in a sandbox as part of a `module` with the
-    // inputs unpackaged in its local directory and the module manifest piped
-    // in as json through stdin.
+    // inputs unpackaged in its local directory.
     //
-    // You can pass optional args which are included in the command. It is recommended
-    // to keep them extremely short.
-    exec(ref, args = null):: {
+    //
+    // - `config` is arbirary json, which will be passed through stdin.
+    // - `args` are included in the command. It is recommended to keep them
+    //   extremely short.
+    exec(ref, config=null, args = null):: {
         type: bnet.TYPE_EXEC,
         ref: ref,
         args: args,
