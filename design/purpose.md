@@ -44,9 +44,10 @@ buildnet) configuration.
 Returns: `value + {type: "config"}`
 
 ## `hash(encoding, value)` ([[.hash]])
-A hash value of an encoding within HASH_ENC_VARIANTS`.
+A hash value of an encoding within `HASH_ENC_VARIANTS`.
 
 ## `moduleId(hash, deterministic)` ([[.moduleId]])
+
 The moduleId is the internal representation of a module. It is
 what the build system "sees" a module as.
 
@@ -73,14 +74,6 @@ The hash will be calculated and included in the object.
 
 Returns: `file`
 
-## `rfile(path)` ([[.rfile]])
-A result file.
-
-Only a path. The hash of the actual file is never computed (but must be
-deterministic).
-
-Returns: `string`
-
 ## `ref(moduleId, output)`([[.ref]])
 
 A reference to an output from another module.
@@ -91,13 +84,11 @@ Args:
 
 Returns: `ref` object.
 
-## `ln(path, ref)` ([[.ln]])
-A local link to a reference from another module.
-
-The reference will be linked to the requested path.
+## `ln(ref, path)` ([[.ln]])
+A local link from either a `ref` or local path to a new local path.
 
 Args:
-- `ref`: the reference to use
+- `ref`: the ref or path to use
 - `path`: the _local_ path to place the link.
 
 Returns: `file`
@@ -153,7 +144,7 @@ Arguments:
   and version.  Used by organiations to control where modules come from.
 - `inputs=null`: A list of `file` or `ref` objects, which are included in the sandbox
   when the build is executing.
-- `outputs=null`: A flat Object of outputs, which must be of type `rfile`,
+- `outputs=null`: A flat Object of outputs, which must be of type `path`,
   `file` or `config`.
 - `exec=null`: The command and config to run to kick off the build. If null,
   the inputs and outputs must be files which already exist.

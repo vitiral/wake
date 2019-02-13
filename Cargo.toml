@@ -3,5 +3,9 @@ name = "buildnet"
 version = "0.1.0"
 authors = ["Rett Berg <rett@google.com>"]
 edition = "2018"
+license = "Apache 2.0"
 
 [dependencies]
+jsonnet-rs = "0.6.0"
+ergo = "0.0.5"
+serde = "1.0.87"
