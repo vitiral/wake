@@ -6,8 +6,10 @@ buildnet is architected upon the following pillars:
   perspective can be imported through the `buildnet.libsonnet` entry point.
   All configurations are representable in JSON.
 - `wasm` is the sandboxing and execution model. All wasm is executed in a
-  sandbox using `wasmer`.
-- The core is written in `rust`, but could easily be written in any language.
+  sandbox.
+- The core is written in `rust`, but could very easily be written in any
+  language. The design simply requires hooks to be executed by (any) native
+  language.
 - It is easy to extend the build system using any language that can compile
   to `wasm`. Languges which can cross-compile their _compiler_ to `wasm` can
   use buildnet as both a package manager and a build system.
@@ -21,10 +23,10 @@ partof: REQ-arch
 > artifact will be used as the user documentation.
 
 To use jsonnet, a user first writes a `.jsonnet` file, which looks something
-like `examples/hello.jsonnet  in this library.
+like [`examples/hello.jsonnet ](../examples/hello.jsonnet)
 
 The jsonnet file must export only a function, which takes an `env` parameter
-as its first argument and an arbitrary `config` object as its second.
+as its first argument and a `config` object as its second.
 
 Consult [[REQ-api]] for the full module exported into `env.std`.
 
@@ -39,27 +41,66 @@ keyword is reserved.
 This is used in other functions to mean an arbitrary (from the perspective of
 buildnet) configuration.
 
-Returns: value + {type: "config"}
+Returns: `value + {type: "config"}`
 
 ## `hash(encoding, value)` ([[.hash]])
 A hash value of an encoding within HASH_ENC_VARIANTS`.
 
-## `moduleId(hash, is_local)` ([[.moduleId]])
+## `moduleId(hash, deterministic)` ([[.moduleId]])
 The moduleId is the internal representation of a module. It is
 what the build system "sees" a module as.
+
+`deterministic` specifies whether the moduleId can be used by other modules,
+or whether it can only be used by `sideEffect` objects.
 
 See [[REQ-api.module]] for more info.
 
 ## `path(components)` ([[.path]])
 Properly joins the components into a valid path (string).
 
+A valid path must be _both_ local and relative, meaning it:
+- Must start with `./` or be the equivalent (start without a folder).
+- Has no `..` remainiing after symantically resolving them.
+
+This function will symantically resolve the path and verify it is valid.
+
+Returns: `string`
+
 ## `file(path)` ([[.file]])
-A local file.
+A local file which exists before the build step.
 
 The hash will be calculated and included in the object.
 
+Returns: `file`
+
 ## `rfile(path)` ([[.rfile]])
-A result file. Only a path, with the hash computed later.
+A result file.
+
+Only a path. The hash of the actual file is never computed (but must be
+deterministic).
+
+Returns: `string`
+
+## `ref(moduleId, output)`([[.ref]])
+
+A reference to an output from another module.
+
+Args:
+- `moduleId`: the module to reference.
+- `output`: the output key to reference from the module.
+
+Returns: `ref` object.
+
+## `ln(path, ref)` ([[.ln]])
+A local link to a reference from another module.
+
+The reference will be linked to the requested path.
+
+Args:
+- `ref`: the reference to use
+- `path`: the _local_ path to place the link.
+
+Returns: `file`
 
 ## `dir(include, exclude=null)` ([[.dir]])
 Path to a directory of files to glob-include.
@@ -67,33 +108,26 @@ Path to a directory of files to glob-include.
 All matching sub files and directories will be recursively included,
 except those listed in `exclude`.
 
-returns: list[file]
+Returns: `List[file]`
 
-## `dump(path, manifest)` ([[.dump]])
-Dumps the resolved manifest at the path as json. Can be used
+## `dump(config, path)` ([[.dump]])
+Dumps the resolved config at the path as json. Can be used
 as an input or output.
+
+Arguments:
+- `config`: arbitrary config object.
+- `path`: the path to put the json.
 
 Returns: `file`
 
 ## `load(path)` ([[.load]])
 Load the path in the module as json into the build system.
 
-Returns: an arbitrary Object.
-
-## `ref(moduleId, output, path)`([[.ref]])
-
-A reference to an output from another module.
-
-  In the build phase the reference will be resolved as files at specific paths.
-
-Args:
-- `moduleId`: the module to reference.
-- `output`: the output object to reference.
-- `path`: the path to put the output object.
+Returns: `config`
 
 ## `exec(...)` ([[.exec]])
 
-A single `.wasm` file and accompaying config and args.
+Execute a single `.wasm` file and accompaying config and args.
 
 The `.wasm` file will be executed in a sandbox as part of a `module` with the
 inputs unpackaged in its local directory.
@@ -129,9 +163,9 @@ Arguments:
 
 Returns: `moduleId`
 
-## `modulePath(...)` ([[.modulePath]])
+## `moduleImport(...)` ([[.moduleImport]])
 
-Refer to a module factory by path.
+Import a module from a module factory.
 
 This is the fundamental method for "importing" modules in the local filesystem.
 
@@ -146,8 +180,9 @@ function(env, config=null) {
 ```
 
 Arguments:
-- `path`: The path to another module. Must be a local, relative path.
-- `config`: `config` object that can be used to configure the build.
+- `env`: the `env` object to use for building the module.
+- `path`: The path to the module. Must be a local, relative path.
+- `config`: `config` object that can be used to configure the module.
 
 Returns: the resulting moduleId
 
@@ -179,9 +214,10 @@ Execute a side effect in an extended sandbox.
 
 This can be included as an output in modules, but cannot be referenced
 by other modules (as it is not deterministic). It can then be
-used to spin up services or run tests.
+used to spin up further (dependent) services or run tests.
 
-It returns a `moduleId`, which contains the specified `outputs`.
+It returns a `moduleId`, which behaves like a normal module the specified
+`outputs`.
 
 Arguments:
 - `moduleId`: the moduleId to execute.
