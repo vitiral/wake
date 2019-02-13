@@ -24,6 +24,7 @@ name = "buildnet"
 version = "0.1.0"
 dependencies = [
  "ergo 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "expect_macro 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonnet-rs 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -190,6 +191,11 @@ dependencies = [
  "ctrlc 3.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "expect_macro"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "filetime"
@@ -742,6 +748,7 @@ dependencies = [
 "checksum ergo_std 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "3d4429d95527994a6e1f29f72ce36852e0c125b2164b9febd9aa13661f89f58e"
 "checksum ergo_sync 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7a5aa15e810ba6eaa0af1dcc6cec61e8845f5982f1c90d0583f05580215f20f9"
 "checksum ergo_sys 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "11525fa32151da5f4ad2c7b9f65b73f2d728726bc59e110826663ef88f37bbb7"
+"checksum expect_macro 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "3177366971c821fc3b187297f80c1d8246c9276815613184a1f8e61730fb2313"
 "checksum filetime 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)" = "a2df5c1a8c4be27e7707789dc42ae65976e60b394afd293d1419ab915833e646"
 "checksum fuchsia-cprng 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba"
 "checksum gcc 0.3.55 (registry+https://github.com/rust-lang/crates.io-index)" = "8f5f3913fa0bfe7ee1fd8248b6b9f42a5af4b9d65ec2dd2c3c26132b950ecfc2"

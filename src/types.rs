@@ -1,24 +1,45 @@
 //! Serialized types
 use ergo::*;
-use jsonnet::JsonVal;
 
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Hash {
-    pub encoding: Encoding,
     pub value: String,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub enum Encoding {
-    AES256,
+impl From<&str> for Hash {
+    fn from(s: &str) -> Self {
+        Hash { value: s.to_string() }
+    }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+impl From<String> for Hash {
+    fn from(s: String) -> Self {
+        Hash { value: s }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModuleId {
     pub hash: Hash,
     pub deterministic: bool,
+}
+
+impl ModuleId {
+    pub fn new(hash: Hash) -> Self {
+        Self {
+            hash: hash,
+            deterministic: true,
+        }
+    }
+}
+
+
+impl From<&str> for ModuleId {
+    fn from(s: &str) -> Self {
+        Self::new(s.into())
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -60,7 +81,7 @@ pub enum Output {
     Exec(Exec),
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Module {
     pub name: String,
@@ -78,7 +99,6 @@ fn test_input_ser() {
             "type": "file",
             "path": "some/path.txt",
             "hash": {
-                "encoding": "AES256",
                 "value": "deadbeef"
             }
         }
@@ -88,7 +108,6 @@ fn test_input_ser() {
     let expected = Input::File(File {
         path: "some/path.txt".to_string(),
         hash: Hash {
-            encoding: Encoding::AES256,
             value: "deadbeef".to_string(),
         },
     });
