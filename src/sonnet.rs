@@ -27,6 +27,7 @@ fn clear_modules() {
     lock.deref_mut().clear();
 }
 
+/// Best docs for this: https://github.com/google/jsonnet/issues/502
 fn myimport<'a>(_vm: &'a JsonnetVm, base: &Path, rel: &Path) -> Result<(PathBuf, String), String> {
     if let Ok(id_path) = rel.strip_prefix(Path::new(id_path_prefix)) {
         let mut components = id_path.components();
@@ -46,11 +47,10 @@ fn myimport<'a>(_vm: &'a JsonnetVm, base: &Path, rel: &Path) -> Result<(PathBuf,
 
         // TODO: improve this
         Ok((base.into(), "2 + 3".to_owned()))
-    // if rel.file_stem() == Some(OsStr::new("bar")) {
-    //     let newbase = base.into();
-    //     let contents = "2 + 3".to_owned();
-    //     Ok((newbase, contents))
+    } else if rel.has_root() {
+        Err(format!("All non-id paths must be relative: {}", rel.display()))
     } else {
+        // TODO: resolve the local path
         Err(format!("not found in base={}, rel={}", base.display(), rel.display()))
     }
 }
