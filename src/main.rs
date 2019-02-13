@@ -1,6 +1,6 @@
-
-mod ser;
+mod sonnet;
+mod types;
 
 fn main() {
-    println!("Hello, world!");
+    sonnet::exec().unwrap();
 }
