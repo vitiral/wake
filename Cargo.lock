@@ -20,16 +20,6 @@ version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "buildnet"
-version = "0.1.0"
-dependencies = [
- "ergo 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "expect_macro 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonnet-rs 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "cc"
 version = "1.0.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -673,6 +663,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "void"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "wake"
+version = "0.1.0"
+dependencies = [
+ "ergo 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "expect_macro 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonnet-rs 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "walkdir"

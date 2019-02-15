@@ -6,7 +6,7 @@ use std::ffi::OsStr;
 use crate::types::{ModuleId, Module};
 use expect_macro::expect;
 
-static id_path_prefix: &str = "/wave/ids/";
+static id_path_prefix: &str = "/wake/ids/";
 
 lazy_static! {
     static ref MODULES: Mutex<IndexMap<ModuleId, Module>> = Mutex::new(IndexMap::new());
@@ -69,7 +69,7 @@ fn test_import() {
     vm.import_callback(myimport);
     {
         let output = vm
-            .evaluate_snippet("myimport", "import '/wave/ids/abcde-name/bar.jsonnet'")
+            .evaluate_snippet("myimport", "import '/wake/ids/abcde-name/bar.jsonnet'")
             .unwrap();
         assert_eq!(output.to_string(), "5\n");
     }

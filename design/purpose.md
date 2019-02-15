@@ -1,9 +1,9 @@
 # REQ-arch
 
-buildnet is architected upon the following pillars:
+wake is architected upon the following pillars:
 
 - `jsonnet` is the configuration language. All behavior from a user's
-  perspective can be imported through the `buildnet.libsonnet` entry point.
+  perspective can be imported through the `wake.libsonnet` entry point.
   All configurations are representable in JSON.
 - `wasm` is the sandboxing and execution model. All wasm is executed in a
   sandbox.
@@ -12,7 +12,7 @@ buildnet is architected upon the following pillars:
   language.
 - It is easy to extend the build system using any language that can compile
   to `wasm`. Languges which can cross-compile their _compiler_ to `wasm` can
-  use buildnet as both a package manager and a build system.
+  use wake as both a package manager and a build system.
 
 
 # REQ-user
@@ -39,7 +39,7 @@ An arbitrary untyped (or type=config) blob of json. Note that the `type`
 keyword is reserved.
 
 This is used in other functions to mean an arbitrary (from the perspective of
-buildnet) configuration.
+wake) configuration.
 
 Returns: `value + {type: "config"}`
 
@@ -304,3 +304,5 @@ the associated plugin (`.wasm` file) to do so.
 
 
 # SPC-arch2
+
+

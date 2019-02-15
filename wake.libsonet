@@ -3,7 +3,7 @@
 // See:
 // #REQ-jsonnet
 {
-    local bnet = self,
+    local wake = self,
 
     local assert_path(path) = {
         assert std.length(path) > 0 : "path cannot be empty",
@@ -33,7 +33,7 @@
     //   the file will be put at the same relative path in the new module.
     // - `path_new`: specify where to put the path in the new module.
     ref(mod, path, path_new=null):: {
-        type: bnet.TYPE_REF,
+        type: wake.TYPE_REF,
         mod: mod,
         path: path,
         path_new: path_new,
@@ -50,14 +50,14 @@
             || paths_move != null
             || std.length(paths_move) > 0
             : "must provide either paths or paths_move",
-        type: bnet.TYPE_REFS,
+        type: wake.TYPE_REFS,
         mod: mod,
         paths: paths,
         paths_move: paths_move,
     },
 
     hash(enc, value):: {
-        type: bnet.TYPE_HASH,
+        type: wake.TYPE_HASH,
         enc: enc,
         value: value,
     },
@@ -66,7 +66,7 @@
     file(path):: {
         assert assert_path(path),
         path: path,
-        type: bnet.TYPE_FILE,
+        type: wake.TYPE_FILE,
     },
 
     // Helper function to create a path from a set of components.
@@ -79,7 +79,7 @@
     //
     // Conceptually returns: list[file]
     dir(include, exclude=null):: {
-        type: bnet.TYPE_DIR,
+        type: wake.TYPE_DIR,
         assert assert_path(path),
         include: include,
         exclude: exclude,
@@ -105,12 +105,12 @@
     //   type `file`. Local modules are the only type of modules that can
     //   be executed by a `module_effect`.
     module(name, inputs=null, outputs=null, exec=null, version=null, is_local=false):: {
-        type: bnet.TYPE_MODULE,
+        type: wake.TYPE_MODULE,
         name: name,
         inputs: inputs,
         outputs: outputs,
 
-        assert exec != bnet.EXEC_RESERVED,
+        assert exec != wake.EXEC_RESERVED,
         exec: exec,
         version: version,
         is_local: is_local,
@@ -118,13 +118,13 @@
 
     // path to another module, with arguments to pass it.
     module_path(env, path, config=null):: {
-        type: bnet.TYPE_MODULE_PATH,
+        type: wake.TYPE_MODULE_PATH,
         assert assert_path(path),
         // TODO: implemented in native code
     },
 
     module_effect(name, module_local, exec, version=null):: {
-        type: bnet.TYPE_MODULE,
+        type: wake.TYPE_MODULE,
         // TODO: implemented in native code
     },
 
@@ -136,7 +136,7 @@
     // - `args` are included in the command. It is recommended to keep them
     //   extremely short.
     exec(ref, config=null, args=null):: {
-        type: bnet.TYPE_EXEC,
+        type: wake.TYPE_EXEC,
         ref: ref,
         args: args,
     },
@@ -165,20 +165,24 @@
     //
     effect(name, mod, exec, outputs=null, is_pure=false):: {
         assert std.isBoolean(is_pure),
-        type: bnet.TYPE_EFFECT,
+        type: wake.TYPE_EFFECT,
         name: name,
         mod: mod,
         exec: exec,
         is_pure: is_pure,
     },
 
-    example_file: bnet.file("./example-file.txt"),
-    example_dir: bnet.dir("./example-dir/"),
-    example_url: bnet.module_url("foo.com", bnet.hash("AES-256", "f3e230a")),
-    example_module: bnet.module(
+    retrievePkg(env, name, version, namespace):: {
+        return: env.
+    }
+
+    example_file: wake.file("./example-file.txt"),
+    example_dir: wake.dir("./example-dir/"),
+    example_url: wake.module_url("foo.com", wake.hash("AES-256", "f3e230a")),
+    example_module: wake.module(
         name='hello',
         inputs=[],
         outputs=[],
-        exec=bnet.exec('hello.wasm')
+        exec=wake.exec('hello.wasm')
     ),
 }
