@@ -96,8 +96,8 @@
 
     // TODO: implement importing mechanics to find the pkg cache.
     // The resolver must always make it linked at
-    // `.__wake__/pkgs.libsonnet` in every directory when config=_TPKG_PKGS
-    _pkgs: import "wake::pkgs",
+    // `.wake/pkgs.libsonnet` in every directory when config=_TPKG_PKGS
+    _pkgs: import ".wake/pkgs.libsonnet",
 
     // TODO: implement the resolver. It must handle _TPKG_DEC and _TPKG_GET
     _pkgResolve(config): wake._callNative("wake-pkg-resolver", config),

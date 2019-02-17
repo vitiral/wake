@@ -7,6 +7,6 @@ license = "Apache 2.0"
 
 [dependencies]
 jsonnet-rs = "0.6.0"
-ergo = "0.0.5"
+ergo = {git="https://github.com/rust-crates/ergo", branch="path_abs-4.0"}
 serde = "1.0.87"
 expect_macro = "0.2.1"
