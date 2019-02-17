@@ -69,3 +69,17 @@ Packages are retrieved and resolved thusly:
    `.wake/pkgs`
 
 
+## [[.module_resolution]] `module_resolution` phase
+
+The module resolution phase happens after all `pkg` are resolved.
+
+It starts by calling the module at pkg root, called `root`.
+
+```
+local pkg = root;
+local module = root.modules.{mod};
+
+
+```
+
+

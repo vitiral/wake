@@ -20,6 +20,27 @@ Arguments:
   version.  Used by organiations to control where modules come from.
 
 
+## [[.pkg]] `pkg(...)`
+Defines a pkg. Must be the only thing returned from the `./PKG` file.
+
+Arguments:
+- `pkgInfo`
+- `files=list[path]`: a list of paths to _local_ files to include. This automatically
+  includes `PKG` itself and paths in `modules`, and is used to compute the hash of
+  the PKG.
+  `inputs=function(wake, pkg) -> map`: function which takes in the instantiated `pkg`
+  and returns a flat map of key/values. The values are _strongly typed_ and can
+  include: ref, file.
+- `pkgs`: flat map of key/pkgInfo. This is resolved first, and is used for
+  finding and downloading pkgs.
+- `modules=map[key, module]`: map of local modules of the pkg.
+  `function(wake, pkg, config) -> moduleId`
+
+> Note: the function defined in `inputs` is called at the beginning of this
+> pkg's instantiation, only after all the `pkgs` this pkg is dependent on have
+> been instantiated.
+
+
 ## [[.getPkg]] `getPkg(...)`
 Retrieve a pkg.
 
@@ -40,42 +61,25 @@ Arguments:
 
 Returns: pkgInfo
 
-## [[.pkg]] `pkg(...)`
-Defines a pkg. Must be the only thing returned from the `./PKG` file.
-
-Arguments:
-- `pkgInfo`
-- `files=list[path]`: a list of paths to _local_ files to include. This automatically
-  includes `PKG` itself and paths in `modules`, and is used to compute the hash of
-  the PKG.
-  `inputs=function(wake, pkg) -> map`: function which takes in the instantiated `pkg`
-  and returns a flat map of key/values. The values are _strongly typed_ and can
-  include: ref, file.
-- `pkgs`: flat map of key/pkgInfo. This is resolved first, and is used for
-  finding and downloading pkgs.
-- `modules`: key/path map of local modules of the pkg. Values must be paths to
-  libsonnet files which return a type `function(wake, pkg, config) -> moduleId`
-
-> Note: the function defined in `inputs` is called at the beginning of this
-> pkg's instantiation, only after all the `pkgs` this pkg is dependent on have
-> been instantiated.
 
 ## [[.module]] `module(...)`
 
-A product of building a set of packages. Instantiated modules are the _result_
-of the build step, and can depend on other modules.
+The definition of something to build.
 
 Note that when `exec` is running it has read access to all files and inputs
-the local `pkg` the module is defined in.
+the local `pkg` the module is defined in, as well as any pkgs and modules it
+is dependt on.
 
-Also note that `module` is only called after all pkg objects have been
-instantiated, so `getPkg` will never be lazy (attempting it on a non-existant
-pkg will result in an error).
+Also note that when the inputs and outputs functions are called, the `pkg` will
+be _fully resolved_, meaning that `module.pkgs.foo` will return the full `pkg`
+object, and all paths will be resolved (the same is true for
+`module.modules.foo`.
+
+When instantiating (i.e. building) the module, `exec` will then be passed the
+fully instantiated manifest, meaning it is just JSON (no jsonnet functions, etc).
 
 Arguments:
-- `name`: name of this module.
-- `pkg=null`: the pkg to use for this module. If `null` (typical) then this is
-  `./PKG`.
+- `pkg`: pkg this module came from.
 - `modules`: dependencies of this module
 - `files=function(wake, module) -> list[reflike]`: function which returns additional
   files (on top of `pkg.files`) to create/link for this specific module.
@@ -84,14 +88,11 @@ Arguments:
   new files), except `file(..., dump=true)`. The function is executed as the beginning
   of this module's instantiation (all the `modules` this module is dependent on
   have been instantiated.)
-- `inputs=function(wake, module) -> map`: additional inputs for the module with
-  the same
-  rules as `files`. Similar to `pkg::inputs`
-- `outputs=function(wake, pkg) -> map[str, value]`: function that returns a
+- `outputs=function(wake, module) -> map[str, value]`: function that returns a
   map contining the outputs of the module execution. Values are typically
   paths, lists of paths, or small jsonnet objects computed with only the
   `config`.
-- `exec`: the execution to use to instantiate the module.
+- `exec=function(wake, module) -> exec`: the execution to use to instantiate the module.
 - `metadata`: the metadata of the module, such as author, license, etc. Not used
   in the hash of the module.
 
@@ -102,13 +103,34 @@ Arguments:
 
 Returns: `moduleId`
 
+
+## [[.getModule]] `getModule(...)`
+Retrieve a module from a pkg with a specified config.
+
+Arguments:
+- `pkg`
+- `
+- `from`: one of:
+  - ./path`: a reflike local path
+  - `wake.GLOBAL` to retrieve from a globally defined pkg
+  - `wake.exec(ePkg, ...)`: to execute another pkg to retrieve the pkg
+- `global=null`: used to insert the pkg in the global namespace
+  (`from=wake.GLOBAL`). Set to `true` to do so, `{override=[1..100]}` to
+  set the override value.
+- `permisions=null`: permissions to grant the pkg. `defineGlobal` is required
+  for the retrieved pkg to _itself_ define global pkgs.
+
+Returns: pkgInfo
+
+
 ## [[.exec]] `exec(...)`
 Specification for executing from within a pkg.
 
-- `ref`: reflike to execute. Must always resolve to a `file`.
+- `path`: local or linked path to execute
 - `config`: config to pass to the executable as JSON via `stdin`
 - `args`: list of strings to pass as arguments to the executable.
 - `env`: environment variables to pass to the executable, resolved as strings.
+  Consider using `config` instead.
   - all `file` objects will be converted to local paths `./path/to/file`
   - all raw strings will remain as strings
   - integers will be converted to a string
@@ -116,12 +138,31 @@ Specification for executing from within a pkg.
   - !! values which serialize to be over 4kB will raise an error.
   - !! all other values will raise an error.
 
+Exec will be executed from within a sandbox where all dependent pkgs
+and modules (and files which use them) will be properly linked. It
+will be passed the `args` as arguments, and the config below in stdin.
+The environment will be what was passed to `env` with the following additions:
+- `PWD` is set to `config.base`
+
+
+The following `config` will be passed as a json object to stdin of exec:
+```
+{
+    "base": <the directory of the module>,
+    "pkg": <the instantiated pkg manifest>,
+    "module": <the instantiated module manifest>,
+    "config": <the config manifest given to exec>,
+    "env": <the env given to exec>,
+}
+```
+
 ## [[.file]] `file(path, from=ref, dump=false)`
 Refer to the file at `path`. If `from` is specified, will create a ln to a file
-there using a file from another location.
+there using a file from another location (i.e. path, config blob, instantiated
+pkg or module).
 
-If dump is `true`, `from` should refer to a manifest. The manifest
-will be converted to json and dumped at `path`.
+If dump is `true`, `from` should refer to a config blob. The manifest of the
+config will be converted to json and dumped at `path`.
 
 Returns: `file` object
 
@@ -132,39 +173,6 @@ struct File {
     dump: bool,
 }
 ```
-
-## [[.ref]] `ref(...)`
-Refer to a file, input, or output of a pkg or module. Frequently
-places that say they take a `ref` will take a `reflike` directly.
-
-Arguments:
-- `from`: reflike specifier the reference.
-
-`reflike` specifiers have a bit of complexity to improve ergonomics.  Examples
-include: `./bin/bash`, `input.foo`, `pkg.otherPkg.input.bar`,
-`modules.otherModule.output.baz`, `['pkg', 'something', 'inputs', 'config']`
-
-Reflike Rules:
-- `file` references must start with `./` and be in the `files` object
-- `input` references must start with `input.`
-- `output` references must start with `output.`
-- `pkg` references must start with `pkg.`
-- `module` references must start with `module.` and cannot be used in PKG.
-- Can also use lists, i.e. `['input', 'a.b.c', 'f']`.  Necessary if a key
-  contains a `'.'`
-
-Returns: the value referenced.
-- Files are a `file` object.
-- Pkgs are a `pkgInfo`
-- Modules are a `moduleId`
-- Others are returned unchanged.
-
-### A Note about Files
-Note that when specifying a reference to a file in another module, the
-file's path will correctly reflect the path from the current one. So if
-`pkg.myPkg.input.dataFile` is `{type:'file', path: './data/dataFile.csv', ...}`
-then it will resolve to `{type:'file', path:
-'./.wake/pkgs/<myPkg-id>/data/dataFile.csv'`
 
 # SPC-helpers
 These are helper functions are not part of the core types.
