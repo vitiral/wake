@@ -91,26 +91,40 @@
     // #SPC-helpers
     dir(): null,
 
+    // TODO: this should do something
     _callNative(method, config): std.native(method)(std.manifestJsonEx(config, "  ")),
+
     _pkgResolve(config): wake._callNative("wake-pkg-resolver", config),
     _pkgRetrieve(config): wake._callNative("wake-pkg-retrieve", config),
 
     _instantiateModule(wake, moduleInfo, config): {
-        local callConfig(m, module) =
-            if std.isFunction(m.config) then
-                m.config(module)
+        local callConfigMaybe(config, selfModule) =
+            if std.isFunction(config) then
+                config(selfModule)
             else
-                m.config,
+                config,
 
         module: {
             pkg: moduleInfo.pkg,
             meta: moduleInfo.meta,
             config: config,
 
+            local mods = moduleInfo.modules,
+
             // note that all of this is done lazily
             modules: {
-                local mods = moduleInfo.modules,
-                [key]: wake.instantiateModule(wake, mods[key].module, callConfig(mods[key], module))
+                // mods are getModule objects
+
+                [key]: {
+                    local mInfo = mods[key].module,
+                    local mConfig = mods[key].config,
+
+                    return: wake.instantiateModule(
+                        wake,
+                        mods[key].module, 
+                        callConfigMaybe(mConfig, self)
+                    )
+                }.return
                 for key in mods
             },
 

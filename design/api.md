@@ -108,17 +108,8 @@ Returns: `moduleId`
 Retrieve a module from a pkg with a specified config.
 
 Arguments:
-- `pkg`
-- `
-- `from`: one of:
-  - ./path`: a reflike local path
-  - `wake.GLOBAL` to retrieve from a globally defined pkg
-  - `wake.exec(ePkg, ...)`: to execute another pkg to retrieve the pkg
-- `global=null`: used to insert the pkg in the global namespace
-  (`from=wake.GLOBAL`). Set to `true` to do so, `{override=[1..100]}` to
-  set the override value.
-- `permisions=null`: permissions to grant the pkg. `defineGlobal` is required
-  for the retrieved pkg to _itself_ define global pkgs.
+- `module`
+- `config`: either a raw config or a function which gets passed the module.
 
 Returns: pkgInfo
 
