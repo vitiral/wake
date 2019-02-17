@@ -1,6 +1,14 @@
 //! Serialized types
 use ergo::*;
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PkgInfo {
+    name: String,
+    version: String,
+    namespace: String,
+}
+
 #[derive(Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Hash {

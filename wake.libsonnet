@@ -1,13 +1,13 @@
 {
     local wake = self,
 
-    TPKG_INFO: "pkg_info",
+    TPKG_INFO: "pkgInfo",
     TPKG: "pkg",
     TEXEC: "exec",
     TFILE: "file",
-    _TFILE_DEC: "file_declare",
-    _TPKG_DEC: "pkg_declare",
-    _TPKG_GET: "pkg_get",
+    _TFILE_DEC: "fileDeclare",
+    _TPKG_DEC: "pkgDeclare",
+    _TPKG_GET: "pkgGet",
 
     pkgInfo(name, version, namespace): {
         type: self.TPKG_INFO,

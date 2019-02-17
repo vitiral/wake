@@ -3,11 +3,52 @@
 use ergo::*;
 use jsonnet::*;
 use std::ffi::OsStr;
-use crate::types::{ModuleId, Module};
+use crate::types::{PkgInfo};
 use expect_macro::expect;
 
-static pkgs: &str = ".wake/pkgs";
 
+lazy_static! {
+    static ref pkgs_path: PathBuf = PathBuf::from("./.wake/pkgs");
+    static ref PKGS: Mutex<IndexMap<PkgInfo, PathBuf>> = Mutex::new(IndexMap::new());
+    static ref PKG_DECLARES: Mutex<IndexMap<PkgInfo, PkgDeclare>> = Mutex::new(IndexMap::new());
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+enum NativeCalls {
+    PkgDeclare(PkgDeclare),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PkgDeclare {
+    pkg_info: PkgInfo,
+    files: Vec<String>,
+    inputs: IndexMap<String, String>,
+
+    // TODO: these are not String
+    pkgs: IndexMap<String, String>,
+    modules: IndexMap<String, String>,
+}
+
+fn wake_pkg_resolver<'a>(vm: &'a JsonnetVm, args: &[JsonVal<'a>]) -> Result<JsonValue<'a>, String> {
+    let arg = args[0].as_str().ok_or("expected string config")?;
+    let config: NativeCalls = json::from_str(arg).map_err(|e| e.to_string())?;
+
+    let mut lock = expect!(PKG_DECLARES.lock());
+    let declares = lock.deref_mut();
+
+    match config {
+        NativeCalls::PkgDeclare(pkg) => {
+            if !declares.contains_key(&pkg.pkg_info) {
+                declares.insert(pkg.pkg_info.clone(), pkg);
+            }
+
+        },
+    }
+
+    Ok(JsonValue::from_num(vm, 1.0))
+}
 
 #[cfg(test)]
 mod test_old {
