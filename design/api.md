@@ -1,32 +1,6 @@
-# REQ-purpose
-<details>
-<summary><b>metadata</b></summary>
-<b>partof:</b> <i>none</i></a><br>
-<b>parts:</b><br>
-<li><a style="font-weight: bold; color: #FF4136" title="SPC-API" href="#SPC-API">SPC-api</a></li>
-<li><a style="font-weight: bold; color: #FF4136" title="SPC-ARCH" href="#SPC-ARCH">SPC-arch</a></li>
-<b>file:</b> design/arch.md<br>
-<b>impl:</b> <i>not implemented</i><br>
-<b>spc:</b>0.00&nbsp;&nbsp;<b>tst:</b>0.00<br>
-<hr>
-</details>
-
-
-Create an awesome build system.
-
-
 # SPC-api
-<details>
-<summary><b>metadata</b></summary>
-<b>partof:</b><br>
-<li><a style="font-weight: bold; color: #FF4136" title="REQ-PURPOSE" href="#REQ-PURPOSE">REQ-purpose</a></li>
-<b>parts:</b> <i>none</i></a><br>
-<b>file:</b> design/api.md<br>
-<b>impl:</b> <i>not implemented</i><br>
-<b>spc:</b>0.00&nbsp;&nbsp;<b>tst:</b>0.00<br>
-<hr>
-</details>
-
+partof: REQ-purpose
+###
 
 Below are the different types/functions that make up the core API of wake.
 
@@ -35,7 +9,7 @@ Some special notes:
 - files can only be defined in `files`. Any reference to a "file" in inputs or outputs
   (or anywhere) will simply be its raw data (json, string, etc).
 
-## <span title="Not Implemented" style="color: #FF4136"><b><i>.pkgInfo</i></b></span> `pkgInfo(...)`
+## [[.pkgInfo]] `pkgInfo(...)`
 This is the information that defines a package. It results in an object which
 is used as part of other types.
 
@@ -46,7 +20,7 @@ Arguments:
   version.  Used by organiations to control where modules come from.
 
 
-## <span title="Not Implemented" style="color: #FF4136"><b><i>.getPkg</i></b></span> `getPkg(...)`
+## [[.getPkg]] `getPkg(...)`
 Retrieve a pkg.
 
 Pkgs are _just data_ that can depend on other pkgs or the direct execution
@@ -66,7 +40,7 @@ Arguments:
 
 Returns: pkgInfo
 
-## <span title="Not Implemented" style="color: #FF4136"><b><i>.pkg</i></b></span> `pkg(...)`
+## [[.pkg]] `pkg(...)`
 Defines a pkg. Must be the only thing returned from the `./PKG` file.
 
 Arguments:
@@ -86,7 +60,7 @@ Arguments:
 > pkg's instantiation, only after all the `pkgs` this pkg is dependent on have
 > been instantiated.
 
-## <span title="Not Implemented" style="color: #FF4136"><b><i>.module</i></b></span> `module(...)`
+## [[.module]] `module(...)`
 
 A product of building a set of packages. Instantiated modules are the _result_
 of the build step, and can depend on other modules.
@@ -128,7 +102,7 @@ Arguments:
 
 Returns: `moduleId`
 
-## <span title="Not Implemented" style="color: #FF4136"><b><i>.exec</i></b></span> `exec(...)`
+## [[.exec]] `exec(...)`
 Specification for executing from within a pkg.
 
 - `ref`: reflike to execute. Must always resolve to a `file`.
@@ -142,7 +116,7 @@ Specification for executing from within a pkg.
   - !! values which serialize to be over 4kB will raise an error.
   - !! all other values will raise an error.
 
-## <span title="Not Implemented" style="color: #FF4136"><b><i>.file</i></b></span> `file(path, from=ref, dump=false)`
+## [[.file]] `file(path, from=ref, dump=false)`
 Refer to the file at `path`. If `from` is specified, will create a ln to a file
 there using a file from another location.
 
@@ -159,7 +133,7 @@ struct File {
 }
 ```
 
-## <span title="Not Implemented" style="color: #FF4136"><b><i>.ref</i></b></span> `ref(...)`
+## [[.ref]] `ref(...)`
 Refer to a file, input, or output of a pkg or module. Frequently
 places that say they take a `ref` will take a `reflike` directly.
 
@@ -192,97 +166,10 @@ file's path will correctly reflect the path from the current one. So if
 then it will resolve to `{type:'file', path:
 './.wake/pkgs/<myPkg-id>/data/dataFile.csv'`
 
-
-# SPC-arch
-<details>
-<summary><b>metadata</b></summary>
-<b>partof:</b><br>
-<li><a style="font-weight: bold; color: #FF4136" title="REQ-PURPOSE" href="#REQ-PURPOSE">REQ-purpose</a></li>
-<b>parts:</b> <i>none</i></a><br>
-<b>file:</b> design/arch.md<br>
-<b>impl:</b> <i>not implemented</i><br>
-<b>spc:</b>0.00&nbsp;&nbsp;<b>tst:</b>0.00<br>
-<hr>
-</details>
-
-
-Wake is _both_ a pkg manager and a build system. The basic architecture of wake
-is _simplicity_. Wake actually does very little, letting jsonnet and the
-provided plugins do almost all of the heavy lifting.
-
-> This architecture references <a style="font-weight: bold; color: #FF4136" title="SPC-API" href="#SPC-API">SPC-api</a> extensively.
-
-There are two phases:
-- pkg_resolution: retieves all pkg objects. During this phase `pkg` can be
-  executed directly. This is the traditional "package management" phase.
-- module_resolution: instantiates all modules using their `exec`. This is the
-  traditional "build" or "make" phase.
-
-One of the most important things to realize about wake is that it's architecture
-is _lazy_. Pkgs can depend on other pkgs which don't yet exist, and it won't be
-an error until the entire current tree has been resolved.
-
-## <span title="Not Implemented" style="color: #FF4136"><b><i>.pkg_resolution</i></b></span> `pkg_resolution` phase
-
-The build system starts at `{working_dir}/PKG` and resolves it. This will results in
-a single call to `pkg` which _fully resolves_ a json manifest. During this time, there
-are several calls to `getPkg`. `getPkg` is implemented natively. Basically it:
-- Checks if the pkg has already been gotten. If so, it returns the cached version.
-- If `from=./path` then it gets resolved by the `pkg_resolver` directly.
-- If `from=wake.exec(ePkg, ...)` then all calls getPkg using `ePkg` are put in a list
-  and serialized to that call. `ePkg` then returns a coresponding list of the pkg-ids.
-- Any pkgs that are not yet resolved are kept in that state. They can be resolved in
-  a later loop.
-
-The above continuously executes until all `getPkg` are resolved. If no pkgs remain
-unresolved _and_ no pkgs were resolved in a cycle, then an error is raised.
-
-> **Note**: although `override` can be used to override a global package, if
-> that package has _ever_ been executed in this build cycle then it will raise an
-> error (you can not override pkgs that have been executed).
->
-> The exception to this rule is that the `wake_pkg_resolver` can be overriden.
-> When null it uses a simple (builtin) file resolver. The `wake_pkg_downloader`
-> may also be added in the future to download packages from a url.
->
-> **Note:** if a pkg is retrieved by one exec, but the same pkg is requested
-> using a different exec, then it will result in an error.
->
-> For these reasons, it is generally recommended to use a single pkg retriever
-> for any group of package types (i.e. namespace & language).
->
-> **Note:** `pkg_retriever` _should_ typically retrieve the largest semver compliant
-> pkg for any request.
-
-Packages are retrieved and resolved thusly:
-1. `myPkg.pkgs` includes a call to `getPkg(otherPkg)`
-1. The `wake_pkg_resolver` is executed with the same args passed to `getPkg`.
-   This must check if the `pkg` currently exists, error check it, and create
-   a symlink in `.wake/pkgs` if it does and return the path. For pkgs to a
-   local path, it must put the pkg in universal storage and return the symlink.
-   (DONE)
-1. If the pkg does not exist, the `getPkg` is passed to the pkg in `exec`. If
-   that pkg doesn't exist, it waits until it does. The exec pkg must download
-   the pkg to `.wake/downloaded/pkgs/<pkg-id>` and return that path.
-1. The `wake_pkg_resolver` will again be called with the downloaded path. It
-   should move the files to their proper place and create a synmlink in
-   `.wake/pkgs`
-
-
 # SPC-helpers
-<details>
-<summary><b>metadata</b></summary>
-<b>partof:</b> <i>none</i></a><br>
-<b>parts:</b> <i>none</i></a><br>
-<b>file:</b> design/api.md<br>
-<b>impl:</b> <i>not implemented</i><br>
-<b>spc:</b>0.00&nbsp;&nbsp;<b>tst:</b>0.00<br>
-<hr>
-</details>
-
 These are helper functions are not part of the core types.
 
-##  <span title="Not Implemented" style="color: #FF4136"><b><i>.dir</i></b></span>: `dir(include, exclude=null)`
+##  [[.dir]]: `dir(include, exclude=null)`
 Path to a directory of files to glob-include.
 
 All matching sub files and directories will be recursively included,
