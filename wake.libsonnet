@@ -5,7 +5,8 @@
     TPKG: "pkg",
     TEXEC: "exec",
     TFILE: "file",
-    _TPKG_DECLARE: "pkg_declare",
+    _TFILE_DEC: "file_declare",
+    _TPKG_DEC: "pkg_declare",
     _TPKG_GET: "pkg_get",
 
     pkgInfo(name, version, namespace): {
@@ -18,7 +19,7 @@
     pkg(name, version, namespace=null, files=null, inputs=null, pkgs=null, modules=null): {
         local pkgInfo = pkgInfo(name, version, namespace),
         local config = {
-            type: self._TPKG_DECLARE,
+            type: self._TPKG_DEC,
             pkgInfo: pkgInfo,
             files: files,
             inputs: inputs,
@@ -28,7 +29,7 @@
 
         local existing = wake._pkgResolve(config),
         return: if existing == null then
-            pkgInfo // unresolved, will be resolved in a later passed
+            pkgInfo // unresolved, will be resolved in a later pass
          else
             wake.pkgs[existing]
     }.return,
@@ -82,7 +83,7 @@
     },
 
     file(path, from=null, dump=false): {
-        type: self.TFILE,
+        type: self.TFILE_DEC,
         path: path,
         from: from,
         dump: dump,
@@ -91,47 +92,50 @@
     // #SPC-helpers
     dir(): null,
 
-    // TODO: this should do something
     _callNative(method, config): std.native(method)(std.manifestJsonEx(config, "  ")),
 
+    // TODO: implement importing mechanics to find the pkg cache.
+    // The resolver must always make it linked at
+    // `.__wake__/pkgs.libsonnet` in every directory when config=_TPKG_PKGS
+    _pkgs: import "wake::pkgs",
+
+    // TODO: implement the resolver. It must handle _TPKG_DEC and _TPKG_GET
     _pkgResolve(config): wake._callNative("wake-pkg-resolver", config),
+
+    // TODO: implement the resolver. It must handle _TPKG_GET
     _pkgRetrieve(config): wake._callNative("wake-pkg-retrieve", config),
 
-    _instantiateModule(wake, moduleInfo, config): {
+    _instantiateModule(wake, moduleDec, config): {
         local callConfigMaybe(config, selfModule) =
             if std.isFunction(config) then
                 config(selfModule)
             else
                 config,
 
-        module: {
-            pkg: moduleInfo.pkg,
-            meta: moduleInfo.meta,
+        return: {
+            local getMods = moduleDec.modules,
+
+            pkg: moduleDec.pkg,
+            meta: moduleDec.meta,
             config: config,
-
-            local mods = moduleInfo.modules,
-
-            // note that all of this is done lazily
             modules: {
-                // mods are getModule objects
-
                 [key]: {
-                    local mInfo = mods[key].module,
-                    local mConfig = mods[key].config,
+                    local mInfo = getMods[key].module,
+                    local mConfig = getMods[key].config,
 
                     return: wake.instantiateModule(
                         wake,
-                        mods[key].module, 
+                        getMods[key].module,
                         callConfigMaybe(mConfig, self)
                     )
                 }.return
-                for key in mods
+                for key in getMods
             },
 
-            files: moduleInfo.files(wake, self),
-            inputs: moduleInfo.inputs(wake, self),
-            outputs: moduleInfo.outputs(wake, self),
-            exec: moduleInfo.exec(wake, self),
+            files: moduleDec.files(wake, self),
+            inputs: moduleDec.inputs(wake, self),
+            outputs: moduleDec.outputs(wake, self),
+            exec: moduleDec.exec(wake, self),
         },
-    },
+    }.return,
 }
