@@ -9,8 +9,13 @@ use expect_macro::expect;
 
 lazy_static! {
     static ref pkgs_path: PathBuf = PathBuf::from("./.wake/pkgs");
-    static ref PKGS: Mutex<IndexMap<PkgInfo, PathBuf>> = Mutex::new(IndexMap::new());
-    static ref PKG_DECLARES: Mutex<IndexMap<PkgInfo, PkgDeclare>> = Mutex::new(IndexMap::new());
+    static ref GLOBALS: Mutex<Globals> = Mutex::new(Globals::default());
+}
+
+#[derive(Debug, Default)]
+struct Globals {
+    pub pkgs: IndexMap<PkgInfo, PathBuf>,
+    pub pkg_declares: IndexMap<PkgInfo, PkgDeclare>,
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -35,15 +40,14 @@ fn wake_pkg_resolver<'a>(vm: &'a JsonnetVm, args: &[JsonVal<'a>]) -> Result<Json
     let arg = args[0].as_str().ok_or("expected string config")?;
     let config: NativeCalls = json::from_str(arg).map_err(|e| e.to_string())?;
 
-    let mut lock = expect!(PKG_DECLARES.lock());
-    let declares = lock.deref_mut();
+    let mut lock_declares = expect!(PKG_DECLARES.lock());
+    let declares = lock_declares.deref_mut();
 
     match config {
         NativeCalls::PkgDeclare(pkg) => {
             if !declares.contains_key(&pkg.pkg_info) {
                 declares.insert(pkg.pkg_info.clone(), pkg);
             }
-
         },
     }
 
