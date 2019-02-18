@@ -14,8 +14,10 @@ lazy_static! {
 #[derive(Debug, Default)]
 struct Globals {
     pub pkgs: IndexMap<PkgInfo, String>,
+    pub pkg_paths: IndexMap<(PkgInfo, String), String>,
     pub pkg_declares: IndexMap<PkgInfo, PkgDeclare>,
-    pub pkg_gets: IndexMap<PkgInfo, PkgGet>,
+    pub pkgs_retrieve: IndexMap<PkgInfo, PkgGet>,
+    pub pkgs_unresolved: IndexSet<PkgInfo>,
     pub pkg_globals: IndexMap<PkgInfo, String>,
 }
 
@@ -89,8 +91,11 @@ pub fn wake_pkg_resolver<'a>(
     let globals = lock.deref_mut();
 
     let pkgs = &mut globals.pkgs;
+    let pkg_paths = &mut globals.pkg_paths;
     let pkg_globals = &mut globals.pkg_globals;
     let declares = &mut globals.pkg_declares;
+    let retrieve = &mut globals.pkgs_retrieve;
+    let unresolved = &mut globals.pkgs_unresolved;
 
     match config {
         NativeCalls::PkgDeclare(pkg) => {
@@ -110,36 +115,64 @@ pub fn wake_pkg_resolver<'a>(
             let info = &pkgGet.pkg_info;
 
             match pkgGet.from {
-                PkgFrom::Path(path) => {
-                    // FIXME: need to call the plugin here
-                    Ok(JsonValue::null(vm))
-                },
+                PkgFrom::Path(ref path) => {
+                    let path_key = (info.clone(), path.clone());
+                    if let Some(key) = pkg_paths.get(&path_key) {
+                        // TODO: make sure nobody has tried to get the same pkg with
+                        // a different exec. Need to load the meta from the filesystem
+                        // to check.
+                        Ok(JsonValue::from_str(vm, &key))
+                    } else {
+                        let exists = retrieve.insert(info.clone(), pkgGet.clone());
+                        _check_pkg_get(info, &pkgGet, exists)?;
+                        Ok(JsonValue::null(vm))
+                    }
+                }
 
                 PkgFrom::PkgGlobal => {
                     if let Some(path) = pkg_globals.get(info) {
-                        // TODO: make sure nobody has tried to get the same pkg with
-                        // a different exec
                         Ok(JsonValue::from_str(vm, &path))
                     } else {
+                        unresolved.insert(info.clone());
                         Ok(JsonValue::null(vm))
                     }
-                },
+                }
 
-                PkgFrom::PkgExec( PkgExec { pkg, exec} ) => {
-                    // TODO: make sure nobody has tried to get the same pkg with
-                    // a different exec
+                PkgFrom::PkgExec(_) => {
                     if let Some(path) = pkgs.get(info) {
                         // TODO: make sure nobody has tried to get the same pkg with
-                        // a different exec
+                        // a different exec. Need to load the meta from the filesystem
+                        // to check.
                         Ok(JsonValue::from_str(vm, &path))
                     } else {
-                        // FIXME: need to call the plugin here
+                        let exists = retrieve.insert(info.clone(), pkgGet.clone());
+                        _check_pkg_get(info, &pkgGet, exists)?;
                         Ok(JsonValue::null(vm))
                     }
                 }
             }
         }
     }
+}
+
+fn _check_pkg_get(
+    pkgInfo: &PkgInfo,
+    first: &PkgGet,
+    exists: Option<PkgGet>,
+) -> Result<(), String> {
+    if let Some(exists) = exists {
+        if first != &exists {
+            return Err(format!(
+                r#"
+                attempted to get pkg with two different kind of gets:
+                pkgInfo = {:#?}
+                getPkg1 = {:#?}
+                getPkg2 = {:#?}"#,
+                pkgInfo, first, exists,
+            ));
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
