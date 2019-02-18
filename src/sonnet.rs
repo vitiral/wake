@@ -15,6 +15,7 @@ lazy_static! {
 struct Globals {
     pub pkgs: IndexMap<PkgInfo, String>,
     pub pkg_declares: IndexMap<PkgInfo, PkgDeclare>,
+    pub pkg_gets: IndexMap<PkgInfo, PkgGet>,
     pub pkg_globals: IndexMap<PkgInfo, String>,
 }
 
@@ -88,6 +89,7 @@ pub fn wake_pkg_resolver<'a>(
     let globals = lock.deref_mut();
 
     let pkgs = &mut globals.pkgs;
+    let pkg_globals = &mut globals.pkg_globals;
     let declares = &mut globals.pkg_declares;
 
     match config {
@@ -104,12 +106,37 @@ pub fn wake_pkg_resolver<'a>(
             }
         }
 
-        NativeCalls::PkgGet(pkg) => {
-            let info = &pkg.pkg_info;
-            match pkg.from {
-                PkgFrom::Path(path) => panic!(),
-                PkgFrom::PkgGlobal => panic!(),
-                PkgFrom::PkgExec( PkgExec { pkg, exec} ) => panic!(),
+        NativeCalls::PkgGet(pkgGet) => {
+            let info = &pkgGet.pkg_info;
+
+            match pkgGet.from {
+                PkgFrom::Path(path) => {
+                    // FIXME: need to call the plugin here
+                    Ok(JsonValue::null(vm))
+                },
+
+                PkgFrom::PkgGlobal => {
+                    if let Some(path) = pkg_globals.get(info) {
+                        // TODO: make sure nobody has tried to get the same pkg with
+                        // a different exec
+                        Ok(JsonValue::from_str(vm, &path))
+                    } else {
+                        Ok(JsonValue::null(vm))
+                    }
+                },
+
+                PkgFrom::PkgExec( PkgExec { pkg, exec} ) => {
+                    // TODO: make sure nobody has tried to get the same pkg with
+                    // a different exec
+                    if let Some(path) = pkgs.get(info) {
+                        // TODO: make sure nobody has tried to get the same pkg with
+                        // a different exec
+                        Ok(JsonValue::from_str(vm, &path))
+                    } else {
+                        // FIXME: need to call the plugin here
+                        Ok(JsonValue::null(vm))
+                    }
+                }
             }
         }
     }
