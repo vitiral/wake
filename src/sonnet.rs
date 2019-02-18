@@ -1,11 +1,10 @@
 //! Helper functions for working with jsonnet.
 
+use crate::types::PkgInfo;
 use ergo::*;
+use expect_macro::expect;
 use jsonnet::*;
 use std::ffi::OsStr;
-use crate::types::{PkgInfo};
-use expect_macro::expect;
-
 
 lazy_static! {
     static ref pkgs_path: PathBuf = PathBuf::from("./.wake/pkgs");
@@ -14,7 +13,7 @@ lazy_static! {
 
 #[derive(Debug, Default)]
 struct Globals {
-    pub pkgs: IndexMap<PkgInfo, PathBuf>,
+    pub pkgs: IndexMap<PkgInfo, String>,
     pub pkg_declares: IndexMap<PkgInfo, PkgDeclare>,
 }
 
@@ -22,6 +21,7 @@ struct Globals {
 #[serde(tag = "type", rename_all = "camelCase")]
 enum NativeCalls {
     PkgDeclare(PkgDeclare),
+    PkgGet(PkgInfo),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -36,22 +36,75 @@ struct PkgDeclare {
     modules: IndexMap<String, String>,
 }
 
-fn wake_pkg_resolver<'a>(vm: &'a JsonnetVm, args: &[JsonVal<'a>]) -> Result<JsonValue<'a>, String> {
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PkgGet {
+    pkg_info: PkgInfo,
+    from: PkgInfo,
+    path: String,
+    global: Option<PkgGlobal>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+enum PkgFrom {
+    Path(String),
+    PkgGlobal,
+    PkgExec,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PkgGlobal {
+    #[serde(rename = "override")]
+    override_: u16,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PkgExec {
+    pkg: PkgInfo,
+    exec: Exec,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Exec {
+    path: String,
+    config: json::Value,
+    args: Vec<String>,
+    env: json::Value,
+}
+
+pub fn wake_pkg_resolver<'a>(
+    vm: &'a JsonnetVm,
+    args: &[JsonVal<'a>],
+) -> Result<JsonValue<'a>, String> {
     let arg = args[0].as_str().ok_or("expected string config")?;
     let config: NativeCalls = json::from_str(arg).map_err(|e| e.to_string())?;
 
-    let mut lock_declares = expect!(PKG_DECLARES.lock());
-    let declares = lock_declares.deref_mut();
+    let mut lock = expect!(GLOBALS.lock());
+    let globals = lock.deref_mut();
+
+    let pkgs = &mut globals.pkgs;
+    let declares = &mut globals.pkg_declares;
 
     match config {
         NativeCalls::PkgDeclare(pkg) => {
-            if !declares.contains_key(&pkg.pkg_info) {
-                declares.insert(pkg.pkg_info.clone(), pkg);
+            let info = &pkg.pkg_info;
+            if let Some(path) = pkgs.get(info) {
+                assert!(!declares.contains_key(info));
+                Ok(JsonValue::from_str(vm, &path))
+            } else {
+                if !declares.contains_key(&pkg.pkg_info) {
+                    declares.insert(pkg.pkg_info.clone(), pkg);
+                }
+                Ok(JsonValue::null(vm))
             }
-        },
-    }
+        }
 
-    Ok(JsonValue::from_num(vm, 1.0))
+        NativeCalls::PkgGet(pkg) => Ok(JsonValue::null(vm)),
+    }
 }
 
 #[cfg(test)]
@@ -78,16 +131,22 @@ mod test_old {
     }
 
     /// Best docs for this: https://github.com/google/jsonnet/issues/502
-    fn myimport<'a>(_vm: &'a JsonnetVm, base: &Path, rel: &Path) -> Result<(PathBuf, String), String> {
+    fn myimport<'a>(
+        _vm: &'a JsonnetVm,
+        base: &Path,
+        rel: &Path,
+    ) -> Result<(PathBuf, String), String> {
         if let Ok(id_path) = rel.strip_prefix(Path::new(id_path_prefix)) {
             let mut components = id_path.components();
-            let id_str = components.next()
+            let id_str = components
+                .next()
                 .ok_or("id path had no id component.".to_string())?
                 .as_os_str()
                 .to_str()
                 .ok_or("id component is not utf8".to_string())?;
 
-            let index = id_str.rfind('-')
+            let index = id_str
+                .rfind('-')
                 .ok_or("id component does not have name".to_string())?;
             let (id, name) = id_str.split_at(index);
             let module_id = ModuleId::from(id);
@@ -98,10 +157,17 @@ mod test_old {
             // TODO: improve this
             Ok((base.into(), "2 + 3".to_owned()))
         } else if rel.has_root() {
-            Err(format!("All non-id paths must be relative: {}", rel.display()))
+            Err(format!(
+                "All non-id paths must be relative: {}",
+                rel.display()
+            ))
         } else {
             // TODO: resolve the local path
-            Err(format!("not found in base={}, rel={}", base.display(), rel.display()))
+            Err(format!(
+                "not found in base={}, rel={}",
+                base.display(),
+                rel.display()
+            ))
         }
     }
 

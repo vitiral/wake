@@ -4,10 +4,15 @@
     TPKG_INFO: "pkgInfo",
     TPKG: "pkg",
     TEXEC: "exec",
+    TPATH: "path",
     TFILE: "file",
     _TFILE_DEC: "fileDeclare",
     _TPKG_DEC: "pkgDeclare",
     _TPKG_GET: "pkgGet",
+
+    GLOBAL: {
+        "type": "pkgGlobal",
+    }
 
     pkgInfo(name, version, namespace): {
         type: self.TPKG_INFO,
@@ -39,8 +44,8 @@
             type: self._TPKG_GET,
             pkgInfo: pkgInfo,
             from: from,
-            global: global,
-            permissions: permissions,
+            // global: global,
+            // permissions: permissions,
         },
         local existing = wake._pkgResolve(config),
 

@@ -1,5 +1,5 @@
-mod sonnet;
-mod types;
+pub mod sonnet;
+pub mod types;
 
 fn main() {
     println!("yay");

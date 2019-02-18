@@ -17,7 +17,9 @@ pub struct Hash {
 
 impl From<&str> for Hash {
     fn from(s: &str) -> Self {
-        Hash { value: s.to_string() }
+        Hash {
+            value: s.to_string(),
+        }
     }
 }
 
@@ -42,7 +44,6 @@ impl ModuleId {
         }
     }
 }
-
 
 impl From<&str> for ModuleId {
     fn from(s: &str) -> Self {
