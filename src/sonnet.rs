@@ -111,20 +111,17 @@ pub fn wake_pkg_resolver<'a>(
             }
         }
 
-        NativeCalls::PkgGet(pkgGet) => {
-            let info = &pkgGet.pkg_info;
+        NativeCalls::PkgGet(pkg_get) => {
+            let info = &pkg_get.pkg_info;
 
-            match pkgGet.from {
+            match pkg_get.from {
                 PkgFrom::Path(ref path) => {
                     let path_key = (info.clone(), path.clone());
                     if let Some(key) = pkg_paths.get(&path_key) {
-                        // TODO: make sure nobody has tried to get the same pkg with
-                        // a different exec. Need to load the meta from the filesystem
-                        // to check.
                         Ok(JsonValue::from_str(vm, &key))
                     } else {
-                        let exists = retrieve.insert(info.clone(), pkgGet.clone());
-                        _check_pkg_get(info, &pkgGet, exists)?;
+                        let exists = retrieve.insert(info.clone(), pkg_get.clone());
+                        _check_pkg_get(info, &pkg_get, exists)?;
                         Ok(JsonValue::null(vm))
                     }
                 }
@@ -145,8 +142,8 @@ pub fn wake_pkg_resolver<'a>(
                         // to check.
                         Ok(JsonValue::from_str(vm, &path))
                     } else {
-                        let exists = retrieve.insert(info.clone(), pkgGet.clone());
-                        _check_pkg_get(info, &pkgGet, exists)?;
+                        let exists = retrieve.insert(info.clone(), pkg_get.clone());
+                        _check_pkg_get(info, &pkg_get, exists)?;
                         Ok(JsonValue::null(vm))
                     }
                 }
