@@ -15,13 +15,14 @@ lazy_static! {
 struct Globals {
     pub pkgs: IndexMap<PkgInfo, String>,
     pub pkg_declares: IndexMap<PkgInfo, PkgDeclare>,
+    pub pkg_globals: IndexMap<PkgInfo, String>,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 enum NativeCalls {
     PkgDeclare(PkgDeclare),
-    PkgGet(PkgInfo),
+    PkgGet(PkgGet),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -36,21 +37,21 @@ struct PkgDeclare {
     modules: IndexMap<String, String>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PkgGet {
     pkg_info: PkgInfo,
-    from: PkgInfo,
+    from: PkgFrom,
     path: String,
     global: Option<PkgGlobal>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 enum PkgFrom {
     Path(String),
     PkgGlobal,
-    PkgExec,
+    PkgExec(PkgExec),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -103,7 +104,14 @@ pub fn wake_pkg_resolver<'a>(
             }
         }
 
-        NativeCalls::PkgGet(pkg) => Ok(JsonValue::null(vm)),
+        NativeCalls::PkgGet(pkg) => {
+            let info = &pkg.pkg_info;
+            match pkg.from {
+                PkgFrom::Path(path) => panic!(),
+                PkgFrom::PkgGlobal => panic!(),
+                PkgFrom::PkgExec( PkgExec { pkg, exec} ) => panic!(),
+            }
+        }
     }
 }
 
