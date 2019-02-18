@@ -13,12 +13,26 @@ lazy_static! {
 
 #[derive(Debug, Default)]
 struct Globals {
+    /// Pkgs loaded from a previous cycle
     pub pkgs: IndexMap<PkgInfo, String>,
-    pub pkg_paths: IndexMap<(PkgInfo, String), String>,
-    pub pkg_declares: IndexMap<PkgInfo, PkgDeclare>,
-    pub pkgs_retrieve: IndexMap<PkgInfo, PkgGet>,
-    pub pkgs_unresolved: IndexSet<PkgInfo>,
-    pub pkg_globals: IndexMap<PkgInfo, String>,
+
+    /// Global pkgs loaded from a previous cycle
+    pub global_pkgs: IndexMap<PkgInfo, String>,
+
+    /// Declared packages. Will be resolved in the
+    /// next pass by the resolver.
+    pub declare_pkgs: IndexMap<PkgInfo, PkgDeclare>,
+
+    /// Requested packages at a path. Will be resolved
+    /// in the next pass by the resolver.
+    pub path_to_pkgs: IndexMap<(PkgInfo, String), String>,
+
+    /// Requested packages from an exec. Will be
+    /// resolved in the next pass by the retriever.
+    pub retrieve_pkgs: IndexMap<PkgInfo, PkgGet>,
+
+    /// Unresolved global packages.
+    pub unresolved_pkgs: IndexSet<PkgInfo>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -80,7 +94,7 @@ struct Exec {
     env: json::Value,
 }
 
-pub fn wake_pkg_resolver<'a>(
+pub fn wake_pkg_resolve<'a>(
     vm: &'a JsonnetVm,
     args: &[JsonVal<'a>],
 ) -> Result<JsonValue<'a>, String> {
@@ -91,11 +105,11 @@ pub fn wake_pkg_resolver<'a>(
     let globals = lock.deref_mut();
 
     let pkgs = &mut globals.pkgs;
-    let pkg_paths = &mut globals.pkg_paths;
-    let pkg_globals = &mut globals.pkg_globals;
-    let declares = &mut globals.pkg_declares;
-    let retrieve = &mut globals.pkgs_retrieve;
-    let unresolved = &mut globals.pkgs_unresolved;
+    let path_to_pkgs = &mut globals.path_to_pkgs;
+    let global_pkgs = &mut globals.global_pkgs;
+    let declares = &mut globals.declare_pkgs;
+    let retrieve = &mut globals.retrieve_pkgs;
+    let unresolved = &mut globals.unresolved_pkgs;
 
     match config {
         NativeCalls::PkgDeclare(pkg) => {
@@ -117,7 +131,7 @@ pub fn wake_pkg_resolver<'a>(
             match pkg_get.from {
                 PkgFrom::Path(ref path) => {
                     let path_key = (info.clone(), path.clone());
-                    if let Some(key) = pkg_paths.get(&path_key) {
+                    if let Some(key) = path_to_pkgs.get(&path_key) {
                         Ok(JsonValue::from_str(vm, &key))
                     } else {
                         let exists = retrieve.insert(info.clone(), pkg_get.clone());
@@ -127,7 +141,7 @@ pub fn wake_pkg_resolver<'a>(
                 }
 
                 PkgFrom::PkgGlobal => {
-                    if let Some(path) = pkg_globals.get(info) {
+                    if let Some(path) = global_pkgs.get(info) {
                         Ok(JsonValue::from_str(vm, &path))
                     } else {
                         unresolved.insert(info.clone());
