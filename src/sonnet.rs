@@ -1,5 +1,7 @@
 //! Helper functions for working with jsonnet.
 
+// TODO: use easy_strings instead, then cloning won't be expensive.
+
 use crate::types::PkgInfo;
 use ergo::*;
 use expect_macro::expect;
@@ -16,19 +18,19 @@ struct Globals {
     /// Pkgs loaded from a previous cycle
     pub pkgs: IndexMap<PkgInfo, String>,
 
-    /// Global pkgs loaded from a previous cycle
+    /// Global pkgs loaded in a previous cycle
     pub global_pkgs: IndexMap<PkgInfo, String>,
 
     /// Declared packages. Will be resolved in the
-    /// next pass by the resolver.
+    /// next pass by the pkg-resolver.
     pub declare_pkgs: IndexMap<PkgInfo, PkgDeclare>,
 
     /// Requested packages at a path. Will be resolved
-    /// in the next pass by the resolver.
+    /// in the next pass by the path-retriever.
     pub path_to_pkgs: IndexMap<(PkgInfo, String), String>,
 
     /// Requested packages from an exec. Will be
-    /// resolved in the next pass by the retriever.
+    /// resolved in the next pass by the pkg-retriever.
     pub retrieve_pkgs: IndexMap<PkgInfo, PkgGet>,
 
     /// Unresolved global packages.

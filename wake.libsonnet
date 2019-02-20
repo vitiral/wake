@@ -1,6 +1,7 @@
 {
     local wake = self,
 
+    TKEY: "__WAKETYPE__",
     TPKG_INFO: "pkgInfo",
     TPKG: "pkg",
     TEXEC: "exec",
@@ -9,13 +10,14 @@
     _TFILE_DEC: "fileDeclare",
     _TPKG_DEC: "pkgDeclare",
     _TPKG_GET: "pkgGet",
+    WAKEDIR: "._wake_/",
 
     GLOBAL: {
-        "type": "pkgGlobal",
+        [wake.TKEY]: "pkgGlobal",
     }
 
     pkgInfo(name, version, namespace): {
-        type: self.TPKG_INFO,
+        [wake.TKEY]: self.TPKG_INFO,
         name: name,
         version: version,
         namespace: namespace,
@@ -24,7 +26,7 @@
     pkg(name, version, namespace=null, files=null, inputs=null, pkgs=null, modules=null): {
         local pkgInfo = pkgInfo(name, version, namespace),
         local config = {
-            type: self._TPKG_DEC,
+            [wake.TKEY]: self._TPKG_DEC,
             pkgInfo: pkgInfo,
             files: files,
             inputs: inputs,
@@ -41,7 +43,7 @@
 
     getPkg(pkgInfo, from, global=null, permissions=null): {
         local config = {
-            type: self._TPKG_GET,
+            [wake.TKEY]: self._TPKG_GET,
             pkgInfo: pkgInfo,
             from: from,
             // global: global,
@@ -81,14 +83,14 @@
     }.return,
 
     exec(path, config=null, args=null, env=null): {
-        type: self.TEXEC,
+        [wake.TKEY]: self.TEXEC,
         config: config,
         args: args,
         env: env,
     },
 
     file(path, from=null, dump=false): {
-        type: self.TFILE_DEC,
+        [wake.TKEY]: self.TFILE_DEC,
         path: path,
         from: from,
         dump: dump,
@@ -102,7 +104,7 @@
     // TODO: implement importing mechanics to find the pkg cache.
     // The resolver must always make it linked at
     // `.wake/pkgs.libsonnet` in every directory when config=_TPKG_PKGS
-    _pkgs: import ".wake/pkgs.libsonnet",
+    _pkgs: import "._wake_/pkgIds.libsonnet",
 
     // TODO: implement the resolver. It must handle _TPKG_DEC and _TPKG_GET
     _pkgResolve(config): wake._callNative("wake-pkg-resolver", config),

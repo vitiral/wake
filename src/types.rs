@@ -5,8 +5,8 @@ use ergo::*;
 #[serde(rename_all = "camelCase")]
 pub struct PkgInfo {
     name: String,
-    version: String,
     namespace: String,
+    version: String,
 }
 
 #[derive(Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
