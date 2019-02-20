@@ -36,6 +36,12 @@ For more information on how wake is being designed, check out the
 
 [jsonnet]: https://jsonnet.org/
 
+## Future goals
+Wake intends to provide a build-path to enable webassembly only building, where
+all executables are `.wasm` (which could produce binaries for any platform).
+This dream is still a _long_ ways away, but props to projects like
+[wasmer](https://wasmer.io/) for building the necessary infrastructure.
+
 # LICENSE
 
 See the [LICENSE](LICENSE.md) file.
