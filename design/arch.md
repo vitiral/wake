@@ -128,11 +128,8 @@ things first:
   container is building the module_.
 - Rather, we want a deterministic representation of the platform we are
   building _on_.
-- However these are defined, they must obviously be a `GLOBAL` pkg of some
+- However these are defined, they must obviously be a `GLOBAL` exec of some
   kind.
-- They are probably also themselves executables (i.e. docker). Many (excepting
-  local builds) depend on some service already existing (i.e. a kubernettes
-  cluster).
 - We need to encapsulate several items:
   - Platform we are building on
   - How to execute the executable

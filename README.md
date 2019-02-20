@@ -1,46 +1,46 @@
-# wake: the packaging system for the web
+# wake: the pkg manager and build system for the web
 
 > **!! EXTREMELY EXPERIMENTAL, IN DESIGN !!**
 >
-> Status: This project currently has a valid libsonnet file... that is it.
+> Status: This project currently has a nearly valid libsonnet file and some
+> experimental rust code... and that is it.
 
-As a build tool, wake aims to be "the build tool of the web".
-
-Its basic architecture is to enable the utmost _simplicity_ in the
-build system. It is inspired from other build tools such as Nix and Bazel,
-but is not related to any of them directly.
+Wake is a functional package manger for the web. Its basic architecture is to
+enable the utmost _simplicity_ in a pkg and build system. It is inspired from
+other build tools such as Nix and Bazel, but is not related to any of them
+directly.
 
 Its tennets are:
+- Simplicity: pkg retrieval and module builds are fully reproducible and are
+  simply inputs and outputs which can be hashed.
+- Orthogonal features: wake has very few features on its own, letting its
+  simple extensibility provide features for any specific usecase (large or
+  small).
+- [jsonnet]: all configuration is jsonnet, which reduces to json when
+  executing in wasm. [jsonnet] is a highly intuitive language made in the
+  crucible of Google's configuration languages.
 
-- Simplicity: module builds are fully reproducible and are simply inputs and
-  outputs.  Furthermore, inputs and outputs can each be reduced to a _single
-  file_ (which can be a `.nar` directory of files) and a _single json
-  configuration_. Inputs can include other modules.
-- Wasm: the only executable is `.wasm`. The only compilers supported are ones
-  that have been compiled to a single `.wasm` binary (just lua currently). All
-  wasm files are executed in a [wasmer](https://github.com/wasmerio/wasmer)
-  sandbox.
-- Json and Jsonnet: all configuration is jsonnet, which reduces to json when
-  executing in wasm.
-
-However, wake is so much more than a build tool, as it includes the `effect`
-object. `effect` corrupts any "build" so that it is no longer considered
-reproducible (or hashable), but it allows for embedding arbitrary services
-within the build+configuration system that is wake. Basically,
-effects can depend on modules both for binaries and configuration but can do
-things like:
-
-- populate or migrate a database
-- depend on other effects (i.e. depend on a database being populated)
-- spawn services in the cloud, such as a webserver.
+Wake diverges heavily from Nix and Blaze:
+- Its goal (as a language) is to be _both_ a first-class pkg manager and a
+  first class build system.
+- Wake uses the [jsonnet] language for constructing its pkg and module (build)
+  objects and provides very little functionality by itself.
+- Wake is not built for any specific system, allowing globals to define usecase
+  specific functionality.
+- Wake has the concept of `sideEffects`, which are non-deterministic operations
+  that can be executed on top of a build in order to (for example) run tests,
+  start servers, analyze data, etc.
 
 For more information on how wake is being designed, check out the
 [ARCHITECTURE](ARCHITECTURE.md) docs.
+
+[jsonnet]: https://jsonnet.org/
 
 # LICENSE
 
 See the [LICENSE](LICENSE.md) file.
 
+```
    Copyright 2019 Rett Berg (googberg@gmail.com)
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,3 +54,4 @@ See the [LICENSE](LICENSE.md) file.
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+```

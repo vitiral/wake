@@ -163,14 +163,13 @@ Arguments:
   - lists of strings will be converted to TODO(see nix)
   - !! values which serialize to be over 4kB will raise an error.
   - !! all other values will raise an error.
-- `container`: an `exec` to use for where to execute, who's `container` must
-  `=wake.ANY`. Typically this is defined as a global.
+- `container`: an `exec` to use for where to execute. The specified
+  `exec::container` must `=wake.ANY`.
 
-Exec will be executed from within the container specified in `container`, where all
-dependent pkgs and modules (and files which use them) will be properly linked.
-It will be passed the `args` as arguments, and the config below in stdin.  The
-environment will be what was passed to `env` with the following additions:
-- `PWD` is set to `config.base`
+The `exec` object will be serialized as `module.json` or `pkg.json`
+([[SPC-rc]]) and included as part of `module-ready` (see [[SPC-rc]]).  It is
+the container's job to then properly execute it with all files and dependencies
+made available.
 
 ## [[.file]] `file(path, from=ref, dump=false)`
 Refer to the file at `path`. If `from` is specified, will create a ln to a file
