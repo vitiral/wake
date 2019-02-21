@@ -26,57 +26,52 @@ Arguments:
 Arguments:
 - `pkgInfo`
 - `pkgFiles=list[path]`: a list of paths to _local_ files which are necessary to
-  define the `PKG` file. These files can then be downloaded when pkgs are being
-  resolved, delaying the download of the entire source+data. Note that `PKG` is
+  define the `PKG.libsonnet` file. These files can then be downloaded when pkgs are being
+  resolved, delaying the download of the entire source+data. Note that `PKG.libsonnet` is
   automatically included.
 - `files=list[path]`: a list of paths to _local_ files to include. This automatically
-  includes `PKG` itself and paths in `modules`, and is used to compute the hash of
-  the PKG.  `inputs=function(wake, pkg) -> map`: function which takes in the
+  includes `PKG.libsonnet` itself and paths in `modules`, and is used to compute the hash of
+  the PKG.libsonnet.  `inputs=function(wake, pkg) -> map`: function which takes in the
   instantiated `pkg` and returns a flat map of key/values. The values are
   _strongly typed_ and can include: ref, file.
 - `pkgs`: flat map of key/pkgInfo. This is resolved first, and is used for
   finding and downloading pkgs.
 - `modules=map[key, function]`: map of local modules of the pkg.
   `function(wake, pkg, config) -> moduleId`
-- `globals=function(wake, pkg) -> map[key, value]`: set the global values which
-  this instantiated pkg wants to set. See the _Globals_ section below.
+- `globals=list[key]`: global values this pkg depends on. Will be a key/value map
+  in `state=pkg-done`.
+- `setGlobals=function(wake, pkg) -> map[key, value]`: set the global values which
+  this pkg in `state=pkg-done`. See the _Globals_ section below.
 
 > Note: the function defined in `inputs` is called at the beginning of this
-> pkg's instantiation, only after all the `pkgs` this pkg is dependent on have
-> been instantiated.
+> pkg's instantiation, only after all the `pkgs` this pkg is dependent on are
+> `state=done`.
 
-### Globals
+### setGlobals
 Global values are a _single key_ which are utilized by other pkgs
-and modules for configuration purposes. They are set by pkgs::gloabls
-by pkgs which have `PERMISSION_DEFINE_GLOBAL`.
+and modules for configuration purposes.
 
-The `globals` function is called after the pkg is in state `pkg-done`.
+Global values are set from calling `pkgs::gloabls` immediately after the pkg
+reaches `state=pkg-done`. The pkg must have `PERMISSION_DEFINE_GLOBAL` or be
+defined in `$WAKEPATH`. It is an error for two pkgs to attempt to set the
+same global key.
 
-Global values _must_ be one of (other types are not permitted):
+Global values _must_ be one of the following types:
 - `pkg` objects, used as dependencies. Common examples include compilers,
   programming languages, and "standard" libraries.
-- `config` objects, which are jsonnet objects that must not make calls to
-  `getGlobal`.
-- `exec` objects. This is necessary to override the default `pkg-retriever` and
-  `pkg-resolver` objects, but is also commonly used for defining global
-  containers. These objects _must_ have `container=wake.ANY`.
+- `config` objects, which are themselves jsonnet objects. Common examples
+  include opt-level settings, debug settings, testing configuration, etc.
+- `exec` objects with `container=wake.ANY`. These are necessary to override the
+  default `pkg-retriever` and `pkg-resolver` objects, but is also commonly used
+  for defining global containers (i.e. `docker`).
 
 Globals can be set by any file in `$WAKEPATH/`, as well as by any pkg that has
 `PERMISSION_DEFINE_GLOBAL`. It is an error to attempt to set a global to a
 different value.
 
-When globals are instantiated, their `wake` object is slightly altered such that
-they cannot make calls to `getPkg` or `getModule`. They must therefore set a
-global pkg via a reference from the `pkg` input.
-
-Arguments:
-- `key`: The global key to set, must be a non-empty string.
-- `value`: the value to set. See above.
-
-
-## [[.getGlobal]] `getGlobal(...)`
-Get a global value or return null if it does not yet exist.
-
+When the `globals` function is called, its `wake` object is slightly altered
+such that it cannot make calls to `getPkg` or `getModule`. It must therefore
+set a global pkg via a reference from the `pkg` input.
 
 ## [[.getPkg]] `getPkg(...)`
 Retrieve a pkg.
@@ -87,7 +82,7 @@ of other pkgs (cannot depend on modules).
 Arguments:
 - `pkgInfo`
 - `from`: one of:
-  - ./path`: a reflike local directory where a `PKG.sonnet` file exists.
+  - ./path`: a reflike local directory where a `PKG.libsonnet` file exists.
   - `wake.exec(ePkg, ...)`: to execute another pkg to retrieve the pkg.
     Typically this is gotten from a `getGlobal` call.
 - `permisions=null`: permissions to grant the pkg. `defineGlobal` is required
@@ -100,9 +95,9 @@ Returns: pkgInfo with an exact version.
 
 The definition of something to build.
 
-Note that when `exec` is running it has read access to all files and inputs
-the local `pkg` the module is defined in, as well as any pkgs and modules it
-is dependt on.
+Note that when `exec` is running it is within its `container` and has read
+access to all files and inputs the local `pkg` the module is defined in, as
+well as any pkgs and modules it is dependt on.
 
 Also note that when the inputs and outputs functions are called, the `pkg` will
 be _fully resolved_, meaning that `module.pkgs.foo` will return the full `pkg`
@@ -113,15 +108,13 @@ When instantiating (i.e. building) the module, `exec` will then be passed the
 fully instantiated manifest, meaning it is just JSON (no jsonnet functions, etc).
 
 Arguments:
-- `pkg`: pkg this module came from.
-- `modules`: dependencies of this module
+- `pkg`: the pkg this module came from.
+- `modules`: dependencies of this module.
 - `files=function(wake, module) -> list[reflike]`: function which returns additional
   files (on top of `pkg.files`) to create/link for this specific module.
-  Possibly new links, dumped configs, or references to inputs/outputs
-  from `modules`. Cannot specify any references that don't already exist (i.e.
-  new files), except `file(..., dump=true)`. The function is executed as the beginning
-  of this module's instantiation (all the `modules` this module is dependent on
-  have been instantiated.)
+  Possibly new links, dumped configs, or references to inputs/outputs from
+  `modules`. Cannot specify any references that don't already exist (i.e.  new
+  files), except `file(..., dump=true)`.
 - `outputs=function(wake, module) -> map[str, value]`: function that returns a
   map contining the outputs of the module execution. Values are typically
   paths, lists of paths, or small jsonnet objects computed with only the
@@ -141,12 +134,14 @@ Returns: `moduleId`
 ## [[.getModule]] `getModule(...)`
 Retrieve a module from a pkg with a specified config.
 
+This is how a module specifies its dependencies.
+
 Arguments:
+- `pkg`
 - `module`
 - `config`: either a raw config or a function which gets passed the module.
 
-Returns: pkgInfo
-
+Returns: `module` object.
 
 ## [[.exec]] `exec(...)`
 Specification for executing from within a pkg.
@@ -157,37 +152,28 @@ Arguments:
 - `args`: list of strings to pass as arguments to the executable.
 - `env`: environment variables to pass to the executable, resolved as strings.
   Consider using `config` instead.
-  - all `file` objects will be converted to local paths `./path/to/file`
+  - all `file` objects will be converted to absolute paths `/full/path/to/file`
   - all raw strings will remain as strings
-  - integers will be converted to a string
-  - lists of strings will be converted to TODO(see nix)
+  - integers will be converted to a string (`MYINT=3`)
+  - lists of strings are allowed, separated by `\n` characters.
   - !! values which serialize to be over 4kB will raise an error.
   - !! all other values will raise an error.
 - `container`: an `exec` to use for where to execute. The specified
-  `exec::container` must `=wake.ANY`.
+  must have `exec::container=wake.ANY`.
 
-The `exec` object will be serialized as `module.json` or `pkg.json`
+The `exec` object will be serialized within `module.json` or `pkg.json`
 ([[SPC-rc]]) and included as part of `module-ready` (see [[SPC-rc]]).  It is
 the container's job to then properly execute it with all files and dependencies
-made available.
+made available (linked or mounted).
 
 ## [[.file]] `file(path, from=ref, dump=false)`
 Refer to the file at `path`. If `from` is specified, will create a ln to a file
-there using a file from another location (i.e. path, config blob, instantiated
-pkg or module).
+there using a file from another location (i.e. path, config blob, pkg or module).
 
 If dump is `true`, `from` should refer to a config blob. The manifest of the
 config will be converted to json and dumped at `path`.
 
 Returns: `file` object
-
-```
-struct File {
-    path: PathBuf,
-    from: Ref,
-    dump: bool,
-}
-```
 
 # SPC-helpers
 These are helper functions are not part of the core types.
@@ -232,7 +218,7 @@ Arguments:
 
 ### [[.config]]
 
-- `./PKG.libsonnet`: Defines the pkg, including files to include and
+- `PKG.libsonnet`: Defines the pkg, including files to include and
   dependencies. Must return a single function (see [[SPC-api.pkg]]).
 - `PKG.meta`: defines the pre-pkg and pkg hashes. The downloaded pkg is
   validated against these values and they are used to identify the pkg.
@@ -296,6 +282,11 @@ The `_wake_/` folder contains
   - `allHash`: contains a hash of all individual files, inputs and outputs,
      as well as a hash of all members. Used when validating module integrity
      and transfering modules over a network.
+
+Special files:
+- `getPkg.json`: only exists when executing a `getPkg` call. Contains the json
+  manifest of the `getJson` call.
+
 
 ### [[.processing]]
 A processing folder exists in an (unspecified) location determined by

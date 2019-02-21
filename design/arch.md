@@ -18,15 +18,42 @@ There are two phases:
 - module_resolution: instantiates all modules using their `exec`. This is the
   traditional "build" or "make" phase.
 
+## [[.cycle]]
+
 One of the most important things to realize about wake is that it's architecture
-is _lazy_. Pkgs can depend on other pkgs which don't yet exist, and it won't be
-an error until the entire current tree has been resolved.
+is _lazy_. All phases run in an arbitrary number of cycles. All that is required is
+that progress is made in each cycle. Therefore pkgs can depend on other pkgs
+which have not yet been found.
 
-## [[.pkg_resolution]] `pkg_resolution` phase
+During a cycle, the jsonnet tree is _fully resolved_ as a json manifest, from which calls
+to `std.native` are stored to determine the following:
+- `set_globals`: globals values that need to be set
+- `unresolved_globals`: keys in `globals` that don't yet exist.
+- `retrieve_pkgs`: pkgs that need to be retrieved
 
-The build system starts at `{working_dir}/PKG` and resolves it. This will results in
-a single call to `pkg` which _fully resolves_ a json manifest. During this time, there
-are several calls to `getPkg`. `getPkg` is implemented natively. Basically it:
+## [[.wakepath_resolution]] phase
+
+The build system starts at $WAKEPATH, resolving the [[SPC-rc.user]] files in
+order to construct initial globals and credentials.
+
+During this phase, the following are not allowed: non-from-path `getPkg`, `module`,
+`getModule`.
+
+The next phase will not be executed until all globals and pkgs are resolved.
+
+## [[.pkg_tree]] phase
+
+The build system must first resolve the exact tree of packages it needs
+to (fully) retrieve. Since semantic versioning can _change_ this in each
+cycle, only `pkgFiles` will be downloaded in this phase (`state=pkg-meta`).
+
+The build system starts at `PKG.jsonnet` in the working dir, resolving it
+determining getting its dependencies. It then proce
+
+The build system starts at `{working_dir}/PKG` and resolves it. This results in
+a single call to `pkg` which _fully resolves_ a json manifest. During this
+time, there are several calls to `getPkg`. `getPkg` is implemented natively.
+Basically it:
 - Checks if the pkg has already been gotten. If so, it returns the cached version.
 - If `from=./path` then it is queued for the `pkg-initializer` to resolve directly.
 - If `from=wake.exec(ePkg, ...)` then it is queued up according to execs and sent
