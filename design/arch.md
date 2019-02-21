@@ -12,91 +12,82 @@ provided plugins do almost all of the heavy lifting.
 
 > This architecture references [[SPC-api]] extensively.
 
-There are two phases:
-- pkg_resolution: retieves all pkg objects. During this phase `pkg` can be
-  executed directly. This is the traditional "package management" phase.
-- module_resolution: instantiates all modules using their `exec`. This is the
-  traditional "build" or "make" phase.
-
 ## [[.cycle]]
 
 One of the most important things to realize about wake is that it's architecture
 is _lazy_. All phases run in an arbitrary number of cycles. All that is required is
 that progress is made in each cycle. Therefore pkgs can depend on other pkgs
-which have not yet been found.
+(or globals) which have not yet been found.
 
-During a cycle, the jsonnet tree is _fully resolved_ as a json manifest, from which calls
-to `std.native` are stored to determine the following:
-- `set_globals`: globals values that need to be set
-- `unresolved_globals`: keys in `globals` that don't yet exist.
-- `retrieve_pkgs`: pkgs that need to be retrieved
+The purpose of cycles is simple: jsonnet is a language which _hates_ side effects, so
+we never introduce them. Instead, we _fully resolve_ the json manifest (from
+jsonnet's perspective) during each cycle, but keep track of items we still need
+to retrieve/complete (native calls keep track of these unresolved items). We
+then take all tasks that can be complete in this cycle, split them up by who
+needs to do them, and run them in parallel -- letting the plugins handle how
+_they_ do things in parallel.
 
-## [[.wakepath_resolution]] phase
+There is only a single `std.native` call: `wake-store-action`, which passes an object
+containing a type description and data of what needs to be resolved or checked.
+This object is stored in an `HashSet` (to avoid deduplication) and processed
+after the jsonnet manifest has been resolved.
 
-The build system starts at $WAKEPATH, resolving the [[SPC-rc.user]] files in
-order to construct initial globals and credentials.
+There are several items that require actions:
+- `_TGET_PKG`: a getPkg call was made in the retrieve-pkg phase. This is called
+  every time because we need to see if multiple exec's are being used that they
+  would return the same result.
+- `_TSET_GLOBALS`: a hashmap of globals want to be set. Also contains the pkgId
+  of who is setting them (can only be a single pkg in a tree).
+- `_TNEED_GLOBALS`: a hashmap of globals that don't yet exist, and who needs
+  them (pkgId). This is unused except to determine if the cycle has stalled.
+- `_TBUILD_MODULE`: a module which needs to be built. Contains the full config
+  for the module. This only happens in the `module-complete` phase.
 
-During this phase, the following are not allowed: non-from-path `getPkg`, `module`,
-`getModule`.
+## [[.pkg_complete]]
+The pkg-complete phase is the first phase. A jsonnet file is created in
+`$PWD/_wake_/pkgInit.jsonnet` containing:
 
-The next phase will not be executed until all globals and pkgs are resolved.
+```
+// instantiate the wake library and user overrides.
+local wakelib = import {WAKEPATH|/lib/wake.jsonnet;
+local user = (import {WAKEPATH}/user.libsonnet)(wakelib);
+local pkgsDef = (import "{PWD}/_wake_/pkgDefs.jsonnet")
 
-## [[.pkg_tree]] phase
+local wake =
+    wakelib    // the base library
+    + pkgsDef  // (computed last cycle) defined pkgs
+    + user;    // user settings
 
-The build system must first resolve the exact tree of packages it needs
-to (fully) retrieve. Since semantic versioning can _change_ this in each
-cycle, only `pkgFiles` will be downloaded in this phase (`state=pkg-meta`).
+// instantiate and return the root pkg
+local pkg_fn = (import {PWD}/PKG.libsonnet);
+local pkg = pkg_fn(wake);
 
-The build system starts at `PKG.jsonnet` in the working dir, resolving it
-determining getting its dependencies. It then proce
+{
+    wake: wake,
+    root: pkg,
+}
+```
 
-The build system starts at `{working_dir}/PKG` and resolves it. This results in
-a single call to `pkg` which _fully resolves_ a json manifest. During this
-time, there are several calls to `getPkg`. `getPkg` is implemented natively.
-Basically it:
-- Checks if the pkg has already been gotten. If so, it returns the cached version.
-- If `from=./path` then it is queued for the `pkg-initializer` to resolve directly.
-- If `from=wake.exec(ePkg, ...)` then it is queued up according to execs and sent
-  to the `pkg-exec`.
-- If `from=wake.GLOBAL` it is put in a list of unresolved packages.
-- Any pkgs that are not yet resolved are kept in that state. They can be resolved in
-  a later loop.
+This file is executed repeatedly (multiple cycles). Each cycle, more calls
+are made to `wake-store-action`, some of which are completed.
 
-The above continuously executes until all `getPkg` are resolved. If no pkgs remain
-unresolved _and_ no pkgs were resolved in a cycle, then an error is raised.
+The following must happen:
+- Calls to getPkg must be fulfilled by retrieving and defining the pkg (while
+  also validating that different retrieval plugins don't cause chaos). These
+  are just `pkgDef` which are stored in the local filesystem and linked
+  relatively.
+- Each successive cycle will have new calls to `getPkg`. Semver requirements
+  will be re-interpreted in a _narrowing_ fashion each cycle, which can cause
+  even more `getPkg` calls (and more cycles) (see _Appendix A_)
 
-> **Note**: although `override` can be used to override a global package, if
-> that package has _ever_ been executed in this build cycle then it will raise an
-> error (you can not override pkgs that have been executed).
->
-> The exception to this rule is that the `wake_pkg_resolver` can be overriden.
-> When null it uses a simple (builtin) file resolver. The `wake_pkg_downloader`
-> may also be added in the future to download packages from a url.
->
-> **Note:** if a pkg is retrieved by one exec, but the same pkg is requested
-> using a different exec, then it will result in an error.
->
-> For these reasons, it is generally recommended to use a single pkg retriever
-> for any group of package types (i.e. namespace & language).
->
-> **Note:** `pkg_retriever` _should_ typically retrieve the largest semver compliant
-> pkg for any request.
+Eventually a single pkg tree will be chosen and the backend performs the following:
+- One of the `exec`s will be re-executed to retrieve the full pkg
+- The result will be passed to the `data-store` to put the pkg in the
+  appropriate storage.
 
-Packages are retrieved and resolved thusly:
-1. `myPkg.pkgs` includes a call to `getPkg(otherPkg)`
-1. The `wake_pkg_resolver` is executed with the same args passed to `getPkg`.
-   This must check if the `pkg` currently exists, error check it, and create
-   a symlink in `_wake_/pkgs` if it does and return the path. For pkgs to a
-   local path, it must put the pkg in universal storage and return the symlink.
-1. If the pkg does not exist, the `getPkg` is passed to the pkg in `exec`. If
-   that pkg doesn't exist, it waits until it does. The exec pkg must download
-   the pkg to `_wake_/downloaded/pkgs/<pkg-id>` and return that path.
-1. The `wake_pkg_resolver` will again be called with the downloaded path. It
-   should move the files to their proper place and create a synmlink in
-   `_wake_/pkgs`
+Congratulations, now all dependent pkgs are `state=pkg-completed`.
 
-
-### Consideration of version changes as cycles progress
+### Appendix A: Consideration of version changes as cycles progress
 There is a possible issue in what happens during pkg resolution. Ideally a pkg
 retriever would get as _few_ pkgs as possible that meet all semver
 requirements. This ideal is difficult to implement, and is itself an NP-hard
@@ -127,47 +118,23 @@ it should only include the files in `pkgFiles` except for the smallest of
 packages. Therefore constructing the tree is relatively cheap, even over the
 internet.
 
+## [[.module_complete]] phase
 
-### Consideration of execution container
-Packages are instantiated as directory trees with:
-- Their own files (pkgFiles and files)
-- Their instantiated `config-instantiated.json`,
-- includes the configuration files ([[SPC-rc]])
+The cmdline specifies which modules of `pkg` should be built. A jsonnet file
+is created in `$PWD/_wake_/module|{key}|init.jsonnet` containing:
 
-The first point is how should we use `getPkg.from<exec>`.  `exec.path` must:
-- Be an executable.
-- Only depend on files in `pkg.pkgFiles`
-- Act _identically_ no matter what platform it is running on, as some are
-  guaranteed to run on _at least_ the user's machine as well as the build
-  nodes. It is okay for it to have builds for different platforms, but those
-  builds must be deterministic and behave identically. It is therefore
-  recommended to write it in a language like sh, wasm or python3.
+```
+// instantiate the wake library and user overrides.
+local wakelib = import {WAKEPATH|/lib/wake.jsonnet;
+local user = (import {WAKEPATH}/user.libsonnet)(wakelib);
+local wake = wakelib + user;
 
-If those conditions are met, then we can run it essentially anywhere.
+// instantiate and return the root pkg
+local pkg_fn = (import {PWD}/PKG.libsonnet);
+local pkg = pkg_fn(wake);
 
-Whew, okay. Now the issue I have been sidestepping -- what is with
-the `exec.container` parameter? Before I dive in, let's discuss a few
-things first:
-
-- The platform we are building _for_ would be configured through the config,
-  env or args parameter to `exec` (i.e.  `args =
-  ["target=x86_64-unkown-linux-gnu"]`), and is not relevant for _which
-  container is building the module_.
-- Rather, we want a deterministic representation of the platform we are
-  building _on_.
-- However these are defined, they must obviously be a `GLOBAL` exec of some
-  kind.
-- We need to encapsulate several items:
-  - Platform we are building on
-  - How to execute the executable
-  - How to use the information we have already collected such as instantaited
-    pkgs and modules including downloaded files, linked files, etc
-  - It seems that there has to be _some_ integration with the `pkg-initializer`,
-    `module-resolver` and these `platform-resolver` objects.
-
-## [[.module_resolution]] `module_resolution` phase
-
-The module resolution phase happens after all `pkg` are resolved.
+pkg.modules["{key}"](wake, pkg)
+```
 
 It starts by calling the module at pkg root, which we will call `root`.
 There can be multiple roots, and they can be executed in parallel,

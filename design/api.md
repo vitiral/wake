@@ -13,22 +13,24 @@ Some special notes:
 This is the information that defines a package identifier. It results in an
 object which is used as part of other types.
 
+This object frequently gets converted to a string in the form
+`name|version|namespace` and then an optional `|hash`.
+
 Arguments:
 - `name`: the name to give to the pkg. Must be at least 3 characters.
 - `version`: semantic version used when resolving packages. Must be a valid
   semantic version requirement.
 - `namespace=null`: a disambiguity between modules with the same name and
   version.  Used by organiations to control where modules come from. Must
-  be at least 3 characters.
+  be at least 3 characters. `null` is treated as `""`
 
 ## [[.pkg]] `pkg(...)`
 
 Arguments:
 - `pkgInfo`
-- `pkgFiles=list[path]`: a list of paths to _local_ files which are necessary to
-  define the `PKG.libsonnet` file. These files can then be downloaded when pkgs are being
-  resolved, delaying the download of the entire source+data. Note that `PKG.libsonnet` is
-  automatically included.
+- `pkgDef=list[path]`: a list of paths to _local_ files which are necessary to
+  define the `PKG.libsonnet` file. This should include all libsonnet files that
+  any function defined in `PKG.libsonnet` might eventually import.
 - `files=list[path]`: a list of paths to _local_ files to include. This automatically
   includes `PKG.libsonnet` itself and paths in `modules`, and is used to compute the hash of
   the PKG.libsonnet.  `inputs=function(wake, pkg) -> map`: function which takes in the
@@ -39,9 +41,9 @@ Arguments:
 - `modules=map[key, function]`: map of local modules of the pkg.
   `function(wake, pkg, config) -> moduleId`
 - `globals=list[key]`: global values this pkg depends on. Will be a key/value map
-  in `state=pkg-done`.
-- `setGlobals=function(wake, pkg) -> map[key, value]`: set the global values which
-  this pkg in `state=pkg-done`. See the _Globals_ section below.
+  in `state=pkg-completed`.
+- `setGlobals=function(wake, pkg) -> list[[key, value]]`: set the global values which
+  this pkg in `state=pkg-completed`. See the _Globals_ section below.
 
 > Note: the function defined in `inputs` is called at the beginning of this
 > pkg's instantiation, only after all the `pkgs` this pkg is dependent on are
@@ -52,7 +54,7 @@ Global values are a _single key_ which are utilized by other pkgs
 and modules for configuration purposes.
 
 Global values are set from calling `pkgs::gloabls` immediately after the pkg
-reaches `state=pkg-done`. The pkg must have `PERMISSION_DEFINE_GLOBAL` or be
+reaches `state=pkg-completed`. The pkg must have `PERMISSION_DEFINE_GLOBAL` or be
 defined in `$WAKEPATH`. It is an error for two pkgs to attempt to set the
 same global key.
 
@@ -62,7 +64,7 @@ Global values _must_ be one of the following types:
 - `config` objects, which are themselves jsonnet objects. Common examples
   include opt-level settings, debug settings, testing configuration, etc.
 - `exec` objects with `container=wake.ANY`. These are necessary to override the
-  default `pkg-retriever` and `pkg-resolver` objects, but is also commonly used
+  default `pkg-retriever` and `data-store` objects, but is also commonly used
   for defining global containers (i.e. `docker`).
 
 Globals can be set by any file in `$WAKEPATH/`, as well as by any pkg that has
@@ -207,13 +209,18 @@ Arguments:
   to run external services. If it is defined, credentials will be requested for
   each pkg retrieved and resolved; as well as modules instantiated and sideEffect
   executed.
-- pkg-retriever: set the _initial_ (overrideable) pkg retriever when building.
-  The default one can only handle local paths.
-- pkg-initializer: set the _initial_ (overrideable) pkg resolver. The default
-  one can only store pkgs in `wakeGlobalDir` (defined here).
+- pkg-retriever-initial: set the _initial_ (overrideable) pkg retriever when
+  building.  The default one can only handle local paths.
+- pkg-initializer-initial: set the _initial_ (overrideable) pkg resolver. The
+  default one can only store pkgs in `wakeGlobalDir` (defined here).
 - module-initializer: set the _initial_ (overrideable) pkg resolver.
-- wakeGlobalDir: directory used to (locally) store instantiated packages and
-  modules. Default is `/wake/`.
+- wakeStore: directory used to (locally) store instantiated packages and
+  modules. Default is `/wake/`. Contains:
+  - `pkgDefs`: local pkg definitions and symlinks.
+  - `pkgs`: local partial or fully complete pkgs (data only, no links)
+  - `modules`: local fully complete modules (data only, no links)
+  - `store`: future directory of symlinked local modules, could be used to (for
+    example) create a WakeOS.
 
 
 ### [[.config]]
@@ -240,20 +247,17 @@ Arguments:
 ### [[.outputs]]
 
 The `_wake_/` folder contains
-- `container.json`: metadata around the container the pkg is executing within,
-  such as platform information. Exists only in the exec container.
 - `pkg.json` and `module.json`: the fully instantiated config manifest for a
-  pkg and module, exists only in the exec container. This has all of the same
-  fields and data that was returned in `PKG.jsonnet` except:
-  - all `getPkg` calls are now `pkgId`, which can be resolved to paths with
-    `pkgPaths.json`.
-  - all `getModule` calls are now `moduleId`, which can be resolved to paths
-    with `modulePaths.json`
+  pkg and module, exists only when the pkg is `pkg-complete` or ready to be
+  builtin a container (respectively). This has all of the same fields and data
+  that was returned in `PKG.jsonnet` except:
+  - all `getPkg` calls are now full `pkgId`.
+  - all `getModule` calls are now `moduleId`
   - all `file` objects are now paths to valid files or symlinks
   - the `exec` object will have all it's attributes expanded and files
     realized.
-- `pkg-ready.json` and `module-ready.json`: the instantiated config manifest for a module/pkg.
-  The same as `config.json` except the `file` objects are still `file` objects
+- `pkg-ready.json` and `module-ready.json`: the instantiated config manifest
+  for a module/pkg. The same as `config.json` except the `file` objects are still `file` objects
   (but with pkgIds), since the paths have not been created in the build container.
 - `pkgPaths.json`: a json file containing an object with key=pkgId, value=path.
   Exists only in the container (when paths exist).
@@ -261,23 +265,25 @@ The `_wake_/` folder contains
   resolve to their corresponding pkg.
 - `modulePaths.json`: a json file containing an object with key=moduleId, value=path.
   Exists only in the build container (when paths exist).
+- `container.json`: metadata around the container the pkg is executing within,
+  such as platform information. Exists only in the exec container.
 - `file.lock`: lockfile taken by the process that is processing the pkg. If no
   process has the lockfile and `state.json::state==unknown` then the folder
   will be deleted by the GC.
 - `state.json`: json file containing pkg or module state. Includes:
   - `type`: one of [pkg, module]
-  - `from`: the full metadata of how the pkg was retrieved. If a module, is
-    `null`. This will be checked to make sure other pkgs don't try to retrieve
-    the same pkg using a different pkg-retriever.
+  - `from`: a _list_ of the full metadata of all the ways folks tried to
+    retrieve the pkg using `getPkg`. Each attempt must check that the hashes
+    remain identical.
   - `state`: one of
     - unknown: unknown state, not ready.
-    - pkg-meta: the pkg metadata exists in the folder.
+    - pkg-def: the pkgDef files have all been retrieved and validated.
     - pkg-retrieved: _all_ data has been retrieved, but required files and
       dependencies have not been linked,
-    - pkg-done: all data has been retrieved and all pkg dependencies are done.
+    - pkg-completed: all data has been retrieved and all pkg dependencies are done.
     - module-ready: all of the module's dependencies are done and the module is
       ready to be built in a container.
-    - module-done: the module has been built and contains all declared outputs.
+    - module-completed: the module has been built and contains all declared outputs.
   - `inputsHash`: hash of the inputs, must match `PKG.meta::hash`.
   - `allHash`: contains a hash of all individual files, inputs and outputs,
      as well as a hash of all members. Used when validating module integrity
