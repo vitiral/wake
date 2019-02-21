@@ -4,15 +4,25 @@
     local this = self,
 
     local wake = {
-        local w = wake,
+        local W = wake,
+
+        globals: {
+            "key1": 1,
+            "key2": "foobar",
+
+            // note: this must be guaranteed to succeed before
+            // it can be added to globlas. Hence why globlas
+            // must be evaluated only after the pkg is completed.
+            "dPkg": W.getPkg(W, "pkgD"),
+        },
 
         pkgs: {
-            pkgB: w.pkg(w, "b"),
-            pkgC: w.pkg(
-                w, "c",
+            pkgB: W.pkg(W, "b"),
+            pkgC: W.pkg(
+                W, "c",
                 pkgs = ["pkgD"]
             ),
-            pkgD: w.pkg(w, "d"),
+            pkgD: W.pkg(W, "d"),
         },
 
         getPkg(wake, key): {
@@ -26,11 +36,11 @@
             name: name,
             pkgs: [
                 wake.getPkg(wake, p)
-                for p in wake.helpers.arrayDefault(pkgs)
+                for p in wake.util.arrayDefault(pkgs)
             ],
         },
 
-        helpers: {
+        util: {
             arrayDefault(arr): if arr == null then
                 []
             else
