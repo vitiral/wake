@@ -40,10 +40,11 @@ Arguments:
   finding and downloading pkgs.
 - `modules=map[key, function]`: map of local modules of the pkg.
   `function(wake, pkg, config) -> moduleId`
-- `exports=null`: jsonnet objects this pkg exports, for use by other
-  (dependent) pkgs. This can be strings, integers, objects and even functions --
-  If gloabls, execs or pkgs are used, dependent pkgs must check the unresolved
-  status with `wake.util.isCompleted` before attempting computation.
+- `exports=function(pkg) -> obj`: function which takes the completed pkg and
+  returns jsonnet objects this pkg exports, for use by other (dependent) pkgs.
+  This can be strings, integers, objects and even functions -- If gloabls are
+  included, dependent pkgs must check the unresolved status with
+  `wake.util.isCompleted` before attempting computation.
 - `globals=list[key]`: global values this pkg depends on. Will be a key/value
   map
   in `state=pkg-completed`.

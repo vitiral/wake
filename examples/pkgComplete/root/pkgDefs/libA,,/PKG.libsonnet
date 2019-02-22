@@ -1,7 +1,7 @@
 function(wake) {
     result: wake.pkg(
         pkgInfo = wake.pkgInfo("libA"),
-        pkgs = [],
+        pkgs = null,
         exports = {
             add(a, b):: a + b,
         }

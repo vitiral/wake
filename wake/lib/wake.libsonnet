@@ -3,6 +3,8 @@
 
     TTYPE: "__WAKETYPE__",
     _UNRESOLVED_PREFIX: "unresolved",
+    // general unresolved object, called by the user
+    _TUNRESOLVED_OBJ: wake._UNRESOLVED_PREFIX + "Obj",
     _TUNRESOLVED_PKG: wake._UNRESOLVED_PREFIX + "Pkg",
 
     user(username, email=null): {
@@ -41,7 +43,7 @@
 
     pkg(pkgInfo, pkgs=null, exports=null): {
         pkgInfo: pkgInfo,
-        pkgs: wake.util.arrayDefault(pkgs),
+        pkgs: wake.util.objDefault(pkgs),
         exports: exports,
     },
 
@@ -50,6 +52,15 @@
             [wake.TTYPE]: wake._TUNRESOLVED_PKG,
             pkgInfo: pkgInfo,
         },
+
+        recurseExports(wake, pkg): {
+            result: pkg + {
+                exports: {
+                    [key]: pkg.exports[key](wake, pkg)
+                    for key in std.objectFields(pkg.exports)
+                }
+            }
+        }.result,
     },
 
     util: {
@@ -66,7 +77,12 @@
             else
                 true,
 
+        unresolved(): {
+            [wake.TTYPE]: wake._TUNRESOLVED_OBJ,
+        },
+
         arrayDefault(arr): if arr == null then [] else arr,
+        objDefault(obj): if obj == null then {} else obj,
         stringDefault(s): if s == null then "" else s,
         containsStr(c, str):
         if std.length(std.splitLimit(str, c, 1)) == 1 then
