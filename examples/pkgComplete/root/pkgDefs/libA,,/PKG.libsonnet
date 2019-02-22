@@ -4,7 +4,3 @@ function(wake) {
         pkgs = [],
     )
 }.result
-// function(wake) wake.pkg(
-//     pkgInfo=wake.pkgInfo("libA"),
-//     pkgs=[],
-// )
