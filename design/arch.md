@@ -49,7 +49,7 @@ The pkg-complete phase is the first phase. A jsonnet file is created in
 
 ```
 // instantiate the wake library and user overrides.
-local wakelib = import {WAKEPATH|/lib/wake.jsonnet;
+local wakelib = import {WAKEPATH}/lib/wake.jsonnet;
 local user = (import {WAKEPATH}/user.libsonnet)(wakelib);
 local pkgsDef = (import "{PWD}/_wake_/pkgDefs.jsonnet")
 
