@@ -54,16 +54,16 @@
         },
 
         recurseExports(wake, pkg): {
-            result: pkg // + {
-                // exports: {
-                //     [key]: pkg.exports[key](wake, pkg)
-                //     for key in std.objectFields(pkg.exports)
-                // },
-                // pkgs: {
-                //     [key]: wake._private.recurseExports(wake, pkg.pkgs[key]),
-                //     for key in std.objectFields(pkg.pkgs)
-                // },
-            // }
+            result: pkg + {
+                exports: {
+                    [key]: pkg.exports[key](wake, pkg)
+                    for key in std.objectFields(pkg.exports)
+                },
+                pkgs: {
+                    [key]: wake._private.recurseExports(wake, pkg.pkgs[key]),
+                    for key in std.objectFields(pkg.pkgs)
+                },
+            }
         }.result,
     },
 

@@ -7,12 +7,12 @@ function(wake) {
         pkgs= {
             libA: wake.getPkg(wake.pkgInfo("libA")),
         },
-        // exports = {
-        //     local libA = this.pkgs.libA,
+        exports = function(wake, pkg) {
+            local libA = pkg.pkgs.libA,
 
-        //     added: if util.isCompleted(libA) then
-        //         libA.exports.add(5, 12) 
-        //         else util.unresolved(),
-        // },
+            added: if util.isCompleted(libA) then
+                libA.exports.add(5, 12) 
+                else util.unresolved(),
+        },
     ),
 }.result
