@@ -2,14 +2,15 @@
 
 local wakelib = import "../../../wake/lib/wake.libsonnet";
 local user = (import "../../../wake/user.libsonnet")(wakelib);
-local pkgDefs = {
-    pkgDefs: (import "../_wake_/pkgDefs.libsonnet"),
-};
+local pkgDefs = (import "../_wake_/pkgDefs.libsonnet");
 
 local wake =
-    wakelib    // the base library
-    + pkgDefs  // (computed last cycle) defined pkgs
-    + user;    // user settings
+    wakelib
+    + {
+        _private+: {
+            pkgDefs: pkgDefs,
+        },
+    } + user;
 
 // instantiate and return the root pkg
 local pkg_fn = (import "../PKG.libsonnet");

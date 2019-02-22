@@ -28,8 +28,11 @@
 
     getPkg(pkgInfo): {
         # TODO: check in completePkgs first
-        return: if pkgInfo in wake.pkgDefs then
-            local pkgFn = wake.pkgDefs[pkgInfo];
+        local pkgDefs = wake._private.pkgDefs,
+        local pkgCompletes = wake._private.pkgCompletes,
+
+        return: if pkgInfo in pkgDefs then
+            local pkgFn = pkgDefs[pkgInfo];
             pkgFn(wake)
         else
             wake._private.unresolvedPkg(pkgInfo)
