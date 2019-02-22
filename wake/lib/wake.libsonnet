@@ -68,10 +68,17 @@
         },
 
         recurseExports(wake, pkg): {
+            local this = self,
+
             result: pkg + {
                 exports: {
                     "added": 42,
                 },
+
+                pkgs: {
+                    [dep]: wake._private.recurseExports(wake, pkg.pkgs[dep])
+                    for dep in std.objectFields(pkg.pkgs)
+                }
             }
             // result: pkg + {
             //     exports: {

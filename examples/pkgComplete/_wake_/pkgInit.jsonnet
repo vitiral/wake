@@ -21,5 +21,5 @@ local pkg = wake._private.recurseExports(wake, pkgInitial);
 {
     added: pkg.exports.added,
     exports: pkg.exports,
-    // root: pkg,
+    root: pkg,
 }
