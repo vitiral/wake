@@ -41,7 +41,7 @@
             wake._private.unresolvedPkg(pkgInfo)
     }.return,
 
-    pkg(pkgInfo, pkgs=null, exports=null): {
+    declarePkg(pkgInfo, pkgs=null, exports=null): {
         pkgInfo: pkgInfo,
         pkgs: wake.util.objDefault(pkgs),
         exports:: exports,

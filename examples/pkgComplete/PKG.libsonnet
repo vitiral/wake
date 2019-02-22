@@ -2,7 +2,7 @@
 function(wake) {
     local util = wake.util,
 
-    result: wake.pkg(
+    result: wake.declarePkg(
         pkgInfo=wake.pkgInfo("foo1"),
         pkgs= {
             libA: wake.getPkg(wake.pkgInfo("libA")),
