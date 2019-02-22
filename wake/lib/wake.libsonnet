@@ -28,7 +28,7 @@
 
     getPkg(pkgInfo): {
         return: if pkgInfo in wake.pkgDefs then
-            # TODO: check for pkgs first
+            # TODO: check in completePkgs first
             wake.pkgDefs[pkgInfo]
         else
             wake._private.unresolvedPkg(pkgInfo)
