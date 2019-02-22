@@ -39,7 +39,6 @@
         pkgs: wake.util.arrayDefault(pkgs),
     },
 
-
     _private: {
         unresolvedPkg(pkgInfo):  {
             [wake.TTYPE]: wake._TPKG_UNRESOLVED,
