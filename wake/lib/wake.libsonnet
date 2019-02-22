@@ -1,5 +1,5 @@
 {
-    local W = self,
+    local wake = self,
 
     TTYPE: "__WAKETYPE__",
     _TPKG_UNRESOLVED: "pkgUnresolved",
@@ -11,13 +11,13 @@
 
     pkgInfo(name, version=null, namespace=null):
     {
-        local versionStr = W.util.stringDefault(version),
-        local namespaceStr = W.util.stringDefault(namespace),
+        local versionStr = wake.util.stringDefault(version),
+        local namespaceStr = wake.util.stringDefault(namespace),
 
         assert std.length(name) > 3: "name length must be > 3",
-        assert !W.util.containsStr(',', name): "name must not contain ','",
-        assert !W.util.containsStr(',', versionStr): "version must not contain ','",
-        assert !W.util.containsStr(',', namespaceStr): "namespace must not contain ','",
+        assert !wake.util.containsStr(',', name): "name must not contain ','",
+        assert !wake.util.containsStr(',', versionStr): "version must not contain ','",
+        assert !wake.util.containsStr(',', namespaceStr): "namespace must not contain ','",
 
         result: '%s,%s,%s' %[
             name,
@@ -26,23 +26,23 @@
         ],
     }.result,
 
-    getPkg(wake, pkgInfo): {
+    getPkg(pkgInfo): {
         return: if pkgInfo in wake.pkgDefs then
             # TODO: check for pkgs first
             wake.pkgDefs[pkgInfo]
         else
-            W._private.unresolvedPkg(pkgInfo)
+            wake._private.unresolvedPkg(pkgInfo)
     }.return,
 
-    pkg(wake, pkgInfo, pkgs=null): {
+    pkg(pkgInfo, pkgs=null): {
         pkgInfo: pkgInfo,
-        pkgs: W.util.arrayDefault(pkgs),
+        pkgs: wake.util.arrayDefault(pkgs),
     },
 
 
     _private: {
         unresolvedPkg(pkgInfo):  {
-            [W.TTYPE]: W._TPKG_UNRESOLVED,
+            [wake.TTYPE]: wake._TPKG_UNRESOLVED,
             pkgInfo: pkgInfo,
         },
     },
