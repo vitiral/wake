@@ -61,6 +61,8 @@
     },
 
     _private: {
+        local P = self,
+
         unresolvedPkg(pkgInfo):  {
             [wake.F_TYPE]: wake.T_PKG,
             [wake.F_STATE]: wake.S_UNRESOLVED,
@@ -71,25 +73,13 @@
             local this = self,
 
             result: pkg + {
-                exports: {
-                    "added": 42,
-                },
+                exports: pkg.exports(wake, this.result),
 
                 pkgs: {
-                    [dep]: wake._private.recurseExports(wake, pkg.pkgs[dep])
+                    [dep]: P.recurseExports(wake, pkg.pkgs[dep])
                     for dep in std.objectFields(pkg.pkgs)
                 }
             }
-            // result: pkg + {
-            //     exports: {
-            //         [key]: pkg.exports[key](wake, pkg)
-            //         for key in std.objectFields(pkg.exports)
-            //     },
-            //     pkgs: {
-            //         [key]: wake._private.recurseExports(wake, pkg.pkgs[key]),
-            //         for key in std.objectFields(pkg.pkgs)
-            //     },
-            // }
         }.result,
     },
 
@@ -98,7 +88,7 @@
 
        isWakeObject(obj):
            std.isObject(obj)
-           && (wake.TTYPE in obj),
+           && (wake.F_TYPE in obj),
 
        isPkg(obj):
             U.isWakeObject(obj) && obj[wake.F_TYPE] == wake.T_PKG,

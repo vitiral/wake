@@ -10,9 +10,9 @@ function(wake) {
         exports = function(wake, pkg) {
             local libA = pkg.pkgs.libA,
 
-            added: if util.isCompleted(libA) then
-                libA.exports.add(5, 12) 
-                else util.unresolved(),
+            added: if util.isDefined(libA) then
+                libA.exports.add(5, 12)
+                else util.UNRESOLVED,
         },
     ),
 }.result
