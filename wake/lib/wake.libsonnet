@@ -53,9 +53,11 @@
     }.return,
 
     declarePkg(pkgInfo, pkgs=null, exports=null): {
+        [wake.F_TYPE]: wake.T_PKG,
+        [wake.F_STATE]: wake.S_DECLARED,
         pkgInfo: pkgInfo,
         pkgs: wake.util.objDefault(pkgs),
-        exports:: exports,
+        exports: exports,
     },
 
     _private: {
@@ -68,14 +70,19 @@
         recurseExports(wake, pkg): {
             result: pkg + {
                 exports: {
-                    [key]: pkg.exports[key](wake, pkg)
-                    for key in std.objectFields(pkg.exports)
-                },
-                pkgs: {
-                    [key]: wake._private.recurseExports(wake, pkg.pkgs[key]),
-                    for key in std.objectFields(pkg.pkgs)
+                    "added": 42,
                 },
             }
+            // result: pkg + {
+            //     exports: {
+            //         [key]: pkg.exports[key](wake, pkg)
+            //         for key in std.objectFields(pkg.exports)
+            //     },
+            //     pkgs: {
+            //         [key]: wake._private.recurseExports(wake, pkg.pkgs[key]),
+            //         for key in std.objectFields(pkg.pkgs)
+            //     },
+            // }
         }.result,
     },
 
