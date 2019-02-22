@@ -1,15 +1,15 @@
 {
     local W = self,
 
-    user(name, email=null): {
-        name: name,
+    user(username, email=null): {
+        username: username,
         email: email,
     },
 
     pkgInfo(name, version=null, namespace=null):
         '%s|%s|%s' %[
             name,
-            if version == null then "*" else version,
+            W.util.stringDefault(version),
             W.util.stringDefault(namespace),
         ],
 
