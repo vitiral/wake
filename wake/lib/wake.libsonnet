@@ -1,5 +1,6 @@
 {
     local wake = self,
+    local U = wake.util,
 
     # Fields
     F_TYPE: "__WAKETYPE__",
@@ -25,13 +26,13 @@
 
     pkgInfo(name, version=null, namespace=null):
     {
-        local versionStr = wake.util.stringDefault(version),
-        local namespaceStr = wake.util.stringDefault(namespace),
+        local versionStr = U.stringDefault(version),
+        local namespaceStr = U.stringDefault(namespace),
 
         assert std.length(name) > 3: "name length must be > 3",
-        assert !wake.util.containsStr(',', name): "name must not contain ','",
-        assert !wake.util.containsStr(',', versionStr): "version must not contain ','",
-        assert !wake.util.containsStr(',', namespaceStr): "namespace must not contain ','",
+        assert !U.containsStr(',', name): "name must not contain ','",
+        assert !U.containsStr(',', versionStr): "version must not contain ','",
+        assert !U.containsStr(',', namespaceStr): "namespace must not contain ','",
 
         result: '%s,%s,%s' %[
             name,
@@ -56,7 +57,7 @@
         [wake.F_TYPE]: wake.T_PKG,
         [wake.F_STATE]: wake.S_DECLARED,
         pkgInfo: pkgInfo,
-        pkgs: wake.util.objDefault(pkgs),
+        pkgs: U.objDefault(pkgs),
         exports: exports,
     },
 
@@ -69,23 +70,32 @@
             pkgInfo: pkgInfo,
         },
 
-        recurseExports(wake, pkg): {
+        recurseDefinePkg(wake, pkg): {
             local this = self,
 
             result: pkg + {
+                local definedCount = std.foldl(
+                    function(prev, v) prev + v,
+                    [
+                        U.toInt(U.isDefined(this.result.pkgs[dep]))
+                        for dep in std.objectFields(this.result.pkgs)
+                    ],
+                    0,
+                ),
+                local isDefined = definedCount == std.length(pkg.pkgs),
+                [wake.F_STATE]: if isDefined then wake.S_DEFINED else pkg[wake.F_STATE],
+
                 exports: pkg.exports(wake, this.result),
 
                 pkgs: {
-                    [dep]: P.recurseExports(wake, pkg.pkgs[dep])
+                    [dep]: P.recurseDefinePkg(wake, pkg.pkgs[dep])
                     for dep in std.objectFields(pkg.pkgs)
-                }
+                },
             }
         }.result,
     },
 
     util: {
-        local U = self,
-
        isWakeObject(obj):
            std.isObject(obj)
            && (wake.F_TYPE in obj),
@@ -97,16 +107,16 @@
         //
         // Can be used in exported variables, etc to wait for the next cycle.
         isDefined(obj):
-            assert wake.util.isWakeObject(obj) : "value must be a wake object";
+            assert U.isWakeObject(obj) : "value must be a wake object";
 
-            obj[wake.F_STATE] == wake.S_DEFINED
-            || obj[wake.F_STATE] == wake.S_COMPLETED,
+            obj[wake.F_STATE] == wake.S_DEFINED,
 
         UNRESOLVED: {
             [wake.F_TYPE]: wake.T_OBJECT,
             [wake.F_STATE]: wake.S_UNRESOLVED,
         },
 
+        toInt(bool): if bool then 1 else 0,
         arrayDefault(arr): if arr == null then [] else arr,
         objDefault(obj): if obj == null then {} else obj,
         stringDefault(s): if s == null then "" else s,

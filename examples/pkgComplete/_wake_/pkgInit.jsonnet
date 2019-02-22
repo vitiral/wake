@@ -16,7 +16,7 @@ local wake =
 local pkg_fn = (import "../PKG.libsonnet");
 local pkgInitial = pkg_fn(wake);
 
-local pkg = wake._private.recurseExports(wake, pkgInitial);
+local pkg = wake._private.recurseDefinePkg(wake, pkgInitial);
 
 {
     added: pkg.exports.added,
