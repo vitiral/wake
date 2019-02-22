@@ -1,11 +1,22 @@
 {
     local wake = self,
 
-    TTYPE: "__WAKETYPE__",
-    _UNRESOLVED_PREFIX: "unresolved",
-    // general unresolved object, called by the user
-    _TUNRESOLVED_OBJ: wake._UNRESOLVED_PREFIX + "Obj",
-    _TUNRESOLVED_PKG: wake._UNRESOLVED_PREFIX + "Pkg",
+    # Fields
+    F_TYPE: "__WAKETYPE__",
+    F_STATE: "__WAKESTATE",
+
+    # Types
+    T_OBJECT: "object",
+    T_PKG: "pkg",
+    T_GLOBAL: "global",
+    T_MODULE: "module",
+    T_FILE: "file",
+
+    # States
+    S_UNRESOLVED: "unresolved",
+    S_DECLARED: "declared",
+    S_DEFINED: "defined",
+    S_COMPLETED: "completed",
 
     user(username, email=null): {
         username: username,
@@ -49,7 +60,8 @@
 
     _private: {
         unresolvedPkg(pkgInfo):  {
-            [wake.TTYPE]: wake._TUNRESOLVED_PKG,
+            [wake.F_TYPE]: wake.T_PKG,
+            [wake.F_STATE]: wake.S_UNRESOLVED,
             pkgInfo: pkgInfo,
         },
 
@@ -68,21 +80,27 @@
     },
 
     util: {
-        // Return whether the object is completed or still needs to be resolved.
-        //
-        // Can be used in exported variables, etc to wait for the next cycle
-        // to complete a computation.
-        isCompleted(obj):
-            assert std.isObject(obj) : "value must be an object";
-            assert wake.TTYPE in obj : "value must be a wake object";
-            local t = obj[wake.TTYPE];
-            if std.startsWith(t, wake._UNRESOLVED_PREFIX) then
-                false
-            else
-                true,
+        local U = self,
 
-        unresolved(): {
-            [wake.TTYPE]: wake._TUNRESOLVED_OBJ,
+       isWakeObject(obj):
+           std.isObject(obj)
+           && (wake.TTYPE in obj),
+
+       isPkg(obj):
+            U.isWakeObject(obj) && obj[wake.F_TYPE] == wake.T_PKG,
+
+        // Return whether the object is defined or still needs to be resolved.
+        //
+        // Can be used in exported variables, etc to wait for the next cycle.
+        isDefined(obj):
+            assert wake.util.isWakeObject(obj) : "value must be a wake object";
+
+            obj[wake.F_STATE] == wake.S_DEFINED
+            || obj[wake.F_STATE] == wake.S_COMPLETED,
+
+        UNRESOLVED: {
+            [wake.F_TYPE]: wake.T_OBJECT,
+            [wake.F_STATE]: wake.S_UNRESOLVED,
         },
 
         arrayDefault(arr): if arr == null then [] else arr,
