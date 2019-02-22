@@ -14,7 +14,9 @@ local wake =
 
 // instantiate and return the root pkg
 local pkg_fn = (import "../PKG.libsonnet");
-local pkg = pkg_fn(wake);
+local pkgInitial = pkg_fn(wake);
+
+local pkg = pkgInitial + wake._private.recurseExports(wake, pkgInitial);
 
 {
     root: pkg,
