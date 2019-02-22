@@ -1,3 +1,3 @@
 {
-    "libA,,": import "../root/pkgDefs/libA/PKG.libsonnet",
+    "libA,,": import "../root/pkgDefs/libA,,/PKG.libsonnet",
 }

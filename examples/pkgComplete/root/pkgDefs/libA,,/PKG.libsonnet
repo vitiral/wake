@@ -1,4 +1,8 @@
-function(wake) wake.pkg(
-    pkgInfo=wake.pkgInfo("libA"),
-    pkgs=[],
-)
+{
+    pkgInfo: "libA,,",
+    pkgs: [],
+}
+// function(wake) wake.pkg(
+//     pkgInfo=wake.pkgInfo("libA"),
+//     pkgs=[],
+// )
