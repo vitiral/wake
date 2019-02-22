@@ -8,11 +8,9 @@ function(wake) {
             libA: wake.getPkg(wake.pkgInfo("libA")),
         },
         exports = function(wake, pkg) {
-            local libA = pkg.pkgs.libA,
+            local libA = pkg.pkgs.libA.exports,
 
-            added: if util.isDefined(libA) then
-                libA.exports.add(5, 12)
-                else util.UNRESOLVED,
+            added: libA.add(5, 12),
         },
     ),
 }.result
