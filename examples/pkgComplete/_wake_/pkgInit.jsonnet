@@ -17,6 +17,5 @@ local pkg_fn = (import "../PKG.libsonnet");
 local pkg = pkg_fn(wake);
 
 {
-    # wake: wake,
     root: pkg,
 }

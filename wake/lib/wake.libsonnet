@@ -2,7 +2,8 @@
     local wake = self,
 
     TTYPE: "__WAKETYPE__",
-    _TPKG_UNRESOLVED: "pkgUnresolved",
+    _UNRESOLVED_PREFIX: "unresolved",
+    _TUNRESOLVED_PKG: wake._UNRESOLVED_PREFIX + "Pkg",
 
     user(username, email=null): {
         username: username,
@@ -38,19 +39,33 @@
             wake._private.unresolvedPkg(pkgInfo)
     }.return,
 
-    pkg(pkgInfo, pkgs=null): {
+    pkg(pkgInfo, pkgs=null, exports=null): {
         pkgInfo: pkgInfo,
         pkgs: wake.util.arrayDefault(pkgs),
+        exports: exports,
     },
 
     _private: {
         unresolvedPkg(pkgInfo):  {
-            [wake.TTYPE]: wake._TPKG_UNRESOLVED,
+            [wake.TTYPE]: wake._TUNRESOLVED_PKG,
             pkgInfo: pkgInfo,
         },
     },
 
     util: {
+        // Return whether the object is completed or still needs to be resolved.
+        //
+        // Can be used in exported variables, etc to wait for the next cycle
+        // to complete a computation.
+        isCompleted(obj):
+            assert std.isObject(obj) : "value must be an object";
+            assert wake.TTYPE in obj : "value must be a wake object";
+            local t = obj[wake.TTYPE];
+            if std.startsWith(t, wake._UNRESOLVED_PREFIX) then
+                false
+            else
+                true,
+
         arrayDefault(arr): if arr == null then [] else arr,
         stringDefault(s): if s == null then "" else s,
         containsStr(c, str):
