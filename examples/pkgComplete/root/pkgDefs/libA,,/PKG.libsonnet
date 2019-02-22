@@ -1,4 +1,4 @@
-{
+function(wake) {
     pkgInfo: "libA,,",
     pkgs: [],
 }
