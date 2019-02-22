@@ -19,5 +19,7 @@ local pkgInitial = pkg_fn(wake);
 local pkg = wake._private.recurseExports(wake, pkgInitial);
 
 {
-    root: pkg,
+    added: pkg.exports.added,
+    exports: pkg.exports,
+    // root: pkg,
 }
