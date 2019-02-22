@@ -53,12 +53,20 @@
             wake._private.unresolvedPkg(pkgInfo)
     }.return,
 
-    declarePkg(pkgInfo, pkgs=null, exports=null): {
+    declarePkg(
+        pkgInfo,
+        pkgs=null,
+        exports=null,
+        useGlobals=null,
+        setGlobals=null
+    ): {
         [wake.F_TYPE]: wake.T_PKG,
         [wake.F_STATE]: wake.S_DECLARED,
         pkgInfo: pkgInfo,
         pkgs: U.objDefault(pkgs),
         exports: exports,
+        useGlobals: useGlobals,
+        setGlobals: setGlobals,
     },
 
     _private: {
