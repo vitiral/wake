@@ -54,10 +54,7 @@ local pkgInitial = pkg_fn(wake);
 
 local root = wake._private.recurseDefinePkg(wake, pkgInitial);
 
-{{
-    root: root,
-    simple: wake._private.recurseSimplify(root),
-}}
+wake._private.recurseSimplify(root)
 """
 
 def create_defined_pkgs(pkgs_defined):
