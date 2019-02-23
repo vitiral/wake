@@ -24,15 +24,19 @@
         email: email,
     },
 
-    pkgInfo(name, version=null, namespace=null):
+    // A pkg requirement with a semantic version.
+    //
+    // This is used as (partof) the filepath for pkgs and modules.
+    pkgReq(name, versionReq=null, namespace=null):
     {
-        local versionStr = U.stringDefault(version),
+        local versionStr = U.stringDefault(versionReq),
         local namespaceStr = U.stringDefault(namespace),
+        local hasComma = function(s) U.containsChr(',', s),
 
         assert std.length(name) > 3: "name length must be > 3",
-        assert !U.containsStr(',', name): "name must not contain ','",
-        assert !U.containsStr(',', versionStr): "version must not contain ','",
-        assert !U.containsStr(',', namespaceStr): "namespace must not contain ','",
+        assert !hasComma(name): "name must not contain ','",
+        assert !hasComma(versionStr): "versionReq must not contain ','",
+        assert !hasComma(namespaceStr): "namespace must not contain ','",
 
         result: '%s,%s,%s' %[
             name,
@@ -41,20 +45,38 @@
         ],
     }.result,
 
-    getPkg(pkgInfo): {
+    pkgId(name, version, namespace, hash): {
+        assert std.isString(hash) : "hash must be string",
+        // Note: the version must be an exact semver, but is checked later.
+        return: "%s|%s" % [
+            wake.pkgReq(name, version, namespace),
+            hash,
+        ],
+    }.return,
+
+    getPkg(pkgReq): {
         # TODO: check in completePkgs first
         local pkgDefs = wake._private.pkgDefs,
         local pkgCompletes = wake._private.pkgCompletes,
 
-        return: if pkgInfo in pkgDefs then
-            local pkgFn = pkgDefs[pkgInfo];
+        return: if pkgReq in pkgDefs then
+            local pkgFn = pkgDefs[pkgReq];
             pkgFn(wake)
         else
-            wake._private.unresolvedPkg(pkgInfo)
+            wake._private.unresolvedPkg(pkgReq)
     }.return,
 
+    // Declare a pkg.
+    //
+    // Must be the only return of the function PKG.libsonnet.
     declarePkg(
-        pkgInfo,
+        hash,
+        // The name of the pkg.
+        name,
+        // The exact version of the pkg.
+        version,
+        // the (optional) namespace of the pkg
+        namespace=null,
         pkgs=null,
         exports=null,
         useGlobals=null,
@@ -62,7 +84,11 @@
     ): {
         [wake.F_TYPE]: wake.T_PKG,
         [wake.F_STATE]: wake.S_DECLARED,
-        pkgInfo: pkgInfo,
+        hash: hash,
+        name: name,
+        version: version,
+        namespace: namespace,
+        pkgId: wake.pkgId(name, version, namespace, hash),
         pkgs: U.objDefault(pkgs),
         exports: exports,
         useGlobals: useGlobals,
@@ -72,10 +98,10 @@
     _private: {
         local P = self,
 
-        unresolvedPkg(pkgInfo):  {
+        unresolvedPkg(pkgReq):  {
             [wake.F_TYPE]: wake.T_PKG,
             [wake.F_STATE]: wake.S_UNRESOLVED,
-            pkgInfo: pkgInfo,
+            pkgReq: pkgReq,
         },
 
         recurseDefinePkg(wake, pkg): {
@@ -128,11 +154,9 @@
         arrayDefault(arr): if arr == null then [] else arr,
         objDefault(obj): if obj == null then {} else obj,
         stringDefault(s): if s == null then "" else s,
-        containsStr(c, str):
-        if std.length(std.splitLimit(str, c, 1)) == 1 then
-            false
-        else
-            true,
-
+        containsChr(c, str): !(std.length(std.splitLimit(str, c, 1)) == 1),
+        isVersionSingle(ver): {
+            local arr = ver.split(ver, '.')
+        },
     },
 }
