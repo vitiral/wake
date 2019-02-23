@@ -83,16 +83,18 @@ def create_defined_pkgs(pkgs_defined):
 
 class PkgSimple(object):
     """Pull out only the data we care about."""
-    def __init__(self, paths, def_paths):
+    def __init__(self, pkgId, paths, def_paths):
         self._assert_paths(paths)
         self._assert_paths(def_paths)
 
+        self.pkgId = pkgId
         self.paths = paths
         self.def_paths = def_paths
 
     @classmethod
     def from_dict(cls, dct):
         return cls(
+            dct['pkgId'],
             dct['paths'],
             dct['defPaths'],
         )
@@ -164,14 +166,13 @@ class PkgConfig(object):
         return manifest_jsonnet(self.run)
 
     def compute_root(self):
-        """Use some shenanigans to get the root of the pkg."""
+        """Use some shenanigans to get the pkg info."""
         self.init_pkg_wake()
         try:
             root = self.manifest_pkg()['root']
         finally:
             self.remove_pkg_wake()
         return PkgSimple.from_dict(root)
-
 
 
 class Config(object):
@@ -197,6 +198,17 @@ class Config(object):
         if path.exists(self.cache_defined):
             for d in os.listdir(self.cache_defined):
                 shutil.rmtree(d)
+
+    def handle_unresolved_pkg(self, pkg):
+        from_ = pkg['from']
+        if not isinstance(from_, str):
+            raise NotYetImplementedError()
+
+        assert_valid_path(from_)
+        pkg_config = PkgConfig(from_)
+        root = pkg_config.compute_root()
+
+        # TODO: move paths and defpaths to a new thingee
 
 
 ## Helpers
@@ -239,15 +251,6 @@ def is_pkg(dct):
 
 def is_unresolved(dct):
     return dct[F_STATE] == S_UNRESOLVED
-
-def handle_unresolved_pkg(pkg):
-    from_ = pkg['from']
-    if not isinstance(from_, str):
-        raise NotYetImplementedError()
-
-    assert_valid_path(from_)
-    pkg_config = PkgConfig(from_)
-    root = pkg_config.compute_root()
 
 
 
@@ -362,7 +365,7 @@ def build(args):
             assert is_pkg(pkg)
             if is_unresolved(pkg):
                 num_unresolved += 1
-                handle_unresolved_pkg(pkg)
+                config.handle_unresolved_pkg(pkg)
 
         break
 
