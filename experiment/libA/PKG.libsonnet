@@ -5,14 +5,13 @@ function(wake) {
 
     result: wake.declarePkg(
         hash=meta.hash,
-        name="wake",
-        version="0.1.0",
+        name="libA",
+        version="1.0.0",
         pkgs= {
-            libA: wake.getPkg(wake.pkgReq("libA"), from="./experiment/libA"),
         },
         exports = function(wake, pkg) {
-            answer: 42,
-            // added: TODO,
+            adder(a, b):: a + b,
         },
     ),
 }.result
+

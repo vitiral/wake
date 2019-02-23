@@ -68,10 +68,11 @@
         local pkgCompletes = wake._private.pkgCompletes;
 
         if pkgReq in pkgsDefined then
+            // TODO: must keep track of all ways we got the pkg
             local pkgFn = pkgsDefined[pkgReq];
             pkgFn(wake)
         else
-            wake._private.unresolvedPkg(pkgReq),
+            wake._private.unresolvedPkg(pkgReq, from),
 
     // Declare a pkg.
     //
@@ -122,15 +123,17 @@
     _private: {
         local P = self,
 
-        unresolvedPkg(pkgReq):  {
+        unresolvedPkg(pkgReq, from):  {
             [wake.F_TYPE]: wake.T_PKG,
             [wake.F_STATE]: wake.S_UNRESOLVED,
             pkgReq: pkgReq,
+            from: from,
         },
 
         // Used to lazily define the exports of the pkg and sub-pkgs.
         recurseDefinePkg(wake, pkg): {
             local this = self,
+            local _ = std.trace("recurseDefinePkg in " + pkg.pkgId, null),
 
             returnPkg: pkg + {
                 [wake.F_STATE]: if P.isDefined(pkg, this.returnPkg) then
@@ -143,10 +146,11 @@
                         % [this.returnPkg.pkgId];
                     out,
 
-                pkgs: {
-                    [dep]: P.recurseDefinePkg(wake, pkg.pkgs[dep])
-                    for dep in std.objectFields(pkg.pkgs)
-                },
+                // FIXME: recursion no workee
+                // pkgs: {
+                //     [dep]: P.recurseDefinePkg(wake, pkg.pkgs[dep])
+                //     for dep in std.objectFields(pkg.pkgs)
+                // },
             }
         }.returnPkg,
 
