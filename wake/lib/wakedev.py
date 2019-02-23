@@ -108,7 +108,7 @@ def copy_fsentry(src, dst):
     This fully copies all files, following symlinks to copy the data.
     """
 
-    if path.isfile(pnode_abs):
+    if path.isfile(src):
         shutil.copy(src, dst)
     else:
         shutil.copytree(src, dst)
@@ -119,7 +119,7 @@ def assert_valid_paths(paths):
 
 def assert_valid_path(p):
     if not p.startswith("./"):
-        raise ValueError("all paths must start with ./")
+        raise ValueError("all paths must start with ./: " + p)
     if sum(filter(lambda c: c == '..', p.split('/'))):
         raise ValueError("paths must not have `..` components: " + p)
 

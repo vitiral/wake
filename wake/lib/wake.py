@@ -43,7 +43,6 @@ class Config(object):
         localconfig.assert_meta_matches(localpkg)
 
         pcache = pjoin(self.cache_pkgs, localpkg.pkg_id)
-        import pdb; pdb.set_trace()
 
         if os.path.exists(pcache):
             pkg_exists = PkgConfig(pcache)
@@ -54,7 +53,7 @@ class Config(object):
             os.mkdir(pcache)
             for fsentry_rel in localpkg.get_fsentries():
                 assert_valid_path(fsentry_rel)
-                copy_fsentry(self.path_abs(pnode), path.join(pcache, fsentry_rel))
+                copy_fsentry(localconfig.path_abs(fsentry_rel), path.join(pcache, fsentry_rel))
                 # TODO: load, validate hash, validate that _wake_ doesn't exist, etc
 
     def create_defined_pkgs(self, pkgs_defined):

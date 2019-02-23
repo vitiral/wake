@@ -13,7 +13,7 @@ class PkgSimple(object):
         assert_valid_paths(paths)
         assert_valid_paths(def_paths)
 
-        self.pkg_root = "PKG.libsonnet"
+        self.pkg_root = "./PKG.libsonnet"
         self.pkg_id = pkg_id
         self.name = name
         self.namespace = namespace
