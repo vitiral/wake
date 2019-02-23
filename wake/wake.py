@@ -81,6 +81,32 @@ def create_defined_pkgs(pkgs_defined):
     return "\n".join(out)
 
 
+class PkgSimple(object):
+    """Pull out only the data we care about."""
+    def __init__(self, paths, def_paths):
+        self._assert_paths(paths)
+        self._assert_paths(def_paths)
+
+        self.paths = paths
+        self.def_paths = def_paths
+
+
+    @classmethod
+    def from_dict(cls, dct):
+        return cls(
+            dct['paths'],
+            dct['defPaths'],
+        )
+
+    def _assert_paths(self, paths):
+        invalid_components = {'.', '..'}
+        for p in paths:
+            if not p.startswith("./"):
+                raise ValueError("all paths must start with ./")
+            if sum(filter(lambda c: c == '..', p.split('/'))):
+                raise ValueError("paths must not have `..` components: " + p)
+
+
 class PkgConfig(object):
     def __init__(self, base):
         self.base = base
@@ -117,17 +143,20 @@ class PkgConfig(object):
 
     def compute_pkg_meta(self):
         self.init_sandbox()
-        root = self.manifest_pkg()['root']
+        root = PkgSimple.from_dict(self.manifest_pkg()['root'])
 
         hashstuff = HashStuff(self.base)
         hashstuff.update_file(self.pkg_root)
-        hashstuff.update_paths(root['paths'])
-        hashstuff.update_paths(root['defPaths'])
+        hashstuff.update_paths(self.paths_abs(root.paths))
+        hashstuff.update_paths(self.paths_abs(root.def_paths))
 
         return {
             "hash": hashstuff.reduce(),
             "hashType": hashstuff.hash_type,
         }
+
+    def paths_abs(self, paths):
+        return map(lambda p: pjoin(self.base, p), paths)
 
     def dump_pkg_meta(self):
         meta = self.compute_pkg_meta()
@@ -164,13 +193,6 @@ class Config(object):
             for d in os.listdir(self.cache_defined):
                 shutil.rmtree(d)
 
-
-
-class PkgDef(object):
-    def __init__(self, partialId, pHash):
-        self.pkgVer = partialId
-        self.hash = pHash
-        self.hashFunc
 
 ## Helpers
 
@@ -238,7 +260,7 @@ class HashStuff(object):
                 self.update_file(p)
 
     def update_dir(self, dirpath):
-        assert path.isabs(dirpath)
+        assert path.isabs(dirpath), dirpath
 
         hash_func = self.hash_func
         hashmap = self.hashmap
@@ -249,8 +271,7 @@ class HashStuff(object):
 
         for root, dirs, files in os.walk(dirpath, topdown=True, followlinks=True):
             for f in files:
-                fpath = os.pjoin(root, f)
-
+                fpath = pjoin(root, f)
                 if fpath in visited:
                     raise RuntimeError(
                         "Error: infinite directory recursion detected at {}"
