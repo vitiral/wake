@@ -51,6 +51,9 @@ class Config(object):
         else:
             assert path.exists(self.cache_pkgs), self.cache_pkgs
             os.mkdir(pcache)
+            for fsentry_rel in itertools.chain(localpkg.paths, localpkg.def_paths):
+                assert_valid_path(fsentry_rel)
+                copy_fsentry(self.path_abs(pnode), path.join(pcache, fsentry_rel))
 
     def create_defined_pkgs(self, pkgs_defined):
         out = ["{"]

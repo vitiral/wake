@@ -82,8 +82,11 @@ class PkgConfig(object):
             "hashType": hashstuff.hash_type,
         }
 
+    def path_abs(self, relpath):
+        return pjoin(self.base, relpath)
+
     def paths_abs(self, relpaths):
-        return map(lambda p: pjoin(self.base, p), relpaths)
+        return map(self.path_abs, relpaths)
 
     def dump_pkg_meta(self):
         dumpf(self.pkg_meta, '{"hash": "--fake hash--", "hashType": "fake"}')

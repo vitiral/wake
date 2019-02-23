@@ -6,6 +6,7 @@ import hashlib
 import json
 import subprocess
 import shutil
+import itertools
 from pprint import pprint as pp
 
 DEBUG = "debug"
@@ -100,6 +101,17 @@ def dumpf(path, s):
     """Dump a string to a file."""
     with open(path, 'w') as f:
         f.write(s)
+
+def copy_fsentry(src, dst):
+    """Perform a deep copy on the filesystem entry (file, dir, symlink).
+
+    This fully copies all files, following symlinks to copy the data.
+    """
+
+    if path.isfile(pnode_abs):
+        shutil.copy(src, dst)
+    else:
+        shutil.copytree(src, dst)
 
 def assert_valid_paths(paths):
     for p in paths:
