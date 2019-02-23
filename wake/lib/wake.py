@@ -39,7 +39,7 @@ class Config(object):
     def handle_unresolved_local_pkg(self, localpath):
         assert_valid_path(localpath)
         localconfig = PkgConfig(localpath)
-        localpkg = localconfig.compute_root()
+        localpkg = localconfig.compute_simplepkg()
         localconfig.assert_meta_matches(localpkg)
 
         pcache = pjoin(self.cache_pkgs, localpkg.pkg_id)

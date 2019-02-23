@@ -77,7 +77,7 @@ class PkgConfig(object):
 
     def compute_pkg_meta(self):
         self.init_pkg_wake()
-        root = self.compute_root()
+        root = self.compute_simplepkg()
 
         hashstuff = HashStuff(self.base)
         hashstuff.update_file(self.pkg_root)
@@ -106,7 +106,7 @@ class PkgConfig(object):
     def manifest_pkg(self):
         return manifest_jsonnet(self.run)
 
-    def compute_root(self):
+    def compute_simplepkg(self):
         """Use some shenanigans to get the pkg info."""
         self.init_pkg_wake()
         try:
@@ -118,7 +118,7 @@ class PkgConfig(object):
     def assert_meta_matches(self, pkgSimple, check_against=None):
         """Assert that the defined metas all match.
 
-        pkgId should be the pkgId obtained from ``compute_root()``.
+        pkgId should be the pkgId obtained from ``compute_simplepkg()``.
         """
         meta = self.get_current_meta()
         computed = self.compute_pkg_meta()
