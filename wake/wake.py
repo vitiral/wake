@@ -3,7 +3,12 @@ import sys, os
 import argparse
 import json
 import subprocess
+import shutil
 from pprint import pprint as pp
+
+# Debug mode does things like delete folders before starting, etc
+DEBUG = "debug"
+MODE = DEBUG
 
 path = os.path
 def abspath(p):
@@ -99,17 +104,13 @@ class Config(object):
         dump(self.pkgs_defined, "{}")
 
 
-def build(args):
-    # TODO: .wakeConfig.jsonnet
-    config = Config()
+    def remove_cache(self):
+        if path.exists(pkg.wake):
+            shutil.rmtree(pkg.wake)
 
-    print("## building local pkg {}".format(config.base))
-    config.create_sandbox()
-
-    print("## MANIFEST")
-    pp(manifestJsonnet(config.run))
-
-
+        if path.exists(self.cache_defined):
+            for d in os.listdir(self.cache_defined):
+                shutil.rmtree(d)
 
 ## Helpers
 
@@ -138,7 +139,21 @@ def dump(path, s):
         f.write(s)
 
 
-## ARGUMENTS AND MAIN
+## COMMANDS AND MAIN
+
+def build(args):
+    # TODO: .wakeConfig.jsonnet
+    config = Config()
+
+    print("## building local pkg {}".format(config.base))
+    if MODE == DEBUG:
+        config.remove_cache()
+
+    config.create_sandbox()
+
+    print("## MANIFEST")
+    pp(manifestJsonnet(config.run))
+
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(
