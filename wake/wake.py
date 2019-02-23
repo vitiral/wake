@@ -18,6 +18,9 @@ def abspath(p):
 def jsonloadf(path):
     with open(path) as f:
         return json.load(f)
+def jsondumpf(path, data, indent=4):
+    with open(path, 'w') as f:
+        return json.dump(f, data, indent=indent)
 
 PATH_HERE = abspath(__file__)
 HERE_DIR = path.dirname(abspath(__file__))
@@ -111,13 +114,21 @@ class PkgConfig(object):
 
     def compute_pkg_meta(self):
         self.init_sandbox()
+        root = self.manifest_pkg()['root']
 
         hashstuff = HashStuff(self.base)
-        # TODO: hash stuff
+        hashstuff.update_paths(root['paths'])
+        hashstuff.update_paths(root['defPaths'])
+
         return {
             "hash": hashstuff.reduce(),
-            "hashType": hashstuff.hash_name,
+            "hashType": hashstuff.hash_type,
         }
+
+    def dump_pkg_meta(self):
+        meta = self.compute_pkg_meta()
+        jsondumpf(self.pkg_meta, meta, indent=4)
+        return meta
 
     def manifest_pkg(self):
         return manifest_jsonnet(self.run)
@@ -214,6 +225,13 @@ class HashStuff(object):
             fail("{} meta file must exist".format(config.pkg_meta))
         return cls(config.base, hash_type=meta[F_HASHTYPE])
 
+    def update_paths(self, paths):
+        for p in paths:
+            if path.isdir(p):
+                self.update_dir(p)
+            else:
+                self.update_file(p)
+
     def update_dir(self, dirpath):
         assert path.isabs(dirpath)
 
@@ -239,6 +257,7 @@ class HashStuff(object):
         return hashmap
 
     def update_file(self, fpath):
+        assert path.isabs(fpath)
         hasher = self.hashfunc()
         blocksize = 64 * 1024
         with open(fpath, 'rb') as fp:
@@ -264,15 +283,18 @@ class HashStuff(object):
 def build(args):
     # TODO: .wakeConfig.jsonnet
     config = Config()
-
+    pkg_config = config.pkg_config
     print("## building local pkg {}".format(config.base))
+    print("-> recomputing PKG.meta")
+    pkg_config.dump_pkg_meta()
+
     if MODE == DEBUG:
         config.remove_cache()
 
     config.init_sandbox()
 
     print("## MANIFEST")
-    pp(config.pkg_config.manifest_pkg())
+    pp(pkg_config.manifest_pkg())
 
 
 def parse_args(argv):
