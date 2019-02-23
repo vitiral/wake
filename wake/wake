@@ -1,0 +1,18 @@
+#!/bin/sh
+
+OLDPWD="$PWD"
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  BINDIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+    SOURCE="$(readlink "$SOURCE")"
+      [[ $SOURCE != /* ]] && SOURCE="$BINDIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+      done
+      BINDIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+WAKEDIR=$(dirname ${BINDIR})
+LIBDIR="${WAKEDIR}/lib"
+export PYTHONPATH="$LIBDIR"
+
+python3 "${LIBDIR}/wake.py" "$@" || exit 1
+exit 0
