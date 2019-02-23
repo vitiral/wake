@@ -189,15 +189,16 @@ class Config(object):
 
         self.store = pjoin(self.user_path, self.user.get('store', 'store'))
         self.cache_defined = pjoin(self.store, "pkgsDefined")
+        self.cache_pkgs = pjoin(self.store, "pkgs")
 
     def init_cache(self):
         os.makedirs(self.cache_defined, exist_ok=True)
+        os.makedirs(self.cache_pkgs, exist_ok=True)
 
     def remove_cache(self):
         self.pkg_config.remove_pkg_wake()
-        if path.exists(self.cache_defined):
-            for d in os.listdir(self.cache_defined):
-                shutil.rmtree(d)
+        rmtree(self.cache_defined)
+        rmtree(self.cache_pkgs)
 
     def handle_unresolved_pkg(self, pkg):
         from_ = pkg['from']
@@ -207,6 +208,7 @@ class Config(object):
         assert_valid_path(from_)
         pkg_config = PkgConfig(from_)
         root = pkg_config.compute_root()
+
 
         # TODO: move paths and defpaths to a new thingee
 
@@ -235,10 +237,12 @@ def fail(msg):
     else:
         sys.exit(1)
 
+
 def dumpf(path, s):
     """Dump a string to a file."""
     with open(path, 'w') as f:
         f.write(s)
+
 
 def assert_valid_path(p):
     if not p.startswith("./"):
@@ -246,11 +250,18 @@ def assert_valid_path(p):
     if sum(filter(lambda c: c == '..', p.split('/'))):
         raise ValueError("paths must not have `..` components: " + p)
 
+
 def is_pkg(dct):
     return dct[F_TYPE] == T_PKG
 
+
 def is_unresolved(dct):
     return dct[F_STATE] == S_UNRESOLVED
+
+
+def rmtree(d):
+    if path.exists(d):
+        shutil.rmtree(d)
 
 
 
