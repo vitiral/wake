@@ -108,16 +108,8 @@
             local this = self,
 
             result: pkg + {
-                local definedCount = std.foldl(
-                    function(prev, v) prev + v,
-                    [
-                        U.toInt(U.isDefined(this.result.pkgs[dep]))
-                        for dep in std.objectFields(this.result.pkgs)
-                    ],
-                    0,
-                ),
-                local isDefined = definedCount == std.length(pkg.pkgs),
-                [wake.F_STATE]: if isDefined then wake.S_DEFINED else pkg[wake.F_STATE],
+                [wake.F_STATE]: if P.isDefined(pkg, this.result) then
+                    wake.S_DEFINED else pkg[wake.F_STATE],
 
                 exports: pkg.exports(wake, this.result),
 
@@ -127,6 +119,18 @@
                 },
             }
         }.result,
+
+        isDefined(oldPkg, newPkg): {
+            local definedCount = std.foldl(
+                function(prev, v) prev + v,
+                [
+                    U.toInt(U.isDefined(newPkg.pkgs[dep]))
+                    for dep in std.objectFields(newPkg.pkgs)
+                ],
+                0,
+            ),
+            return: definedCount == std.length(oldPkg.pkgs),
+        }.return,
     },
 
     util: {
