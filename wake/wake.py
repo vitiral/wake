@@ -52,10 +52,11 @@ local wake =
 local pkg_fn = (import "{pkg_root}");
 local pkgInitial = pkg_fn(wake);
 
-local pkg = wake._private.recurseDefinePkg(wake, pkgInitial);
+local root = wake._private.recurseDefinePkg(wake, pkgInitial);
 
 {{
-    root: pkg,
+    root: root,
+    simple: wake._private.recurseSimplify(root),
 }}
 """
 

@@ -170,12 +170,15 @@
             );
             definedCount == std.length(oldPkg.pkgs),
 
-        simplifyRecurse(pkg):
-            local simpleDeps = std.flatten([
-                P.simplifyRecurse(pkg.pkgs[dep])
-                for dep in pkg.pkgs
-            ]);
-            [P.simplify(pkg)] + simpleDeps,
+        recurseSimplify(pkg):
+            if U.isUnresolved(pkg) then
+                pkg
+            else
+                local simpleDeps = [
+                    P.recurseSimplify(pkg.pkgs[dep])
+                    for dep in std.objectFields(pkg.pkgs)
+                ];
+                [P.simplify(pkg)] + simpleDeps,
 
         simplify(pkg): {
             local onlyIdOrUnresolved = function(dep)
