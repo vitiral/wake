@@ -26,13 +26,31 @@
     // A pkg requirement with a semantic version.
     //
     // This is used as (partof) the filepath for pkgs and modules.
-    pkgReq(name, versionReq=null, namespace=null):
-    {
+    //
+    // Errors:
+    // - name and namespace must be length > 3
+    // - It is an error for any field to have commas.
+    // - versionReq must be a valid semverReq
+    pkgReq(
+        // The name of the pkgReq.
+        name,
+
+        // The version requirements of the pkgReq.
+        //
+        // wake will attempt to match the requirements, taking
+        // into account other pkgs to use as few pkgs as possible.
+        versionReq=null,
+
+        // The namespace to find the pkg.
+        namespace=null
+    ): {
         local versionStr = U.stringDefault(versionReq),
         local namespaceStr = U.stringDefault(namespace),
+        local namespaceLen = std.length(namespaceStr),
         local hasComma = function(s) U.containsChr(',', s),
 
         assert std.length(name) > 3: "name length must be > 3",
+        assert namespaceLen == 0 || namespaceLen > 3: "namespace length must be > 3",
         assert !hasComma(name): "name must not contain ','",
         assert !hasComma(versionStr): "versionReq must not contain ','",
         assert !hasComma(namespaceStr): "namespace must not contain ','",
@@ -44,30 +62,43 @@
         ],
     }.result,
 
-    pkgId(name, version, namespace, hash): {
-        assert std.isString(hash) : "hash must be string",
+    // The exact pkgId of the pkg.
+    //
+    // This is similar to pkgReq except it is the _exact_ pkg, with the hash
+    // included in the Id.
+    pkgId(name, version, namespace, hash):
+        assert std.isString(hash) : "hash must be string";
         // Note: the version must be an exact semver, but is checked later.
-        return: "%s|%s" % [
+        "%s|%s" % [
             wake.pkgReq(name, version, namespace),
             hash,
         ],
-    }.return,
 
-    getPkg(pkgReq): {
+    // Retrieve a pkg.
+    //
+    // #SPC-api.getPkg
+    getPkg(
+        // The pkgReq(...) to retrieve.
+        pkgReq,
+
+        // A string or exec(...) to use to retrieve the pkg from.
+        from=null
+    ):
         # TODO: check in completePkgs first
-        local pkgDefs = wake._private.pkgDefs,
-        local pkgCompletes = wake._private.pkgCompletes,
+        local pkgDefs = wake._private.pkgDefs;
+        local pkgCompletes = wake._private.pkgCompletes;
 
-        return: if pkgReq in pkgDefs then
+        if pkgReq in pkgDefs then
             local pkgFn = pkgDefs[pkgReq];
             pkgFn(wake)
         else
-            wake._private.unresolvedPkg(pkgReq)
-    }.return,
+            wake._private.unresolvedPkg(pkgReq),
 
     // Declare a pkg.
     //
     // Must be the only return of the function PKG.libsonnet.
+    //
+    // #SPC-api.declarePkg
     declarePkg(
         hash,
         // The name of the pkg.
@@ -118,6 +149,7 @@
             pkgReq: pkgReq,
         },
 
+        // Used to lazily define the exports of the pkg and sub-pkgs.
         recurseDefinePkg(wake, pkg): {
             local this = self,
 
@@ -125,12 +157,12 @@
                 [wake.F_STATE]: if P.isDefined(pkg, this.returnPkg) then
                     wake.S_DEFINED else pkg[wake.F_STATE],
 
-                exports: {
-                    return: pkg.exports(wake, this.returnPkg),
-                    assert std.isObject(self.return) 
+                exports:
+                    local out = pkg.exports(wake, this.returnPkg);
+                    assert std.isObject(out)
                         : "%s exports did not return an object"
-                        % [this.returnPkg.pkgId],
-                }.return,
+                        % [this.returnPkg.pkgId];
+                    out,
 
                 pkgs: {
                     [dep]: P.recurseDefinePkg(wake, pkg.pkgs[dep])
@@ -139,11 +171,12 @@
             }
         }.returnPkg,
 
+        // Return if the newPkg is defined.
         isDefined(oldPkg, newPkg): {
             local definedCount = std.foldl(
                 function(prev, v) prev + v,
                 [
-                    U.toInt(U.isDefined(newPkg.pkgs[dep]))
+                    U.boolToInt(U.isDefined(newPkg.pkgs[dep]))
                     for dep in std.objectFields(newPkg.pkgs)
                 ],
                 0,
@@ -153,33 +186,28 @@
     },
 
     util: {
-       isWakeObject(obj):
-           std.isObject(obj)
-           && (wake.F_TYPE in obj),
+        // Wake typecheck functions
+        isWakeObject(obj):
+            std.isObject(obj)
+            && (wake.F_TYPE in obj),
+        isPkg(obj):
+             U.isWakeObject(obj) && obj[wake.F_TYPE] == wake.T_PKG,
 
-       isPkg(obj):
-            U.isWakeObject(obj) && obj[wake.F_TYPE] == wake.T_PKG,
-
-        // Return whether the object is defined or still needs to be resolved.
-        //
-        // Can be used in exported variables, etc to wait for the next cycle.
+        // Wake status-check functions.
         isDefined(obj):
             assert U.isWakeObject(obj) : "value must be a wake object";
-
             obj[wake.F_STATE] == wake.S_DEFINED,
 
-        UNRESOLVED: {
-            [wake.F_TYPE]: wake.T_OBJECT,
-            [wake.F_STATE]: wake.S_UNRESOLVED,
-        },
-
-        toInt(bool): if bool then 1 else 0,
-        arrayDefault(arr): if arr == null then [] else arr,
-        objDefault(obj): if obj == null then {} else obj,
-        stringDefault(s): if s == null then "" else s,
+        // General Helpers
+        boolToInt(bool): if bool then 1 else 0,
         containsChr(c, str): !(std.length(std.splitLimit(str, c, 1)) == 1),
         isVersionSingle(ver): {
             local arr = ver.split(ver, '.')
         },
+
+        // Default functions return empty containers on null
+        arrayDefault(arr): if arr == null then [] else arr,
+        objDefault(obj): if obj == null then {} else obj,
+        stringDefault(s): if s == null then "" else s,
     },
 }

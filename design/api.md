@@ -24,7 +24,7 @@ Arguments:
   version.  Used by organiations to control where modules come from. Must
   be at least 3 characters. `null` is treated as `""`
 
-## [[.pkg]] `pkg(...)`
+## [[.declarePkg]] `declarePkg(...)`
 
 Arguments:
 - `pkgInfo`
@@ -83,6 +83,12 @@ set a global pkg via a reference from the `pkg` input.
 
 ## [[.getPkg]] `getPkg(...)`
 Retrieve a pkg.
+
+There are a million possible ways to retrieve a pkg. From a path
+is the simplest (and most obvious), but pkgs can be stored anywhere
+that computers are.
+
+Wake takes no opinions on _how_ to retrieve pkgs. The `from`
 
 Pkgs are _just data_ that can depend on other pkgs or the direct execution
 of other pkgs (cannot depend on modules).
