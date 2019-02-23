@@ -71,12 +71,31 @@
     declarePkg(
         hash,
         // The name of the pkg.
+        //
+        // Type: string
         name,
+
         // The exact version of the pkg.
+        //
+        // Type: string
         version,
-        // the (optional) namespace of the pkg
+
+        // the (optional) namespace of the pkg.
+        //
+        // Type: string
         namespace=null,
+
+
+        // pkgs that this pkg depends on. 
+        //
+        // Type: object of key/getPkg(...) pairs
         pkgs=null,
+
+        // Exports of this pkg. 
+        //
+        // Called once the pkg has been fully defined (all dependencies resolved, etc).
+        //
+        // Type: function(wake, pkgDefined) -> Object
         exports=null,
     ): {
         [wake.F_TYPE]: wake.T_PKG,
@@ -102,18 +121,23 @@
         recurseDefinePkg(wake, pkg): {
             local this = self,
 
-            result: pkg + {
-                [wake.F_STATE]: if P.isDefined(pkg, this.result) then
+            returnPkg: pkg + {
+                [wake.F_STATE]: if P.isDefined(pkg, this.returnPkg) then
                     wake.S_DEFINED else pkg[wake.F_STATE],
 
-                exports: pkg.exports(wake, this.result),
+                exports: {
+                    return: pkg.exports(wake, this.returnPkg),
+                    assert std.isObject(self.return) 
+                        : "%s exports did not return an object"
+                        % [this.returnPkg.pkgId],
+                }.return,
 
                 pkgs: {
                     [dep]: P.recurseDefinePkg(wake, pkg.pkgs[dep])
                     for dep in std.objectFields(pkg.pkgs)
                 },
             }
-        }.result,
+        }.returnPkg,
 
         isDefined(oldPkg, newPkg): {
             local definedCount = std.foldl(
