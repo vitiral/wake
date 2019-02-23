@@ -134,9 +134,14 @@
         recurseDefinePkg(wake, pkg): {
             local this = self,
             local _ = std.trace("recurseDefinePkg in " + pkg.pkgId, null),
+            local recurseMaybe = function(depPkg)
+                if U.isUnresolved(depPkg) then
+                    depPkg
+                else
+                    P.recurseDefinePkg(wake, depPkg),
 
             returnPkg: pkg + {
-                [wake.F_STATE]: if P.isDefined(pkg, this.returnPkg) then
+                [wake.F_STATE]: if P.hasBeenDefined(pkg, this.returnPkg) then
                     wake.S_DEFINED else pkg[wake.F_STATE],
 
                 exports:
@@ -146,16 +151,15 @@
                         % [this.returnPkg.pkgId];
                     out,
 
-                // FIXME: recursion no workee
-                // pkgs: {
-                //     [dep]: P.recurseDefinePkg(wake, pkg.pkgs[dep])
-                //     for dep in std.objectFields(pkg.pkgs)
-                // },
+                pkgs: {
+                    [dep]: recurseMaybe(pkg.pkgs[dep])
+                    for dep in std.objectFields(pkg.pkgs)
+                },
             }
         }.returnPkg,
 
         // Return if the newPkg is defined.
-        isDefined(oldPkg, newPkg):
+        hasBeenDefined(oldPkg, newPkg):
             local definedCount = std.foldl(
                 function(prev, v) prev + v,
                 [
@@ -176,6 +180,10 @@
              U.isWakeObject(obj) && obj[wake.F_TYPE] == wake.T_PKG,
 
         // Wake status-check functions.
+        isUnresolved(obj):
+            assert U.isWakeObject(obj) : "value must be a wake object";
+            obj[wake.F_STATE] == wake.S_UNRESOLVED,
+
         isDefined(obj):
             assert U.isWakeObject(obj) : "value must be a wake object";
             obj[wake.F_STATE] == wake.S_DEFINED,
