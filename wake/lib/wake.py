@@ -28,8 +28,8 @@ def jsondumpf(path, data, indent=4):
 PATH_HERE = abspath(__file__)
 HERE_DIR = path.dirname(abspath(__file__))
 
-wakelib = pjoin(HERE_DIR, "lib", "wake.libsonnet")
-wakeConstants = jsonloadf(pjoin(HERE_DIR, "lib", "wakeConstants.json"))
+wakelib = pjoin(HERE_DIR, "wake.libsonnet")
+wakeConstants = jsonloadf(pjoin(HERE_DIR, "wakeConstants.json"))
 
 F_TYPE = wakeConstants["F_TYPE"]
 F_STATE = wakeConstants["F_STATE"]
@@ -240,10 +240,11 @@ def manifest_jsonnet(path):
 
 
 def fail(msg):
-    sys.stderr.write("FAIL: {}\n".format(msg))
+    msg = "FAIL: {}\n".format(msg)
     if MODE == DEBUG:
-        raise RuntimeError()
+        raise RuntimeError(msg)
     else:
+        sys.stderr.write(msg)
         sys.exit(1)
 
 
