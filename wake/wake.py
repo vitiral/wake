@@ -60,7 +60,10 @@ local pkgInitial = pkg_fn(wake);
 
 local root = wake._private.recurseDefinePkg(wake, pkgInitial);
 
-wake._private.recurseSimplify(root)
+{{
+    root: wake._private.simplify(root),
+    all: wake._private.recurseSimplify(root),
+}}
 """
 
 def create_defined_pkgs(pkgs_defined):
@@ -72,23 +75,14 @@ def create_defined_pkgs(pkgs_defined):
     return "\n".join(out)
 
 
-class Config(object):
-    def __init__(self):
-        self.user_path = abspath(os.getenv("WAKEPATH", "~/.wake"))
-        self.base = os.getcwd()
+class PkgConfig(object):
+    def __init__(self, base):
+        self.base = base
         self.pkg_root = pjoin(self.base, "PKG.libsonnet")
         self.pkg_meta = pjoin(self.base, "PKG.meta")
         self.pkg_wake = pjoin(self.base, "_wake_")
         self.run = pjoin(self.pkg_wake, "run.jsonnet")
         self.pkgs_defined = pjoin(self.pkg_wake, "pkgsDefined.jsonnet")
-
-        user_file = pjoin(self.user_path, "user.jsonnet")
-        if not path.exists(user_file):
-            fail("must instantiate user credentials: " + user_file)
-        self.user = manifestJsonnet(user_file)
-
-        self.store = pjoin(self.user_path, self.user.get('store', 'store'))
-        self.cache_defined = pjoin(self.store, "pkgsDefined")
 
     def init_sandbox(self):
         """Create a simple linked sandbox."""
@@ -97,7 +91,6 @@ class Config(object):
         assert path.exists(self.pkg_meta)
 
         os.makedirs(self.pkg_wake, exist_ok=True)
-        os.makedirs(self.cache_defined, exist_ok=True)
         runtxt = RUN_TEMPLATE.format(
             wakelib=wakelib,
             pkgs_defined=self.pkgs_defined,
@@ -107,24 +100,55 @@ class Config(object):
         dump(self.run, runtxt)
         dump(self.pkgs_defined, "{}")
 
-    def remove_cache(self):
+    def remove_pkg_wake(self):
         if path.exists(self.pkg_wake):
             shutil.rmtree(self.pkg_wake)
-
-        if path.exists(self.cache_defined):
-            for d in os.listdir(self.cache_defined):
-                shutil.rmtree(d)
 
     def get_current_meta(self):
         if not path.exists(self.pkg_meta):
             return None
+        return jsonloadf(self.pkg_meta)
 
     def compute_pkg_meta(self):
+        self.init_sandbox()
+
         hashstuff = HashStuff(self.base)
+        # TODO: hash stuff
         return {
             "hash": hashstuff.reduce(),
             "hashType": hashstuff.hash_name,
         }
+
+    def manifest_pkg(self):
+        return manifest_jsonnet(self.run)
+
+
+
+class Config(object):
+    def __init__(self):
+        self.user_path = abspath(os.getenv("WAKEPATH", "~/.wake"))
+        self.base = os.getcwd()
+
+        self.pkg_config = PkgConfig(self.base)
+
+        user_file = pjoin(self.user_path, "user.jsonnet")
+        if not path.exists(user_file):
+            fail("must instantiate user credentials: " + user_file)
+        self.user = manifest_jsonnet(user_file)
+
+        self.store = pjoin(self.user_path, self.user.get('store', 'store'))
+        self.cache_defined = pjoin(self.store, "pkgsDefined")
+
+    def init_sandbox(self):
+        self.pkg_config.init_sandbox()
+        os.makedirs(self.cache_defined, exist_ok=True)
+
+    def remove_cache(self):
+        self.pkg_config.remove_pkg_wake()
+        if path.exists(self.cache_defined):
+            for d in os.listdir(self.cache_defined):
+                shutil.rmtree(d)
+
 
 
 class PkgDef(object):
@@ -135,7 +159,7 @@ class PkgDef(object):
 
 ## Helpers
 
-def manifestJsonnet(path):
+def manifest_jsonnet(path):
     """Manifest a jsonnet path."""
     cmd = ["jsonnet", path]
     print("calling", cmd)
@@ -249,7 +273,7 @@ def build(args):
     config.init_sandbox()
 
     print("## MANIFEST")
-    pp(manifestJsonnet(config.run))
+    pp(config.pkg_config.manifest_pkg())
 
 
 def parse_args(argv):
