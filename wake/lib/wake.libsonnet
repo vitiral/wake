@@ -69,11 +69,11 @@
         from=null
     ):
         # TODO: check in completePkgs first
-        local pkgDefs = wake._private.pkgDefs;
+        local pkgsDefined = wake._private.pkgsDefined;
         local pkgCompletes = wake._private.pkgCompletes;
 
-        if pkgReq in pkgDefs then
-            local pkgFn = pkgDefs[pkgReq];
+        if pkgReq in pkgsDefined then
+            local pkgFn = pkgsDefined[pkgReq];
             pkgFn(wake)
         else
             wake._private.unresolvedPkg(pkgReq),

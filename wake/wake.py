@@ -3,15 +3,17 @@ import sys, os
 import argparse
 import json
 import subprocess
+from pprint import pprint as pp
 
 path = os.path
 def abspath(p):
     return path.abspath(path.expanduser(p))
 
 PATH_HERE = abspath(__file__)
+HERE_DIR = path.dirname(abspath(__file__))
 
-wakelib = path.join(PATH_HERE, "lib", "wake.libsonnet")
-with open(path.join(PATH_HERE, "lib", "wakeConstants.json")) as f:
+wakelib = path.join(HERE_DIR, "lib", "wake.libsonnet")
+with open(path.join(HERE_DIR, "lib", "wakeConstants.json")) as f:
     wakeConstants = json.load(f)
 
 F_TYPE = wakeConstants["F_TYPE"]
@@ -30,19 +32,19 @@ S_COMPLETED = wakeConstants["S_COMPLETED"]
 ## FILE WRITERS
 
 RUN_TEMPLATE = """
-local wakelib = import "{wakelib}/lib/wake.libsonnet";
-local pkgDefs = (import "{pkg_wake}/pkgDefs.libsonnet");
+local wakelib = import "{wakelib}";
+local pkgsDefined = (import "{pkgs_defined}");
 
 local wake =
     wakelib
     + {{
         _private+: {{
-            pkgDefs: pkgDefs,
+            pkgsDefined: pkgsDefined,
         }},
     }};
 
 // instantiate and return the root pkg
-local pkg_fn = (import "{base}/PKG.libsonnet");
+local pkg_fn = (import "{pkg_root}");
 local pkgInitial = pkg_fn(wake);
 
 local pkg = wake._private.recurseDefinePkg(wake, pkgInitial);
@@ -65,16 +67,16 @@ class Config(object):
     def __init__(self):
         self.user_path = abspath(os.getenv("WAKEPATH", "~/.wake"))
         self.base = os.getcwd()
-        self.pkg = path.join(self.base, "PKG.jsonnet")
-        self.meta = path.join(self.base, "PKG.meta")
+        self.pkg_root = path.join(self.base, "PKG.libsonnet")
+        self.pkg_meta = path.join(self.base, "PKG.meta")
         self.pkg_wake = path.join(self.base, "_wake_")
         self.run = path.join(self.pkg_wake, "run.jsonnet")
         self.pkgs_defined = path.join(self.pkg_wake, "pkgsDefined.jsonnet")
 
-        user_path = path.join(self.user_path, "user.jsonnet")
-        if not path.exists(user_path):
-            fail("must instantiate user credentials.")
-        self.user = manifestJsonnet(user_path)
+        user_file = path.join(self.user_path, "user.jsonnet")
+        if not path.exists(user_file):
+            fail("must instantiate user credentials: " + user_file)
+        self.user = manifestJsonnet(user_file)
 
         self.store = path.join(self.user_path, self.user.get('store', 'store'))
         self.cache_defined = path.join(self.store, "pkgsDefined")
@@ -82,15 +84,15 @@ class Config(object):
     def create_sandbox(self):
         """Create a simple linked sandbox."""
         assert path.exists(self.base)
-        assert path.exists(self.pkg)
-        assert path.exists(self.meta)
+        assert path.exists(self.pkg_root)
+        assert path.exists(self.pkg_meta)
 
-        os.mkdirs(self.pkg_wake, exist_ok=True)
-        os.mkdirs(self.cache_defined, exist_ok=True)
+        os.makedirs(self.pkg_wake, exist_ok=True)
+        os.makedirs(self.cache_defined, exist_ok=True)
         runtxt = RUN_TEMPLATE.format(
             wakelib=wakelib,
-            base=self.base,
-            pkg_wake=self.pkg_wake,
+            pkgs_defined=self.pkgs_defined,
+            pkg_root=self.pkg_root,
         )
 
         dump(self.run, runtxt)
@@ -102,6 +104,10 @@ def build(args):
     config = Config()
 
     print("## building local pkg {}".format(config.base))
+    config.create_sandbox()
+
+    print("## MANIFEST")
+    pp(manifestJsonnet(config.run))
 
 
 
@@ -109,9 +115,13 @@ def build(args):
 
 def manifestJsonnet(path):
     """Manifest a jsonnet path."""
+    cmd = ["jsonnet", path]
+    print("calling", cmd)
     completed = subprocess.run(
-        ["jsonnet", path],
-        text=True,
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
     )
     if completed.returncode != 0:
         fail("Manifesting jsonnet at {}\n{}".format(path, completed.stderr))
