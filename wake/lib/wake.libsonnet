@@ -9,7 +9,6 @@
     # Types
     T_OBJECT: "object",
     T_PKG: "pkg",
-    T_GLOBAL: "global",
     T_MODULE: "module",
     T_FILE: "file",
 
@@ -79,8 +78,6 @@
         namespace=null,
         pkgs=null,
         exports=null,
-        useGlobals=null,
-        setGlobals=null
     ): {
         [wake.F_TYPE]: wake.T_PKG,
         [wake.F_STATE]: wake.S_DECLARED,
@@ -91,8 +88,6 @@
         pkgId: wake.pkgId(name, version, namespace, hash),
         pkgs: U.objDefault(pkgs),
         exports: exports,
-        useGlobals: useGlobals,
-        setGlobals: setGlobals,
     },
 
     _private: {

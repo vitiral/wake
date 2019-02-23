@@ -1,7 +1,9 @@
 // instantiate the wake library and user overrides.
 
+// TODO: generated to be $WAKEPATH instead of ../../../
 local wakelib = import "../../../wake/lib/wake.libsonnet";
 local user = (import "../../../wake/user.libsonnet")(wakelib);
+
 local pkgDefs = (import "../_wake_/pkgDefs.libsonnet");
 
 local wake =
@@ -19,7 +21,5 @@ local pkgInitial = pkg_fn(wake);
 local pkg = wake._private.recurseDefinePkg(wake, pkgInitial);
 
 {
-    added: pkg.exports.added,
-    exports: pkg.exports,
     root: pkg,
 }
