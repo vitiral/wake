@@ -272,7 +272,7 @@ class HashStuff(object):
                     break
                 hasher.update(data)
         pkey = path.relpath(fpath, self.base)
-        hashmap[pkey] = hasher.hexdigest()
+        self.hashmap[pkey] = hasher.hexdigest()
 
     def reduce(self):
         hashmap = self.hashmap
