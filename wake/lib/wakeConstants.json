@@ -1,0 +1,15 @@
+
+{
+    "F_TYPE": "__WAKETYPE__",
+    "F_STATE": "__WAKESTATE",
+
+    "T_OBJECT": "object",
+    "T_PKG": "pkg",
+    "T_MODULE": "module",
+    "T_FILE": "file",
+
+    "S_UNRESOLVED": "unresolved",
+    "S_DECLARED": "declared",
+    "S_DEFINED": "defined",
+    "S_COMPLETED": "completed"
+}

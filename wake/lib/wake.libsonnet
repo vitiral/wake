@@ -1,22 +1,6 @@
-{
+(import "wakeConstants.json") + {
     local wake = self,
     local U = wake.util,
-
-    # Fields
-    F_TYPE: "__WAKETYPE__",
-    F_STATE: "__WAKESTATE",
-
-    # Types
-    T_OBJECT: "object",
-    T_PKG: "pkg",
-    T_MODULE: "module",
-    T_FILE: "file",
-
-    # States
-    S_UNRESOLVED: "unresolved",
-    S_DECLARED: "declared",
-    S_DEFINED: "defined",
-    S_COMPLETED: "completed",
 
     user(username, email=null): {
         username: username,
