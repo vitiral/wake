@@ -172,7 +172,7 @@
         }.returnPkg,
 
         // Return if the newPkg is defined.
-        isDefined(oldPkg, newPkg): {
+        isDefined(oldPkg, newPkg):
             local definedCount = std.foldl(
                 function(prev, v) prev + v,
                 [
@@ -180,9 +180,8 @@
                     for dep in std.objectFields(newPkg.pkgs)
                 ],
                 0,
-            ),
-            return: definedCount == std.length(oldPkg.pkgs),
-        }.return,
+            );
+            definedCount == std.length(oldPkg.pkgs),
     },
 
     util: {
