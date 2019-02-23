@@ -169,6 +169,28 @@
                 0,
             );
             definedCount == std.length(oldPkg.pkgs),
+
+        simplifyRecurse(pkg):
+            local simpleDeps = std.flatten([
+                P.simplifyRecurse(pkg.pkgs[dep])
+                for dep in pkg.pkgs
+            ]);
+            [P.simplify(pkg)] + simpleDeps,
+
+        simplify(pkg): {
+            local onlyIdOrUnresolved = function(dep)
+                if U.isUnresolved(dep) then
+                    dep
+                else
+                    dep.pkgId,
+
+            pkgId: pkg.pkgId,
+            pkgs: {
+                [dep]: onlyIdOrUnresolved(pkg.pkgs[dep])
+                for dep in std.objectFields(pkg.pkgs)
+            },
+            exports: pkg.exports,
+        },
     },
 
     util: {
