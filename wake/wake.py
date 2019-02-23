@@ -120,7 +120,6 @@ class PkgConfig(object):
         """Create a simple linked sandbox."""
         assert path.exists(self.base)
         assert path.exists(self.pkg_root)
-        assert path.exists(self.pkg_meta)
 
         os.makedirs(self.pkg_wake, exist_ok=True)
         runtxt = RUN_TEMPLATE.format(
@@ -129,8 +128,8 @@ class PkgConfig(object):
             pkg_root=self.pkg_root,
         )
 
-        dump(self.run, runtxt)
-        dump(self.pkgs_defined, "{}")
+        dumpf(self.run, runtxt)
+        dumpf(self.pkgs_defined, "{}")
 
     def remove_pkg_wake(self):
         if path.exists(self.pkg_wake):
@@ -159,6 +158,7 @@ class PkgConfig(object):
         return map(lambda p: pjoin(self.base, p), paths)
 
     def dump_pkg_meta(self):
+        dumpf(self.pkg_meta, '{"hash": "--fake hash--", "hashType": "fake"}')
         meta = self.compute_pkg_meta()
         pp(meta)
         jsondumpf(self.pkg_meta, meta, indent=4)
@@ -215,7 +215,7 @@ def fail(msg):
     sys.stderr.write("FAIL: {}\n".format(msg))
     sys.exit(1)
 
-def dump(path, s):
+def dumpf(path, s):
     """Dump a string to a file."""
     with open(path, 'w') as f:
         f.write(s)
