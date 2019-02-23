@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import sys, os
 import argparse
+import hashlib
 import json
 import subprocess
 import shutil
@@ -11,18 +12,23 @@ DEBUG = "debug"
 MODE = DEBUG
 
 path = os.path
+pjoin = os.path.join
 def abspath(p):
     return path.abspath(path.expanduser(p))
+def jsonloadf(path):
+    with open(path) as f:
+        return json.load(f)
 
 PATH_HERE = abspath(__file__)
 HERE_DIR = path.dirname(abspath(__file__))
 
-wakelib = path.join(HERE_DIR, "lib", "wake.libsonnet")
-with open(path.join(HERE_DIR, "lib", "wakeConstants.json")) as f:
-    wakeConstants = json.load(f)
+wakelib = pjoin(HERE_DIR, "lib", "wake.libsonnet")
+wakeConstants = jsonloadf(pjoin(HERE_DIR, "lib", "wakeConstants.json"))
 
 F_TYPE = wakeConstants["F_TYPE"]
 F_STATE = wakeConstants["F_STATE"]
+F_HASH = wakeConstants["F_HASH"]
+F_HASHTYPE = wakeConstants["F_HASHTYPE"]
 
 T_OBJECT = wakeConstants["T_OBJECT"]
 T_PKG = wakeConstants["T_PKG"]
@@ -70,21 +76,21 @@ class Config(object):
     def __init__(self):
         self.user_path = abspath(os.getenv("WAKEPATH", "~/.wake"))
         self.base = os.getcwd()
-        self.pkg_root = path.join(self.base, "PKG.libsonnet")
-        self.pkg_meta = path.join(self.base, "PKG.meta")
-        self.pkg_wake = path.join(self.base, "_wake_")
-        self.run = path.join(self.pkg_wake, "run.jsonnet")
-        self.pkgs_defined = path.join(self.pkg_wake, "pkgsDefined.jsonnet")
+        self.pkg_root = pjoin(self.base, "PKG.libsonnet")
+        self.pkg_meta = pjoin(self.base, "PKG.meta")
+        self.pkg_wake = pjoin(self.base, "_wake_")
+        self.run = pjoin(self.pkg_wake, "run.jsonnet")
+        self.pkgs_defined = pjoin(self.pkg_wake, "pkgsDefined.jsonnet")
 
-        user_file = path.join(self.user_path, "user.jsonnet")
+        user_file = pjoin(self.user_path, "user.jsonnet")
         if not path.exists(user_file):
             fail("must instantiate user credentials: " + user_file)
         self.user = manifestJsonnet(user_file)
 
-        self.store = path.join(self.user_path, self.user.get('store', 'store'))
-        self.cache_defined = path.join(self.store, "pkgsDefined")
+        self.store = pjoin(self.user_path, self.user.get('store', 'store'))
+        self.cache_defined = pjoin(self.store, "pkgsDefined")
 
-    def create_sandbox(self):
+    def init_sandbox(self):
         """Create a simple linked sandbox."""
         assert path.exists(self.base)
         assert path.exists(self.pkg_root)
@@ -101,7 +107,6 @@ class Config(object):
         dump(self.run, runtxt)
         dump(self.pkgs_defined, "{}")
 
-
     def remove_cache(self):
         if path.exists(self.pkg_wake):
             shutil.rmtree(self.pkg_wake)
@@ -109,6 +114,24 @@ class Config(object):
         if path.exists(self.cache_defined):
             for d in os.listdir(self.cache_defined):
                 shutil.rmtree(d)
+
+    def get_current_meta(self):
+        if not path.exists(self.pkg_meta):
+            return None
+
+    def compute_pkg_meta(self):
+        hashstuff = HashStuff(self.base)
+        return {
+            "hash": hashstuff.reduce(),
+            "hashType": hashstuff.hash_name,
+        }
+
+
+class PkgDef(object):
+    def __init__(self, partialId, pHash):
+        self.pkgVer = partialId
+        self.hash = pHash
+        self.hashFunc
 
 ## Helpers
 
@@ -143,22 +166,30 @@ def dump(path, s):
 # https://pypi.org/project/checksumdir/#files
 
 class HashStuff(object):
-    HASH_FUNCS = {
+    HASH_TYPES = {
         'md5': hashlib.md5,
         'sha1': hashlib.sha1,
         'sha256': hashlib.sha256,
         'sha512': hashlib.sha512
     }
 
-    def __init__(self, base, hashfunc):
+    def __init__(self, base, hash_type='md5'):
         assert path.isabs(base)
 
-        self.hashfunc = self.HASH_FUNCS[hashfunc]
+        self.base = base
+        self.hash_type = hash_type
+        self.hashfunc = self.HASH_TYPES[hash_type]
         self.hashmap = {}
         self.visited = set()
-        self.base = base
         if not hashfunc:
             raise NotImplementedError('{} not implemented.'.format(hashfunc))
+
+    @classmethod
+    def from_config(cls, config):
+        meta = config.get_current_meta()
+        if meta is None:
+            fail("{} meta file must exist".format(config.pkg_meta))
+        return cls(config.base, hash_type=meta[F_HASHTYPE])
 
     def update_dir(self, dirpath):
         assert path.isabs(dirpath)
@@ -172,7 +203,7 @@ class HashStuff(object):
 
         for root, dirs, files in os.walk(dirpath, topdown=True, followlinks=True):
             for f in files:
-                fpath = os.path.join(root, f)
+                fpath = os.pjoin(root, f)
 
                 if fpath in visited:
                     raise RuntimeError(
@@ -215,7 +246,7 @@ def build(args):
     if MODE == DEBUG:
         config.remove_cache()
 
-    config.create_sandbox()
+    config.init_sandbox()
 
     print("## MANIFEST")
     pp(manifestJsonnet(config.run))
