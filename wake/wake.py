@@ -90,7 +90,6 @@ class PkgSimple(object):
         self.paths = paths
         self.def_paths = def_paths
 
-
     @classmethod
     def from_dict(cls, dct):
         return cls(
@@ -101,22 +100,19 @@ class PkgSimple(object):
     def _assert_paths(self, paths):
         invalid_components = {'.', '..'}
         for p in paths:
-            if not p.startswith("./"):
-                raise ValueError("all paths must start with ./")
-            if sum(filter(lambda c: c == '..', p.split('/'))):
-                raise ValueError("paths must not have `..` components: " + p)
+            assert_valid_path(p)
 
 
 class PkgConfig(object):
     def __init__(self, base):
-        self.base = base
+        self.base = abspath(base)
         self.pkg_root = pjoin(self.base, "PKG.libsonnet")
         self.pkg_meta = pjoin(self.base, "PKG.meta")
         self.pkg_wake = pjoin(self.base, "_wake_")
         self.run = pjoin(self.pkg_wake, "run.jsonnet")
         self.pkgs_defined = pjoin(self.pkg_wake, "pkgsDefined.jsonnet")
 
-    def init_sandbox(self):
+    def init_pkg_wake(self):
         """Create a simple linked sandbox."""
         assert path.exists(self.base)
         assert path.exists(self.pkg_root)
@@ -141,8 +137,8 @@ class PkgConfig(object):
         return jsonloadf(self.pkg_meta)
 
     def compute_pkg_meta(self):
-        self.init_sandbox()
-        root = PkgSimple.from_dict(self.manifest_pkg()['root'])
+        self.init_pkg_wake()
+        root = self.compute_root()
 
         hashstuff = HashStuff(self.base)
         hashstuff.update_file(self.pkg_root)
@@ -167,6 +163,16 @@ class PkgConfig(object):
     def manifest_pkg(self):
         return manifest_jsonnet(self.run)
 
+    def compute_root(self):
+        """Use some shenanigans to get the root of the pkg."""
+        self.init_pkg_wake()
+        try:
+            root = self.manifest_pkg()['root']
+        finally:
+            self.remove_pkg_wake()
+        return PkgSimple.from_dict(root)
+
+
 
 class Config(object):
     def __init__(self):
@@ -183,8 +189,7 @@ class Config(object):
         self.store = pjoin(self.user_path, self.user.get('store', 'store'))
         self.cache_defined = pjoin(self.store, "pkgsDefined")
 
-    def init_sandbox(self):
-        self.pkg_config.init_sandbox()
+    def init_cache(self):
         os.makedirs(self.cache_defined, exist_ok=True)
 
     def remove_cache(self):
@@ -213,12 +218,37 @@ def manifest_jsonnet(path):
 
 def fail(msg):
     sys.stderr.write("FAIL: {}\n".format(msg))
-    sys.exit(1)
+    if MODE == DEBUG:
+        raise RuntimeError()
+    else:
+        sys.exit(1)
 
 def dumpf(path, s):
     """Dump a string to a file."""
     with open(path, 'w') as f:
         f.write(s)
+
+def assert_valid_path(p):
+    if not p.startswith("./"):
+        raise ValueError("all paths must start with ./")
+    if sum(filter(lambda c: c == '..', p.split('/'))):
+        raise ValueError("paths must not have `..` components: " + p)
+
+def is_pkg(dct):
+    return dct[F_TYPE] == T_PKG
+
+def is_unresolved(dct):
+    return dct[F_STATE] == S_UNRESOLVED
+
+def handle_unresolved_pkg(pkg):
+    from_ = pkg['from']
+    if not isinstance(from_, str):
+        raise NotYetImplementedError()
+
+    assert_valid_path(from_)
+    pkg_config = PkgConfig(from_)
+    root = pkg_config.compute_root()
+
 
 
 # Heavily modified from checksumdir v1.1.5
@@ -307,17 +337,35 @@ class HashStuff(object):
 ## COMMANDS AND MAIN
 
 def build(args):
-    # TODO: .wakeConfig.jsonnet
     config = Config()
-    pkg_config = config.pkg_config
     print("## building local pkg {}".format(config.base))
+    pkg_config = config.pkg_config
+
+    print("-> initializing the global cache")
+    config.init_cache()
+
     print("-> recomputing PKG.meta")
     pkg_config.dump_pkg_meta()
 
     if MODE == DEBUG:
         config.remove_cache()
 
-    config.init_sandbox()
+    print("-> Starting build cycles")
+    pkg_config.init_pkg_wake()
+    cycle = 0
+    while True:
+        manifest = pkg_config.manifest_pkg()
+        pkgs = manifest['all']
+
+        num_unresolved = 0
+        for pkg in pkgs:
+            assert is_pkg(pkg)
+            if is_unresolved(pkg):
+                num_unresolved += 1
+                handle_unresolved_pkg(pkg)
+
+        break
+
 
     print("## MANIFEST")
     pp(pkg_config.manifest_pkg())
