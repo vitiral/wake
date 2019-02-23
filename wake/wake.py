@@ -147,6 +147,7 @@ class PkgConfig(object):
         hashstuff.update_paths(self.paths_abs(root.paths))
         hashstuff.update_paths(self.paths_abs(root.def_paths))
 
+        self.remove_pkg_wake()
         return {
             "hash": hashstuff.reduce(),
             "hashType": hashstuff.hash_type,
@@ -208,9 +209,17 @@ class Config(object):
         assert_valid_path(from_)
         pkg_config = PkgConfig(from_)
         root = pkg_config.compute_root()
+        pcache = pjoin(self.cache_pkgs, root.pkgId)
 
+        meta = pkg_config.get_current_meta()
+        computed = pkg_config.compute_pkg_meta()
 
-        # TODO: move paths and defpaths to a new thingee
+        if os.path.exists(pcache):
+            # TODO: validate metadata or something
+            pass
+        else:
+            assert path.exists(self.cache_pkgs), self.cache_pkgs
+            os.mkdir(pcache)
 
 
 ## Helpers
@@ -356,13 +365,12 @@ def build(args):
     pkg_config = config.pkg_config
 
     print("-> initializing the global cache")
+    if MODE == DEBUG:
+        config.remove_cache()
     config.init_cache()
 
     print("-> recomputing PKG.meta")
     pkg_config.dump_pkg_meta()
-
-    if MODE == DEBUG:
-        config.remove_cache()
 
     print("-> Starting build cycles")
     pkg_config.init_pkg_wake()
