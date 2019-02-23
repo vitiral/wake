@@ -71,3 +71,55 @@ local root = wake._private.recurseDefinePkg(wake, pkgInitial);
     all: wake._private.recurseSimplify(root),
 }}
 """
+
+def manifest_jsonnet(path):
+    """Manifest a jsonnet path."""
+    cmd = ["jsonnet", path]
+    print("calling", cmd)
+    completed = subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    if completed.returncode != 0:
+        fail("Manifesting jsonnet at {}\n{}".format(path, completed.stderr))
+    return json.loads(completed.stdout)
+
+
+def fail(msg):
+    msg = "FAIL: {}\n".format(msg)
+    if MODE == DEBUG:
+        raise RuntimeError(msg)
+    else:
+        sys.stderr.write(msg)
+        sys.exit(1)
+
+
+def dumpf(path, s):
+    """Dump a string to a file."""
+    with open(path, 'w') as f:
+        f.write(s)
+
+
+def assert_valid_path(p):
+    if not p.startswith("./"):
+        raise ValueError("all paths must start with ./")
+    if sum(filter(lambda c: c == '..', p.split('/'))):
+        raise ValueError("paths must not have `..` components: " + p)
+
+
+def is_pkg(dct):
+    return dct[F_TYPE] == T_PKG
+
+
+def is_unresolved(dct):
+    return dct[F_STATE] == S_UNRESOLVED
+
+
+def rmtree(d):
+    if path.exists(d):
+        shutil.rmtree(d)
+
+
+
