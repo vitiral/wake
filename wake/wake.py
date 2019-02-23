@@ -137,6 +137,74 @@ def dump(path, s):
         f.write(s)
 
 
+# Heavily modified from checksumdir v1.1.5
+# The MIT License (MIT)
+# Copyright (c) 2015 cakepietoast
+# https://pypi.org/project/checksumdir/#files
+
+class HashStuff(object):
+    HASH_FUNCS = {
+        'md5': hashlib.md5,
+        'sha1': hashlib.sha1,
+        'sha256': hashlib.sha256,
+        'sha512': hashlib.sha512
+    }
+
+    def __init__(self, base, hashfunc):
+        assert path.isabs(base)
+
+        self.hashfunc = self.HASH_FUNCS[hashfunc]
+        self.hashmap = {}
+        self.visited = set()
+        self.base = base
+        if not hashfunc:
+            raise NotImplementedError('{} not implemented.'.format(hashfunc))
+
+    def update_dir(self, dirpath):
+        assert path.isabs(dirpath)
+
+        hashfunc = self.hashfunc
+        hashmap = self.hashmap
+        visited = self.visited
+
+        if not os.path.isdir(dirpath):
+            raise TypeError('{} is not a directory.'.format(dirpath))
+
+        for root, dirs, files in os.walk(dirpath, topdown=True, followlinks=True):
+            for f in files:
+                fpath = os.path.join(root, f)
+
+                if fpath in visited:
+                    raise RuntimeError(
+                        "Error: infinite directory recursion detected at {}"
+                        .format(fpath)
+                    )
+                visited.add(fpath)
+                self.update_file(fpath)
+
+        return hashmap
+
+    def update_file(self, fpath):
+        hasher = self.hashfunc()
+        blocksize = 64 * 1024
+        with open(fpath, 'rb') as fp:
+            while True:
+                data = fp.read(blocksize)
+                if not data:
+                    break
+                hasher.update(data)
+        pkey = path.relpath(fpath, self.base)
+        hashmap[pkey] = hasher.hexdigest()
+
+    def reduce(self):
+        hashmap = self.hashmap
+        hasher = hashfunc()
+        for fpath in sorted(hashmap.keys()):
+            hasher.update(fpath.encode())
+            hasher.update(hashmap[fpath].encode())
+        return hasher.hexdigest()
+
+
 ## COMMANDS AND MAIN
 
 def build(args):
