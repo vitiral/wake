@@ -1,4 +1,5 @@
-from wakedef import *
+from wakedev import *
+from wakepkg import *
 
 
 class Store(object):
@@ -12,7 +13,6 @@ class Store(object):
         os.makedirs(self.pkgs, exist_ok=True)
 
     def remove_store(self):
-        self.pkg_config.remove_pkg_wake()
         rmtree(self.defined)
         rmtree(self.pkgs)
 
@@ -22,14 +22,14 @@ class Store(object):
         localpkg = localconfig.compute_simplepkg()
         localconfig.assert_meta_matches(localpkg)
 
-        pcache = pjoin(self.cache_pkgs, localpkg.pkg_id)
+        pcache = pjoin(self.pkgs, localpkg.pkg_id)
 
         if os.path.exists(pcache):
             pkg_exists = PkgConfig(pcache)
             metaexists = pkg_exists.get_current_meta()
             localconfig.assert_meta_matches(metaexists)
         else:
-            assert path.exists(self.cache_pkgs), self.cache_pkgs
+            assert path.exists(self.pkgs), self.pkgs
             os.mkdir(pcache)
             for fsentry_rel in localpkg.get_fsentries():
                 assert_valid_path(fsentry_rel)

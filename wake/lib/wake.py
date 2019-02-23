@@ -2,6 +2,7 @@
 
 from wakedev import *
 from wakepkg import *
+from wakestore import *
 
 
 class Config(object):
@@ -16,47 +17,23 @@ class Config(object):
             fail("must instantiate user credentials: " + user_file)
         self.user = manifest_jsonnet(user_file)
 
-        self.store = pjoin(self.user_path, self.user.get('store', 'store'))
-        self.cache_defined = pjoin(self.store, "pkgsDefined")
-        self.cache_pkgs = pjoin(self.store, "pkgs")
+        self.store = Store(pjoin(self.user_path, self.user.get('store', 'store')))
 
-    def init_cache(self):
-        os.makedirs(self.cache_defined, exist_ok=True)
-        os.makedirs(self.cache_pkgs, exist_ok=True)
+    def init_store(self):
+        self.store.init_store()
 
-    def remove_cache(self):
+    def remove_caches(self):
         self.pkg_config.remove_pkg_wake()
-        rmtree(self.cache_defined)
-        rmtree(self.cache_pkgs)
+        self.store.remove_store()
 
     def handle_unresolved_pkg(self, pkg):
         from_ = pkg['from']
         if not isinstance(from_, str):
             raise NotYetImplementedError()
         else:
-            self.handle_unresolved_local_pkg(from_)
-
-    def handle_unresolved_local_pkg(self, localpath):
-        assert_valid_path(localpath)
-        localconfig = PkgConfig(localpath)
-        localpkg = localconfig.compute_simplepkg()
-        localconfig.assert_meta_matches(localpkg)
-
-        pcache = pjoin(self.cache_pkgs, localpkg.pkg_id)
-
-        if os.path.exists(pcache):
-            pkg_exists = PkgConfig(pcache)
-            metaexists = pkg_exists.get_current_meta()
-            localconfig.assert_meta_matches(metaexists)
-        else:
-            assert path.exists(self.cache_pkgs), self.cache_pkgs
-            os.mkdir(pcache)
-            for fsentry_rel in localpkg.get_fsentries():
-                assert_valid_path(fsentry_rel)
-                copy_fsentry(localconfig.path_abs(fsentry_rel), path.join(pcache, fsentry_rel))
-
-            # TODO: load, validate hash, validate that _wake_ doesn't exist, etc
-            copy_fsentry(localconfig.pkg_meta, pcache)
+            # from_ is a path
+            # TODO: something is wrong here... the path needs to be made absolute
+            self.store.add_pkg_path(from_)
 
     def create_defined_pkgs(self, pkgs_defined):
         out = ["{"]
@@ -91,8 +68,8 @@ def build(args):
 
     print("-> initializing the global cache")
     if MODE == DEBUG:
-        config.remove_cache()
-    config.init_cache()
+        config.remove_caches()
+    config.init_store()
 
     print("-> recomputing PKG.meta")
     pkg_config.dump_pkg_meta()
