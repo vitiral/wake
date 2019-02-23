@@ -16,11 +16,14 @@ pjoin = os.path.join
 def abspath(p):
     return path.abspath(path.expanduser(p))
 def jsonloadf(path):
-    with open(path) as f:
-        return json.load(f)
+    with open(path) as fp:
+        return json.load(fp)
 def jsondumpf(path, data, indent=4):
-    with open(path, 'w') as f:
-        return json.dump(f, data, indent=indent)
+    with open(path, 'w') as fp:
+        return json.dump(
+            data, fp,
+            indent=indent,
+            sort_keys=True)
 
 PATH_HERE = abspath(__file__)
 HERE_DIR = path.dirname(abspath(__file__))
@@ -117,6 +120,7 @@ class PkgConfig(object):
         root = self.manifest_pkg()['root']
 
         hashstuff = HashStuff(self.base)
+        hashstuff.update_file(self.pkg_root)
         hashstuff.update_paths(root['paths'])
         hashstuff.update_paths(root['defPaths'])
 
