@@ -127,6 +127,7 @@ class PkgConfig(object):
 
     def dump_pkg_meta(self):
         meta = self.compute_pkg_meta()
+        pp(meta)
         jsondumpf(self.pkg_meta, meta, indent=4)
         return meta
 
@@ -212,11 +213,11 @@ class HashStuff(object):
 
         self.base = base
         self.hash_type = hash_type
-        self.hashfunc = self.HASH_TYPES[hash_type]
+        self.hash_func = self.HASH_TYPES[hash_type]
+        if not self.hash_func:
+            raise NotImplementedError('{} not implemented.'.format(hash_type))
         self.hashmap = {}
         self.visited = set()
-        if not hashfunc:
-            raise NotImplementedError('{} not implemented.'.format(hashfunc))
 
     @classmethod
     def from_config(cls, config):
@@ -235,7 +236,7 @@ class HashStuff(object):
     def update_dir(self, dirpath):
         assert path.isabs(dirpath)
 
-        hashfunc = self.hashfunc
+        hash_func = self.hash_func
         hashmap = self.hashmap
         visited = self.visited
 
@@ -258,7 +259,7 @@ class HashStuff(object):
 
     def update_file(self, fpath):
         assert path.isabs(fpath)
-        hasher = self.hashfunc()
+        hasher = self.hash_func()
         blocksize = 64 * 1024
         with open(fpath, 'rb') as fp:
             while True:
@@ -271,7 +272,7 @@ class HashStuff(object):
 
     def reduce(self):
         hashmap = self.hashmap
-        hasher = hashfunc()
+        hasher = self.hash_func()
         for fpath in sorted(hashmap.keys()):
             hasher.update(fpath.encode())
             hasher.update(hashmap[fpath].encode())
