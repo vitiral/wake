@@ -54,7 +54,9 @@ class Config(object):
             for fsentry_rel in localpkg.get_fsentries():
                 assert_valid_path(fsentry_rel)
                 copy_fsentry(localconfig.path_abs(fsentry_rel), path.join(pcache, fsentry_rel))
-                # TODO: load, validate hash, validate that _wake_ doesn't exist, etc
+
+            # TODO: load, validate hash, validate that _wake_ doesn't exist, etc
+            copy_fsentry(localconfig.pkg_meta, pcache)
 
     def create_defined_pkgs(self, pkgs_defined):
         out = ["{"]
