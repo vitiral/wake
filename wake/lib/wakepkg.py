@@ -13,6 +13,7 @@ class PkgSimple(object):
         assert_valid_paths(paths)
         assert_valid_paths(def_paths)
 
+        self.pkg_root = "PKG.libsonnet"
         self.pkg_id = pkg_id
         self.name = name
         self.namespace = namespace
@@ -32,6 +33,13 @@ class PkgSimple(object):
             dct['paths'],
             dct['defPaths'],
         )
+
+    def get_def_fsentries(self):
+        """Return all defined pkgs, including root."""
+        return itertools.chain((self.pkg_root,), self.def_paths)
+
+    def get_fsentries(self):
+        return itertools.chain(self.get_def_fsentries(), self.paths)
 
 
 class PkgConfig(object):
