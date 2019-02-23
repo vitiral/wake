@@ -80,7 +80,9 @@
     //
     // #SPC-api.declarePkg
     declarePkg(
+        // The hash, **imported** from PKG.meta
         hash,
+
         // The name of the pkg.
         //
         // Type: string
@@ -96,13 +98,33 @@
         // Type: string
         namespace=null,
 
+        // Local paths (files or dirs) this pkg depends on for its definition.
+        //
+        // Paths used in the "define" phase must be included in this list.
+        // Typically will just be items this PKG.libsonnet imports in some way.
+        // This should be kept to a minimal size so that it can be retrieved
+        // quickly.
+        //
+        // Note that .wake.libsonnet and PKG.libsonnet are automatically
+        // included in this list.
+        //
+        // Type: list[string]
+        defPaths=null,
 
-        // pkgs that this pkg depends on. 
+        // Local paths (files or dirs) this pkg depends on for building.
+        //
+        // These are included when the full pkg is retrieved or setup in
+        // a sandbox.
+        //
+        // Type: list[string]
+        paths=null,
+
+        // pkgs that this pkg depends on.
         //
         // Type: object of key/getPkg(...) pairs
         pkgs=null,
 
-        // Exports of this pkg. 
+        // Exports of this pkg.
         //
         // Called once the pkg has been fully defined (all dependencies resolved, etc).
         //
@@ -116,6 +138,9 @@
         version: version,
         namespace: namespace,
         pkgId: wake.pkgId(name, version, namespace, hash),
+
+        defPaths: U.arrayDefault(defPaths),
+        paths: U.arrayDefault(paths),
         pkgs: U.objDefault(pkgs),
         exports: exports,
     },
@@ -181,12 +206,17 @@
                 [P.simplify(pkg)] + simpleDeps,
 
         simplify(pkg): {
+            [wake.F_TYPE]: pkg[wake.F_TYPE],
+            [wake.F_STATE]: pkg[wake.F_STATE],
+
             local onlyIdOrUnresolved = function(dep)
                 if U.isUnresolved(dep) then
                     dep
                 else
                     dep.pkgId,
 
+            defPaths: pkg.defPaths,
+            paths: pkg.paths,
             pkgId: pkg.pkgId,
             pkgs: {
                 [dep]: onlyIdOrUnresolved(pkg.pkgs[dep])

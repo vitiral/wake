@@ -123,7 +123,6 @@ class PkgConfig(object):
         return manifest_jsonnet(self.run)
 
 
-
 class Config(object):
     def __init__(self):
         self.user_path = abspath(os.getenv("WAKEPATH", "~/.wake"))
