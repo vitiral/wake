@@ -136,7 +136,7 @@
         hash: hash,
         name: name,
         version: version,
-        namespace: namespace,
+        namespace: U.stringDefault(namespace),
         pkgId: wake.pkgId(name, version, namespace, hash),
 
         defPaths: U.arrayDefault(defPaths),
@@ -208,6 +208,11 @@
         simplify(pkg): {
             [wake.F_TYPE]: pkg[wake.F_TYPE],
             [wake.F_STATE]: pkg[wake.F_STATE],
+            pkgId: pkg.pkgId,
+            name: pkg.name,
+            version: pkg.version,
+            namespace: pkg.namespace,
+            hash: pkg.hash,
 
             local onlyIdOrUnresolved = function(dep)
                 if U.isUnresolved(dep) then
@@ -217,7 +222,6 @@
 
             defPaths: pkg.defPaths,
             paths: pkg.paths,
-            pkgId: pkg.pkgId,
             pkgs: {
                 [dep]: onlyIdOrUnresolved(pkg.pkgs[dep])
                 for dep in std.objectFields(pkg.pkgs)

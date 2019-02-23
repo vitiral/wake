@@ -1,13 +1,23 @@
 from wakedev import *
 from wakehash import *
 
+
 class PkgSimple(object):
     """Pull out only the data we care about."""
-    def __init__(self, pkgId, paths, def_paths):
-        self._assert_paths(paths)
-        self._assert_paths(def_paths)
+    def __init__(self, pkg_id, name, version, namespace, hash_, paths, def_paths):
+        expected_pkg_id = [name, version, namespace, hash_]
+        assert expected_pkg_id == pkg_id.split(','), (
+            "pkgId != 'name,version,namespace,hash':\n{}\n{}".format(
+                pkg_id, expected_pkg_id))
 
-        self.pkgId = pkgId
+        assert_valid_paths(paths)
+        assert_valid_paths(def_paths)
+
+        self.pkg_id = pkg_id
+        self.name = name
+        self.namespace = namespace
+        self.hash = hash_
+
         self.paths = paths
         self.def_paths = def_paths
 
@@ -15,14 +25,13 @@ class PkgSimple(object):
     def from_dict(cls, dct):
         return cls(
             dct['pkgId'],
+            dct['name'],
+            dct['version'],
+            dct['namespace'],
+            dct['hash'],
             dct['paths'],
             dct['defPaths'],
         )
-
-    def _assert_paths(self, paths):
-        invalid_components = {'.', '..'}
-        for p in paths:
-            assert_valid_path(p)
 
 
 class PkgConfig(object):
@@ -73,8 +82,8 @@ class PkgConfig(object):
             "hashType": hashstuff.hash_type,
         }
 
-    def paths_abs(self, paths):
-        return map(lambda p: pjoin(self.base, p), paths)
+    def paths_abs(self, relpaths):
+        return map(lambda p: pjoin(self.base, p), relpaths)
 
     def dump_pkg_meta(self):
         dumpf(self.pkg_meta, '{"hash": "--fake hash--", "hashType": "fake"}')
@@ -94,3 +103,16 @@ class PkgConfig(object):
         finally:
             self.remove_pkg_wake()
         return PkgSimple.from_dict(root)
+
+    def assert_meta_matches(self, pkgSimple, check_against=None):
+        """Assert that the defined metas all match.
+
+        pkgId should be the pkgId obtained from ``compute_root()``.
+        """
+        meta = self.get_current_meta()
+        computed = self.compute_pkg_meta()
+        assert meta == computed, "own meta does not match."
+
+        if check_against is not None:
+            assert meta == check_against
+

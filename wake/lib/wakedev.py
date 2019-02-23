@@ -101,6 +101,9 @@ def dumpf(path, s):
     with open(path, 'w') as f:
         f.write(s)
 
+def assert_valid_paths(paths):
+    for p in paths:
+        assert_valid_path(p)
 
 def assert_valid_path(p):
     if not p.startswith("./"):
