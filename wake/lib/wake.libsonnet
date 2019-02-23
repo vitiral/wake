@@ -2,11 +2,6 @@
     local wake = self,
     local U = wake.util,
 
-    user(username, email=null): {
-        username: username,
-        email: email,
-    },
-
     // A pkg requirement with a semantic version.
     //
     // This is used as (partof) the filepath for pkgs and modules.
@@ -53,7 +48,7 @@
     pkgId(name, version, namespace, hash):
         assert std.isString(hash) : "hash must be string";
         // Note: the version must be an exact semver, but is checked later.
-        "%s|%s" % [
+        "%s,%s" % [
             wake.pkgReq(name, version, namespace),
             hash,
         ],

@@ -1,8 +1,10 @@
+local meta = import "PKG.meta";
+
 function(wake) {
     local util = wake.util,
 
     result: wake.declarePkg(
-        hash="ae92kd",
+        hash=meta.hash,
         name="wake",
         version="0.1.0",
         pkgs= {

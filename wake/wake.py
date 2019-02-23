@@ -105,8 +105,8 @@ class Config(object):
 
 
     def remove_cache(self):
-        if path.exists(pkg.wake):
-            shutil.rmtree(pkg.wake)
+        if path.exists(self.pkg_wake):
+            shutil.rmtree(self.pkg_wake)
 
         if path.exists(self.cache_defined):
             for d in os.listdir(self.cache_defined):
