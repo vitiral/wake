@@ -49,10 +49,12 @@ class Config(object):
 
         dumpf(self.run, runtxt)
 
-        return manifest_jsonnet(self.run)
+        manifest = manifest_jsonnet(self.run)
+        return PkgManifest.from_dict(manifest)
+
 
     def compute_pkg_meta(self, pkg_config):
-        root = self.compute_simplepkg(pkg_config)
+        root = self.run_pkg(pkg_config).root
 
         hashstuff = HashStuff(pkg_config.base)
         hashstuff.update_file(pkg_config.pkg_root)
@@ -63,11 +65,6 @@ class Config(object):
             "hashType": hashstuff.hash_type,
         }
 
-    def compute_simplepkg(self, pkg_config):
-        """Use some shenanigans to get the pkg info."""
-        root = self.run_pkg(pkg_config)['root']
-        return PkgSimple.from_dict(root)
-
     def dump_pkg_meta(self, pkg_config):
         dumpf(pkg_config.pkg_meta, '{"hash": "--fake hash--", "hashType": "fake"}')
         meta = self.compute_pkg_meta(pkg_config)
@@ -76,16 +73,16 @@ class Config(object):
         return meta
 
     def handle_unresolved_pkg(self, pkg):
-        from_ = pkg['from']
+        from_ = pkg.from_
         if not isinstance(from_, str):
             raise NotYetImplementedError()
         else:
             # from_ is a path
             # TODO: something is wrong here... the path needs to be made absolute
-            pkg_config = PkgConfig(from_)
-            self.dump_pkg_meta(pkg_config)
-            pkg = self.compute_simplepkg(pkg_config)
-            self.store.add_pkg_path(pkg_config, pkg)
+            from_config = PkgConfig(from_)
+            self.dump_pkg_meta(from_config)
+            pkg = self.run_pkg(from_config).root
+            self.store.add_pkg_path(from_config, pkg)
 
     def create_defined_pkgs(self, pkgs_defined):
         out = ["{"]
@@ -102,15 +99,20 @@ class Config(object):
 def run_cycle(config):
     root_config = config.root_config
 
-    manifest = config.run_pkg(root_config)
-    pkgs = manifest['all']
+    pkgs = config.run_pkg(root_config).all
 
     num_unresolved = 0
     for pkg in pkgs:
-        assert is_pkg(pkg)
-        if is_unresolved(pkg):
+        if isinstance(pkg, PkgUnresolved):
             num_unresolved += 1
             config.handle_unresolved_pkg(pkg)
+
+
+def store_local(config, base_path):
+    """Recursively traverse local dependencies, putting them in the store.
+    """
+    base_config = PkgConfig(base_path)
+    base_pkg = config.run_pkg(base_config)
 
 
 def build(args):
@@ -123,7 +125,18 @@ def build(args):
         config.remove_caches()
     config.init()
 
-    print("-> recomputing .wake/fingerprint.json")
+    print("-> recomputing fingerprint")
+    # TODO: this needs to be reworked. The solution also solves pkg overrides!
+    # - Compute the hash of this pkg, by traversing all local dependencies
+    #   first and computing their hashes
+    # - When a local pkg's hash has been computed, put it in the `store.localPkgs`.
+    #   This is a special place in the store that overrides pkgs for _only this
+    #   directory_. (It is actually located in .wake/store/localPkgs). Also, the
+    #   pkg names there don't include the hash (will be overriden if hash changes)
+    # - This goes all the way down, until the rootPkg's hash has been computed and
+    #   is stored in the local store.
+    # - When retieving pkgs, we first check if the VERSION is in the local store.
+    #   if it is, we take it.
     config.dump_pkg_meta(root_config)
 
     print("-> Starting build cycles")
@@ -131,7 +144,7 @@ def build(args):
     run_cycle(config)
 
     print("## MANIFEST")
-    pp(config.run_pkg(root_config))
+    pp(config.run_pkg(root_config).to_dict())
 
 
 def parse_args(argv):
