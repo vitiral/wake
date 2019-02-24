@@ -244,7 +244,7 @@ Arguments:
   This also contains the version of `wake` used to create the pkg. This also
   includes the version of wake used to create this file, which is used for
   debugging purposes only.
-- `_wake_/`: this directory is created automatically and must NOT exist. Can be
+- `.wake/`: this directory is created automatically and must NOT exist. Can be
   overriden with the `outputsDir`.
 - `.wake.jsonnet`: can be located in the `$base/.wake.jsonnet` file of any pkg.
   Is is a jsonnet file that must not contain any imports, since it is used
@@ -253,12 +253,12 @@ Arguments:
   fields:
   - `pkgLib`: override the location of `PKG.libsonnet`
   - `pkgMeta: override the location of `PKG.meta`
-  - `wakeDir`: override the location of `_wake_/`. Must be a local path with a
+  - `wakeDir`: override the location of `.wake/`. Must be a local path with a
     single component.
 
 ### [[.outputs]]
 
-The `_wake_/` folder contains
+The `.wake/` folder contains
 - `pkg.json` and `module.json`: the fully instantiated config manifest for a
   pkg and module, exists only when the pkg is `pkg-complete` or ready to be
   builtin a container (respectively). This has all of the same fields and data

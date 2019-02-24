@@ -45,13 +45,13 @@ There are several items that require actions:
 
 ## [[.pkg_complete]]
 The pkg-complete phase is the first phase. A jsonnet file is created in
-`$PWD/_wake_/pkgInit.jsonnet` containing:
+`$PWD/.wake/pkgInit.jsonnet` containing:
 
 ```
 // instantiate the wake library and user overrides.
 local wakelib = import {WAKEPATH}/lib/wake.jsonnet;
 local user = (import {WAKEPATH}/user.libsonnet)(wakelib);
-local pkgsDef = (import "{PWD}/_wake_/pkgDefs.jsonnet")
+local pkgsDef = (import "{PWD}/.wake/pkgDefs.jsonnet")
 
 local wake =
     wakelib    // the base library
@@ -121,7 +121,7 @@ internet.
 ## [[.module_complete]] phase
 
 The cmdline specifies which modules of `pkg` should be built. A jsonnet file
-is created in `$PWD/_wake_/module|{key}|init.jsonnet` containing:
+is created in `$PWD/.wake/module|{key}|init.jsonnet` containing:
 
 ```
 // instantiate the wake library and user overrides.

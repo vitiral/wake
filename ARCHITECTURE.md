@@ -282,14 +282,14 @@ Packages are retrieved and resolved thusly:
 1. `myPkg.pkgs` includes a call to `getPkg(otherPkg)`
 1. The `wake_pkg_resolver` is executed with the same args passed to `getPkg`.
    This must check if the `pkg` currently exists, error check it, and create
-   a symlink in `_wake_/pkgs` if it does and return the path. For pkgs to a
+   a symlink in `.wake/pkgs` if it does and return the path. For pkgs to a
    local path, it must put the pkg in universal storage and return the symlink.
 1. If the pkg does not exist, the `getPkg` is passed to the pkg in `exec`. If
    that pkg doesn't exist, it waits until it does. The exec pkg must download
-   the pkg to `_wake_/downloaded/pkgs/<pkg-id>` and return that path.
+   the pkg to `.wake/downloaded/pkgs/<pkg-id>` and return that path.
 1. The `wake_pkg_resolver` will again be called with the downloaded path. It
    should move the files to their proper place and create a synmlink in
-   `_wake_/pkgs`
+   `.wake/pkgs`
 
 
 ### Consideration of version changes as cycles progress
@@ -430,7 +430,7 @@ Arguments:
   This also contains the version of `wake` used to create the pkg. This also
   includes the version of wake used to create this file, which is used for
   debugging purposes only.
-- `_wake_/`: this directory is created automatically and must NOT exist. Can be
+- `.wake/`: this directory is created automatically and must NOT exist. Can be
   overriden with the `outputsDir`.
 - `.wake.jsonnet`: can be located in the `$base/.wake.jsonnet` file of any pkg.
   Is is a jsonnet file that must not contain any imports, since it is used
@@ -439,12 +439,12 @@ Arguments:
   fields:
   - `pkgLib`: override the location of `PKG.libsonnet`
   - `pkgMeta: override the location of `PKG.meta`
-  - `wakeDir`: override the location of `_wake_/`. Must be a local path with a
+  - `wakeDir`: override the location of `.wake/`. Must be a local path with a
     single component.
 
 ### <span title="Not Implemented" style="color: #FF4136"><b><i>.outputs</i></b></span>
 
-The `_wake_/` folder contains
+The `.wake/` folder contains
 - `container.json`: metadata around the container the pkg is executing within,
   such as platform information. Exists only in the exec container.
 - `pkg.json` and `module.json`: the fully instantiated config manifest for a
