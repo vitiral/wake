@@ -23,7 +23,6 @@ class Config(object):
         self.store.init_store()
 
     def remove_caches(self):
-        self.pkg_config.remove_pkg_wake()
         self.store.remove_store()
 
     def handle_unresolved_pkg(self, pkg):

@@ -53,7 +53,6 @@ class PkgConfig(object):
         self.pkgs_defined = pjoin(self.pkg_wake, "pkgsDefined.jsonnet")
 
     def init_pkg_wake(self):
-        """Create a simple linked sandbox."""
         assert path.exists(self.base)
         assert path.exists(self.pkg_root)
 
@@ -66,10 +65,6 @@ class PkgConfig(object):
 
         dumpf(self.run, runtxt)
         dumpf(self.pkgs_defined, "{}")
-
-    def remove_pkg_wake(self):
-        if path.exists(self.pkg_wake):
-            shutil.rmtree(self.pkg_wake)
 
     def get_current_meta(self):
         if not path.exists(self.pkg_meta):
@@ -84,8 +79,6 @@ class PkgConfig(object):
         hashstuff.update_file(self.pkg_root)
         hashstuff.update_paths(self.paths_abs(root.paths))
         hashstuff.update_paths(self.paths_abs(root.def_paths))
-
-        self.remove_pkg_wake()
         return {
             "hash": hashstuff.reduce(),
             "hashType": hashstuff.hash_type,
@@ -110,10 +103,7 @@ class PkgConfig(object):
     def compute_simplepkg(self):
         """Use some shenanigans to get the pkg info."""
         self.init_pkg_wake()
-        try:
-            root = self.manifest_pkg()['root']
-        finally:
-            self.remove_pkg_wake()
+        root = self.manifest_pkg()['root']
         return PkgSimple.from_dict(root)
 
     def assert_meta_matches(self, pkgSimple, check_against=None):
