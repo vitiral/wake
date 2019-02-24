@@ -52,7 +52,6 @@ class Config(object):
         manifest = manifest_jsonnet(self.run)
         return PkgManifest.from_dict(manifest)
 
-
     def compute_pkg_meta(self, pkg_config):
         root = self.run_pkg(pkg_config).root
 
@@ -60,17 +59,13 @@ class Config(object):
         hashstuff.update_file(pkg_config.pkg_root)
         hashstuff.update_paths(pkg_config.paths_abs(root.paths))
         hashstuff.update_paths(pkg_config.paths_abs(root.def_paths))
-        return {
-            "hash": hashstuff.reduce(),
-            "hashType": hashstuff.hash_type,
-        }
+        return Fingerprint(hash_=hashstuff.reduce(), hash_type=hashstuff.hash_type)
 
     def dump_pkg_meta(self, pkg_config):
         dumpf(pkg_config.pkg_meta, '{"hash": "--fake hash--", "hashType": "fake"}')
-        meta = self.compute_pkg_meta(pkg_config)
-        pp(meta)
-        jsondumpf(pkg_config.pkg_meta, meta, indent=4)
-        return meta
+        fingerprint = self.compute_pkg_meta(pkg_config)
+        jsondumpf(pkg_config.pkg_meta, fingerprint.to_dict(), indent=4)
+        return fingerprint
 
     def handle_unresolved_pkg(self, pkg):
         from_ = pkg.from_

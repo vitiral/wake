@@ -26,6 +26,25 @@ class PkgManifest(object):
             "all": [p.to_dict() for p in self.all],
         }
 
+class Fingerprint(object):
+    def __init__(self, hash_, hash_type):
+        self.hash = hash_
+        self.hash_type = hash_type
+
+    @classmethod
+    def from_dict(cls, dct):
+        return cls(
+            hash_=dct['hash'],
+            hash_type=dct['hash_type']
+        )
+
+    def to_dict(self):
+        return {
+            'hash': self.hash,
+            'hashType': self.hash_type,
+        }
+
+
 class PkgSimple(object):
     """Pull out only the data we care about."""
     def __init__(self, state, pkg_id, name, version, namespace, fingerprint, paths, def_paths):
