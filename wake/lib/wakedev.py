@@ -16,6 +16,11 @@ MODE = DEBUG
 
 path = os.path
 pjoin = os.path.join
+
+def pjoin(base, p):
+    if p.startswith('./'):
+        p = p[2:]
+    return path.join(base, p)
 def abspath(p):
     return path.abspath(path.expanduser(p))
 def jsonloadf(path):

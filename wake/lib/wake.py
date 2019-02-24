@@ -64,9 +64,9 @@ class Config(object):
         hashstuff.update_paths(pkg_config.paths_abs(root.def_paths))
         return Fingerprint(hash_=hashstuff.reduce(), hash_type=hashstuff.hash_type)
 
-    def dump_pkg_fingerprint(self, pkg_config, deps=None):
-        if deps is not None:
-            jsondumpf(pkg_config.path_local_deps, deps)
+    def dump_pkg_fingerprint(self, pkg_config, local_deps=None):
+        if local_deps:
+            jsondumpf(pkg_config.path_local_deps, local_deps)
         dumpf(pkg_config.pkg_fingerprint, '{"hash": "--fake hash--", "hashType": "fake"}')
         fingerprint = self.compute_pkg_fingerprint(pkg_config)
         jsondumpf(pkg_config.pkg_fingerprint, fingerprint.to_dict(), indent=4)
@@ -111,24 +111,30 @@ def store_local(config, local_abs):
     """Recursively traverse local dependencies, putting them in the store.
     """
     local_config = PkgConfig(local_abs)
-    local_pkg = config.run_pkg(local_config)
+    local_manifest = config.run_pkg(local_config)
 
     # recursively store all local dependencies first
     deps = {}
-    for dep in local_pkg.all:
+    for dep in local_manifest.all:
         if dep.is_unresolved() and dep.is_from_local():
             deps[dep.from_] = store_local(
                 config,
-                path.join(local_abs, dep.from_)
-            )
+                pjoin(local_abs, dep.from_)
+            ).pkg_id
 
     deps = OrderedDict(sorted(deps.items()))
 
     # TODO: we must first write dependency lookups to local store and .wake/
-    fingerprint = config.dump_pkg_fingerprint(local_config)
-    config.store.add_pkg_path(local_config, local_pkg)
+    config.dump_pkg_fingerprint(local_config, deps)
 
-    return # TODO: name with fingerprint
+    local_pkg = config.run_pkg(local_config).root
+    config.store.add_pkg_path(
+        local_config,
+        # Note: we don't pass deps here because we only care about hashes
+        local_pkg
+    )
+
+    return local_pkg
 
 
 def build(args):
@@ -153,11 +159,11 @@ def build(args):
     #   is stored in the local store.
     # - When retieving pkgs, we first check if the VERSION is in the local store.
     #   if it is, we take it.
-    config.dump_pkg_fingerprint(root_config)
+    store_local(config, config.base)
 
     print("-> Starting build cycles")
     # TODO: run in loop
-    run_cycle(config)
+    # run_cycle(config)
 
     print("## MANIFEST")
     pp(config.run_pkg(root_config).to_dict())

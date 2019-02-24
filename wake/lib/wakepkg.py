@@ -169,3 +169,5 @@ class PkgConfig(object):
         if check_against is not None:
             assert fingerprint == check_against
 
+    def __repr__(self):
+        return "PkgConfig({})".format(self.base)
