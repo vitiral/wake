@@ -46,8 +46,8 @@ class PkgConfig(object):
     def __init__(self, base):
         self.base = abspath(base)
         self.pkg_root = pjoin(self.base, "PKG.libsonnet")
-        self.pkg_meta = pjoin(self.base, "PKG.meta")
         self.pkg_wake = pjoin(self.base, ".wake")
+        self.pkg_meta = pjoin(self.pkg_wake, "meta.json")
         self.run = pjoin(self.pkg_wake, "run.jsonnet")
         self.pkgs_defined = pjoin(self.pkg_wake, "pkgsDefined.jsonnet")
 

@@ -1,4 +1,4 @@
-local meta = import "PKG.meta";
+local meta = import ".wake/meta.json";
 
 function(wake) {
     local util = wake.util,
