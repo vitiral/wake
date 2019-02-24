@@ -1,4 +1,4 @@
 /target
 **/*.rs.bk
-_wake_/
+.wake/
 PKG.meta
