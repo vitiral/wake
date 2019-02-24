@@ -1,10 +1,8 @@
-local meta = import ".wake/meta.json";
-
 function(wake) {
     local util = wake.util,
 
     result: wake.declarePkg(
-        hash=meta.hash,
+        fingerprint=import ".wake/fingerprint.json",
         name="wake",
         version="0.1.0",
         paths=[

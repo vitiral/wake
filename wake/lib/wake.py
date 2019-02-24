@@ -71,12 +71,11 @@ def build(args):
         config.remove_caches()
     config.init_store()
 
-    print("-> recomputing PKG.meta")
+    print("-> recomputing .wake/fingerprint.json")
+    pkg_config.init_pkg_wake()
     pkg_config.dump_pkg_meta()
 
     print("-> Starting build cycles")
-    pkg_config.init_pkg_wake()
-
     # TODO: run in loop
     run_cycle(config)
 

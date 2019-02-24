@@ -80,8 +80,8 @@
     //
     // #SPC-api.declarePkg
     declarePkg(
-        // The hash, **imported** from PKG.meta
-        hash,
+        // The fingerprint, **imported** from .wake/fingerprint.json
+        fingerprint,
 
         // The name of the pkg.
         //
@@ -133,11 +133,11 @@
     ): {
         [wake.F_TYPE]: wake.T_PKG,
         [wake.F_STATE]: wake.S_DECLARED,
-        hash: hash,
+        fingerprint: fingerprint,
         name: name,
         version: version,
         namespace: U.stringDefault(namespace),
-        pkgId: wake.pkgId(name, version, namespace, hash),
+        pkgId: wake.pkgId(name, version, namespace, fingerprint.hash),
 
         defPaths: U.arrayDefault(defPaths),
         paths: U.arrayDefault(paths),
@@ -212,7 +212,7 @@
             name: pkg.name,
             version: pkg.version,
             namespace: pkg.namespace,
-            hash: pkg.hash,
+            fingerprint: pkg.fingerprint,
 
             local onlyIdOrUnresolved = function(dep)
                 if U.isUnresolved(dep) then

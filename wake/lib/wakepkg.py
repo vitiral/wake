@@ -4,7 +4,8 @@ from wakehash import *
 
 class PkgSimple(object):
     """Pull out only the data we care about."""
-    def __init__(self, pkg_id, name, version, namespace, hash_, paths, def_paths):
+    def __init__(self, pkg_id, name, version, namespace, fingerprint, paths, def_paths):
+        hash_ = fingerprint['hash']
         expected_pkg_id = [name, version, namespace, hash_]
         assert expected_pkg_id == pkg_id.split(','), (
             "pkgId != 'name,version,namespace,hash':\n{}\n{}".format(
@@ -17,7 +18,7 @@ class PkgSimple(object):
         self.pkg_id = pkg_id
         self.name = name
         self.namespace = namespace
-        self.hash = hash_
+        self.fingerprint = fingerprint
 
         self.paths = paths
         self.def_paths = def_paths
@@ -29,7 +30,7 @@ class PkgSimple(object):
             dct['name'],
             dct['version'],
             dct['namespace'],
-            dct['hash'],
+            dct['fingerprint'],
             dct['paths'],
             dct['defPaths'],
         )
@@ -47,7 +48,7 @@ class PkgConfig(object):
         self.base = abspath(base)
         self.pkg_root = pjoin(self.base, "PKG.libsonnet")
         self.pkg_wake = pjoin(self.base, ".wake")
-        self.pkg_meta = pjoin(self.pkg_wake, "meta.json")
+        self.pkg_meta = pjoin(self.pkg_wake, "fingerprint.json")
         self.run = pjoin(self.pkg_wake, "run.jsonnet")
         self.pkgs_defined = pjoin(self.pkg_wake, "pkgsDefined.jsonnet")
 
