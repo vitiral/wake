@@ -83,8 +83,9 @@ class Config(object):
             # from_ is a path
             # TODO: something is wrong here... the path needs to be made absolute
             pkg_config = PkgConfig(from_)
+            self.dump_pkg_meta(pkg_config)
             pkg = self.compute_simplepkg(pkg_config)
-            self.store.add_pkg_path(from_)
+            self.store.add_pkg_path(pkg_config, pkg)
 
     def create_defined_pkgs(self, pkgs_defined):
         out = ["{"]
@@ -130,7 +131,7 @@ def build(args):
     run_cycle(config)
 
     print("## MANIFEST")
-    pp(config.manifest_pkg(root_config))
+    pp(config.run_pkg(root_config))
 
 
 def parse_args(argv):

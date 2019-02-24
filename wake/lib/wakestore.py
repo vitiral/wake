@@ -17,14 +17,13 @@ class Store(object):
         rmtree(self.pkgs)
 
     def add_pkg_path(self, pkg_config, simple_pkg):
-        pkg_config.assert_meta_matches(simple_pkg)
-
         pcache = pjoin(self.pkgs, simple_pkg.pkg_id)
 
         if os.path.exists(pcache):
             pkg_exists = PkgConfig(pcache)
             metaexists = pkg_exists.get_current_meta()
-            pkg_config.assert_meta_matches(metaexists)
+            # TODO: do this
+            # pkg_config.assert_meta_matches(metaexists)
         else:
             assert path.exists(self.pkgs), self.pkgs
             os.mkdir(pcache)
