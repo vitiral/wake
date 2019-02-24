@@ -47,64 +47,24 @@ class PkgConfig(object):
     def __init__(self, base):
         self.base = abspath(base)
         self.pkg_root = pjoin(self.base, "PKG.libsonnet")
-        self.pkg_wake = pjoin(self.base, ".wake")
-        self.pkg_meta = pjoin(self.pkg_wake, "fingerprint.json")
-        self.run = pjoin(self.pkg_wake, "run.jsonnet")
-        self.pkgs_defined = pjoin(self.pkg_wake, "pkgsDefined.jsonnet")
+        self.wakedir = pjoin(self.base, ".wake")
+        self.pkg_meta = pjoin(self.wakedir, "fingerprint.json")
 
-    def init_pkg_wake(self):
+    def init_wakedir(self):
         assert path.exists(self.base)
         assert path.exists(self.pkg_root)
-
-        os.makedirs(self.pkg_wake, exist_ok=True)
-        runtxt = RUN_TEMPLATE.format(
-            wakelib=wakelib,
-            pkgs_defined=self.pkgs_defined,
-            pkg_root=self.pkg_root,
-        )
-
-        dumpf(self.run, runtxt)
-        dumpf(self.pkgs_defined, "{}")
+        os.makedirs(self.wakedir, exist_ok=True)
 
     def get_current_meta(self):
         if not path.exists(self.pkg_meta):
             return None
         return jsonloadf(self.pkg_meta)
 
-    def compute_pkg_meta(self):
-        self.init_pkg_wake()
-        root = self.compute_simplepkg()
-
-        hashstuff = HashStuff(self.base)
-        hashstuff.update_file(self.pkg_root)
-        hashstuff.update_paths(self.paths_abs(root.paths))
-        hashstuff.update_paths(self.paths_abs(root.def_paths))
-        return {
-            "hash": hashstuff.reduce(),
-            "hashType": hashstuff.hash_type,
-        }
-
     def path_abs(self, relpath):
         return pjoin(self.base, relpath)
 
     def paths_abs(self, relpaths):
         return map(self.path_abs, relpaths)
-
-    def dump_pkg_meta(self):
-        dumpf(self.pkg_meta, '{"hash": "--fake hash--", "hashType": "fake"}')
-        meta = self.compute_pkg_meta()
-        pp(meta)
-        jsondumpf(self.pkg_meta, meta, indent=4)
-        return meta
-
-    def manifest_pkg(self):
-        return manifest_jsonnet(self.run)
-
-    def compute_simplepkg(self):
-        """Use some shenanigans to get the pkg info."""
-        self.init_pkg_wake()
-        root = self.manifest_pkg()['root']
-        return PkgSimple.from_dict(root)
 
     def assert_meta_matches(self, pkgSimple, check_against=None):
         """Assert that the defined metas all match.

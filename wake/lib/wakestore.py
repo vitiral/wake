@@ -16,25 +16,22 @@ class Store(object):
         rmtree(self.defined)
         rmtree(self.pkgs)
 
-    def add_pkg_path(self, localpath):
-        assert_valid_path(localpath)
-        localconfig = PkgConfig(localpath)
-        localpkg = localconfig.compute_simplepkg()
-        localconfig.assert_meta_matches(localpkg)
+    def add_pkg_path(self, pkg_config, simple_pkg):
+        pkg_config.assert_meta_matches(simple_pkg)
 
-        pcache = pjoin(self.pkgs, localpkg.pkg_id)
+        pcache = pjoin(self.pkgs, simple_pkg.pkg_id)
 
         if os.path.exists(pcache):
             pkg_exists = PkgConfig(pcache)
             metaexists = pkg_exists.get_current_meta()
-            localconfig.assert_meta_matches(metaexists)
+            pkg_config.assert_meta_matches(metaexists)
         else:
             assert path.exists(self.pkgs), self.pkgs
             os.mkdir(pcache)
-            for fsentry_rel in localpkg.get_fsentries():
+            for fsentry_rel in simple_pkg.get_fsentries():
                 assert_valid_path(fsentry_rel)
-                copy_fsentry(localconfig.path_abs(fsentry_rel), path.join(pcache, fsentry_rel))
+                copy_fsentry(pkg_config.path_abs(fsentry_rel), path.join(pcache, fsentry_rel))
 
             # TODO: load, validate hash, validate that .wake doesn't exist, etc
-            copy_fsentry(localconfig.pkg_meta, pcache)
+            copy_fsentry(pkg_config.pkg_meta, pcache)
 
