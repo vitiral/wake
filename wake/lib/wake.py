@@ -65,8 +65,9 @@ class Config(object):
         return Fingerprint(hash_=hashstuff.reduce(), hash_type=hashstuff.hash_type)
 
     def dump_pkg_fingerprint(self, pkg_config, local_deps=None):
-        if local_deps:
-            jsondumpf(pkg_config.path_local_deps, local_deps)
+        local_deps = local_deps or {}
+        jsondumpf(pkg_config.path_local_deps, local_deps)
+
         dumpf(pkg_config.pkg_fingerprint, '{"hash": "--fake hash--", "hashType": "fake"}')
         fingerprint = self.compute_pkg_fingerprint(pkg_config)
         jsondumpf(pkg_config.pkg_fingerprint, fingerprint.to_dict(), indent=4)

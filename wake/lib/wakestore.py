@@ -29,7 +29,7 @@ class Store(object):
             os.mkdir(pcache)
             for fsentry_rel in simple_pkg.get_fsentries():
                 assert_valid_path(fsentry_rel)
-                copy_fsentry(pkg_config.path_abs(fsentry_rel), path.join(pcache, fsentry_rel))
+                copy_fsentry(pkg_config.path_abs(fsentry_rel), pjoin(pcache, fsentry_rel))
 
             # TODO: load, validate hash, validate that .wake doesn't exist, etc
             copy_fsentry(pkg_config.pkg_fingerprint, pcache)

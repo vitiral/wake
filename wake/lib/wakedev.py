@@ -54,6 +54,13 @@ S_DECLARED = wakeConstants["S_DECLARED"]
 S_DEFINED = wakeConstants["S_DEFINED"]
 S_COMPLETED = wakeConstants["S_COMPLETED"]
 
+## COMMON PATHS
+DIR_WAKE = ".wake"
+
+FILE_PKG = "PKG.libsonnet"
+FILE_LOCAL_DEPS = "localDeps.json"
+FILE_FINGERPRINT = "fingerprint.json"
+
 ## FILE WRITERS
 
 RUN_TEMPLATE = """
@@ -114,6 +121,9 @@ def copy_fsentry(src, dst):
 
     This fully copies all files, following symlinks to copy the data.
     """
+    dstdir = path.dirname(dst)
+    if dstdir and not os.path.exists(dstdir):
+        os.makedirs(dstdir, exist_ok=True)
 
     if path.isfile(src):
         shutil.copy(src, dst)

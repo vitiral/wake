@@ -58,7 +58,8 @@ class PkgSimple(object):
         assert_valid_paths(def_paths)
 
         self.state = state
-        self.pkg_root = "./PKG.libsonnet"
+        self.pkg_root = path.join("./", FILE_PKG)
+        self.pkg_local_deps = path.join("./", DIR_WAKE, FILE_LOCAL_DEPS)
         self.pkg_id = pkg_id
         self.name = name
         self.namespace = namespace
@@ -94,7 +95,8 @@ class PkgSimple(object):
 
     def get_def_fsentries(self):
         """Return all defined pkgs, including root."""
-        return itertools.chain((self.pkg_root,), self.def_paths)
+        default = [self.pkg_root, self.pkg_local_deps]
+        return itertools.chain(default, self.def_paths)
 
     def get_fsentries(self):
         return itertools.chain(self.get_def_fsentries(), self.paths)
@@ -140,8 +142,8 @@ class PkgConfig(object):
         self.base = abspath(base)
         self.pkg_root = pjoin(self.base, "PKG.libsonnet")
         self.wakedir = pjoin(self.base, ".wake")
-        self.pkg_fingerprint = pjoin(self.wakedir, "fingerprint.json")
-        self.path_local_deps = pjoin(self.wakedir, "local.json")
+        self.pkg_fingerprint = pjoin(self.wakedir, FILE_FINGERPRINT)
+        self.path_local_deps = pjoin(self.wakedir, FILE_LOCAL_DEPS)
 
     def init_wakedir(self):
         assert path.exists(self.base)
