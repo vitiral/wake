@@ -56,12 +56,17 @@ class Config(object):
         root = self.run_pkg(pkg_config).root
 
         hashstuff = HashStuff(pkg_config.base)
+        if path.exists(pkg_config.path_local_deps):
+            hashstuff.update_file(pkg_config.path_local_deps)
+
         hashstuff.update_file(pkg_config.pkg_root)
         hashstuff.update_paths(pkg_config.paths_abs(root.paths))
         hashstuff.update_paths(pkg_config.paths_abs(root.def_paths))
         return Fingerprint(hash_=hashstuff.reduce(), hash_type=hashstuff.hash_type)
 
-    def dump_pkg_fingerprint(self, pkg_config):
+    def dump_pkg_fingerprint(self, pkg_config, deps=None):
+        if deps is not None:
+            jsondumpf(pkg_config.path_local_deps, deps)
         dumpf(pkg_config.pkg_fingerprint, '{"hash": "--fake hash--", "hashType": "fake"}')
         fingerprint = self.compute_pkg_fingerprint(pkg_config)
         jsondumpf(pkg_config.pkg_fingerprint, fingerprint.to_dict(), indent=4)
@@ -88,7 +93,6 @@ class Config(object):
         return "\n".join(out)
 
 
-
 ## COMMANDS AND MAIN
 
 def run_cycle(config):
@@ -103,11 +107,28 @@ def run_cycle(config):
             config.handle_unresolved_pkg(pkg)
 
 
-def store_local(config, base_path):
+def store_local(config, local_abs):
     """Recursively traverse local dependencies, putting them in the store.
     """
-    base_config = PkgConfig(base_path)
-    base_pkg = config.run_pkg(base_config)
+    local_config = PkgConfig(local_abs)
+    local_pkg = config.run_pkg(local_config)
+
+    # recursively store all local dependencies first
+    deps = {}
+    for dep in local_pkg.all:
+        if dep.is_unresolved() and dep.is_from_local():
+            deps[dep.from_] = store_local(
+                config,
+                path.join(local_abs, dep.from_)
+            )
+
+    deps = OrderedDict(sorted(deps.items()))
+
+    # TODO: we must first write dependency lookups to local store and .wake/
+    fingerprint = config.dump_pkg_fingerprint(local_config)
+    config.store.add_pkg_path(local_config, local_pkg)
+
+    return # TODO: name with fingerprint
 
 
 def build(args):

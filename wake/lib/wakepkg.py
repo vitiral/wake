@@ -99,9 +99,16 @@ class PkgSimple(object):
     def get_fsentries(self):
         return itertools.chain(self.get_def_fsentries(), self.paths)
 
+    def is_unresolved(self):
+        return False
+
 
 class PkgUnresolved(object):
     def __init__(self, pkg_req, from_):
+        if isinstance(from_, str) and not from_.startswith('./'):
+            raise TypeError(
+                "{}: from must start with ./ for local pkgs: {}"
+                .format(pkg_req, from_))
         self.pkg_req = pkg_req
         self.from_ = from_
 
@@ -122,6 +129,11 @@ class PkgUnresolved(object):
             'from': self.from_,
         }
 
+    def is_unresolved(self):
+        return True
+
+    def is_from_local(self):
+        return isinstance(self.from_, str)
 
 class PkgConfig(object):
     def __init__(self, base):
@@ -129,6 +141,7 @@ class PkgConfig(object):
         self.pkg_root = pjoin(self.base, "PKG.libsonnet")
         self.wakedir = pjoin(self.base, ".wake")
         self.pkg_fingerprint = pjoin(self.wakedir, "fingerprint.json")
+        self.path_local_deps = pjoin(self.wakedir, "local.json")
 
     def init_wakedir(self):
         assert path.exists(self.base)
