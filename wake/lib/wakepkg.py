@@ -128,17 +128,17 @@ class PkgConfig(object):
         self.base = abspath(base)
         self.pkg_root = pjoin(self.base, "PKG.libsonnet")
         self.wakedir = pjoin(self.base, ".wake")
-        self.pkg_meta = pjoin(self.wakedir, "fingerprint.json")
+        self.pkg_fingerprint = pjoin(self.wakedir, "fingerprint.json")
 
     def init_wakedir(self):
         assert path.exists(self.base)
         assert path.exists(self.pkg_root)
         os.makedirs(self.wakedir, exist_ok=True)
 
-    def get_current_meta(self):
-        if not path.exists(self.pkg_meta):
+    def get_current_fingerprint(self):
+        if not path.exists(self.pkg_fingerprint):
             return None
-        return jsonloadf(self.pkg_meta)
+        return jsonloadf(self.pkg_fingerprint)
 
     def path_abs(self, relpath):
         return pjoin(self.base, relpath)
@@ -146,13 +146,13 @@ class PkgConfig(object):
     def paths_abs(self, relpaths):
         return map(self.path_abs, relpaths)
 
-    def assert_meta_matches(self, pkgSimple, check_against=None):
-        """Assert that the defined metas all match.
+    def assert_fingerprint_matches(self, pkgSimple, check_against=None):
+        """Assert that the defined fingerprints all match.
         """
-        meta = self.get_current_meta()
-        computed = self.compute_pkg_meta()
-        assert meta == computed, "own meta does not match."
+        fingerprint = self.get_current_fingerprint()
+        computed = self.compute_pkg_fingerprint()
+        assert fingerprint == computed, "own fingerprint does not match."
 
         if check_against is not None:
-            assert meta == check_against
+            assert fingerprint == check_against
 

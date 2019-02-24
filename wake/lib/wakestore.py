@@ -21,9 +21,9 @@ class Store(object):
 
         if os.path.exists(pcache):
             pkg_exists = PkgConfig(pcache)
-            metaexists = pkg_exists.get_current_meta()
+            fingerprintexists = pkg_exists.get_current_fingerprint()
             # TODO: do this
-            # pkg_config.assert_meta_matches(metaexists)
+            # pkg_config.assert_fingerprint_matches(fingerprintexists)
         else:
             assert path.exists(self.pkgs), self.pkgs
             os.mkdir(pcache)
@@ -32,5 +32,5 @@ class Store(object):
                 copy_fsentry(pkg_config.path_abs(fsentry_rel), path.join(pcache, fsentry_rel))
 
             # TODO: load, validate hash, validate that .wake doesn't exist, etc
-            copy_fsentry(pkg_config.pkg_meta, pcache)
+            copy_fsentry(pkg_config.pkg_fingerprint, pcache)
 

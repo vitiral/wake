@@ -27,10 +27,10 @@ class HashStuff(object):
 
     @classmethod
     def from_config(cls, config):
-        meta = config.get_current_meta()
-        if meta is None:
-            fail("{} meta file must exist".format(config.pkg_meta))
-        return cls(config.base, hash_type=meta[F_HASHTYPE])
+        fingerprint = config.get_current_fingerprint()
+        if fingerprint is None:
+            fail("{} fingerprint file must exist".format(config.pkg_fingerprint))
+        return cls(config.base, hash_type=fingerprint[F_HASHTYPE])
 
     def update_paths(self, paths):
         for p in paths:

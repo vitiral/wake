@@ -52,7 +52,7 @@ class Config(object):
         manifest = manifest_jsonnet(self.run)
         return PkgManifest.from_dict(manifest)
 
-    def compute_pkg_meta(self, pkg_config):
+    def compute_pkg_fingerprint(self, pkg_config):
         root = self.run_pkg(pkg_config).root
 
         hashstuff = HashStuff(pkg_config.base)
@@ -61,10 +61,10 @@ class Config(object):
         hashstuff.update_paths(pkg_config.paths_abs(root.def_paths))
         return Fingerprint(hash_=hashstuff.reduce(), hash_type=hashstuff.hash_type)
 
-    def dump_pkg_meta(self, pkg_config):
-        dumpf(pkg_config.pkg_meta, '{"hash": "--fake hash--", "hashType": "fake"}')
-        fingerprint = self.compute_pkg_meta(pkg_config)
-        jsondumpf(pkg_config.pkg_meta, fingerprint.to_dict(), indent=4)
+    def dump_pkg_fingerprint(self, pkg_config):
+        dumpf(pkg_config.pkg_fingerprint, '{"hash": "--fake hash--", "hashType": "fake"}')
+        fingerprint = self.compute_pkg_fingerprint(pkg_config)
+        jsondumpf(pkg_config.pkg_fingerprint, fingerprint.to_dict(), indent=4)
         return fingerprint
 
     def handle_unresolved_pkg(self, pkg):
@@ -75,7 +75,7 @@ class Config(object):
             # from_ is a path
             # TODO: something is wrong here... the path needs to be made absolute
             from_config = PkgConfig(from_)
-            self.dump_pkg_meta(from_config)
+            self.dump_pkg_fingerprint(from_config)
             pkg = self.run_pkg(from_config).root
             self.store.add_pkg_path(from_config, pkg)
 
@@ -132,7 +132,7 @@ def build(args):
     #   is stored in the local store.
     # - When retieving pkgs, we first check if the VERSION is in the local store.
     #   if it is, we take it.
-    config.dump_pkg_meta(root_config)
+    config.dump_pkg_fingerprint(root_config)
 
     print("-> Starting build cycles")
     # TODO: run in loop
