@@ -234,7 +234,7 @@
 
         // A pkg or another fsentry.
         from,
-    ),
+    ): null,
 
     // (#SPC-api.exec): specify an executable from within a pkg and container.
     //

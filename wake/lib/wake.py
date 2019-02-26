@@ -91,8 +91,7 @@ class Config(object):
         if not isinstance(from_, str):
             raise NotYetImplementedError()
         else:
-            # from_ is a path
-            # TODO: something is wrong here... the path needs to be made absolute
+            # TODO: retrieve from local store
             from_config = PkgConfig(from_)
             self.dump_pkg_fingerprint(from_config)
             pkg = self.run_pkg(from_config).root
@@ -101,7 +100,6 @@ class Config(object):
     def create_defined_pkgs(self, pkgs_defined):
         out = ["{"]
 
-        # TODO: write jsonnet
 
         out.append("}")
         return "\n".join(out)
