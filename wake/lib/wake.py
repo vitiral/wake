@@ -23,9 +23,9 @@ class Config(object):
         self.user_path = abspath(os.getenv("WAKEPATH", "~/.wake"))
         self.base = os.getcwd()
 
-        self.root_config = PkgConfig(self.base)
-        self.pkgs_defined = pjoin(self.root_config.wakedir, "pkgsDefined.jsonnet")
-        self.run = pjoin(self.root_config.wakedir, "run.jsonnet")
+        root_config = PkgConfig(self.base)
+        self.pkgs_defined = pjoin(root_config.wakedir, "pkgsDefined.jsonnet")
+        self.run = pjoin(root_config.wakedir, "run.jsonnet")
 
         user_file = pjoin(self.user_path, "user.jsonnet")
         if not path.exists(user_file):
@@ -38,7 +38,6 @@ class Config(object):
         )
 
     def init(self):
-        self.root_config.init_wakedir()
         self.store.init_store()
 
     def remove_caches(self):
@@ -96,7 +95,7 @@ class Config(object):
             raise NotYetImplementedError()
         else:
             # It is a path, it must _already_ be in the store
-            out = self.store.get_pkg_path(pkg.pkg_id, def_okay=True)
+            out = self.store.get_pkg_path(pkg.pkg_req, def_okay=True)
             if out is None:
                 raise ValueError("{} was not in the store".format(pkg.pkg_id))
             return out
@@ -111,9 +110,8 @@ class Config(object):
 
 ## COMMANDS AND MAIN
 
-def run_cycle(config):
-    root_config = config.root_config
-
+def run_cycle(config, root_config):
+    """Run a cycle with the config and root_config at the current setting."""
     pkgs = config.run_pkg(root_config).all
 
     num_unresolved = 0
@@ -157,11 +155,12 @@ def store_local(config, local_abs):
 def build(args):
     config = Config()
     print("## building local pkg {}".format(config.base))
-    root_config = config.root_config
+    root_config = PkgConfig(config.base)
 
     print("-> initializing the global cache")
     if MODE == DEBUG:
         config.remove_caches()
+    root_config.init_wakedir()
     config.init()
 
     print("-> recomputing fingerprint")
@@ -180,7 +179,7 @@ def build(args):
 
     print("-> Starting build cycles")
     # TODO: run in loop
-    # run_cycle(config)
+    run_cycle(config, root_config)
 
     print("## MANIFEST")
     pp(config.run_pkg(root_config).to_dict())
@@ -208,5 +207,14 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    print(sys.argv)
-    main(sys.argv)
+    try:
+        main(sys.argv)
+    except:
+        if MODE == DEBUG:
+            import traceback, pdb
+            extype, value, tb = sys.exc_info()
+            traceback.print_exc()
+            pdb.post_mortem(tb)
+        else:
+            raise
+

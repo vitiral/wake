@@ -10,6 +10,7 @@ import itertools
 from collections import OrderedDict
 
 from pprint import pprint as pp
+from pdb import set_trace
 
 DEBUG = "debug"
 MODE = DEBUG

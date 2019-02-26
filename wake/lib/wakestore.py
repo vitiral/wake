@@ -64,6 +64,7 @@ class Store(object):
             copy_fsentry(pkg_config.pkg_fingerprint, pcache)
 
     def get_pkg_path(self, pkg_id, def_okay=False):
+        set_trace()
         pkgPath = pjoin(self.pkgs_local, pkg_id)
         if os.path.exists(pkgPath):
             return pkgPath
