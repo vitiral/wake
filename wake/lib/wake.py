@@ -32,7 +32,10 @@ class Config(object):
             fail("must instantiate user credentials: " + user_file)
         self.user = manifest_jsonnet(user_file)
 
-        self.store = Store(pjoin(self.user_path, self.user.get('store', 'store')))
+        self.store = Store(
+            self.base,
+            pjoin(self.user_path, self.user.get('store', 'store')),
+        )
 
     def init(self):
         self.root_config.init_wakedir()

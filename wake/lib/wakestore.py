@@ -17,21 +17,27 @@ from wakepkg import *
 
 
 class Store(object):
-    def __init__(self, store_dir):
+    def __init__(self, base, store_dir):
         self.store_dir = store_dir
         self.defined = pjoin(self.store_dir, "pkgsDefined")
         self.pkgs = pjoin(self.store_dir, "pkgs")
+        self.pkgs_local = pjoin(base, "pkgsLocal")
 
     def init_store(self):
+        os.makedirs(self.pkgs_local, exist_ok=True)
         os.makedirs(self.defined, exist_ok=True)
         os.makedirs(self.pkgs, exist_ok=True)
 
     def remove_store(self):
+        rmtree(self.pkgs_local)
         rmtree(self.defined)
         rmtree(self.pkgs)
 
-    def add_pkg_path(self, pkg_config, simple_pkg):
-        pcache = pjoin(self.pkgs, simple_pkg.pkg_id)
+    def add_pkg_path(self, pkg_config, simple_pkg, local=False):
+        if local:
+            pcache = pjoin(self.pkgs_local, simple_pkg.pkg_id)
+        else:
+            pcache = pjoin(self.pkgs, simple_pkg.pkg_id)
 
         if os.path.exists(pcache):
             pkg_exists = PkgConfig(pcache)
@@ -46,5 +52,23 @@ class Store(object):
                 copy_fsentry(pkg_config.path_abs(fsentry_rel), pjoin(pcache, fsentry_rel))
 
             # TODO: load, validate hash, validate that .wake doesn't exist, etc
+            # TODO: write that state=done in fingerprint
             copy_fsentry(pkg_config.pkg_fingerprint, pcache)
+
+
+    def read_pkg_path(self, pkg_id, def_okay=False):
+        pkgPath = pjoin(self.pkgs_local, pkg_id)
+        if os.path.exists(pkgPath):
+            return pkgPath
+
+        pkgPath = pjoin(self.pkgs, pkg_id)
+        if os.path.exists(pkgPath):
+            return pkgPath
+
+        if def_okay:
+            pkgPath = pjoin(self.defined)
+            if os.path.exists(pkgPath):
+                return pkgPath
+
+        return None
 
