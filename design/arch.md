@@ -140,6 +140,9 @@ whereas module inputs remain only pure data.
   - [[.pkgsLibFile]]:  `pkgs.libsonnet` file containing the imports to already
     defined pkgs. This is regenerated each cycle in the **phasePkgComplete**
     with the currently known pkgs.
+  - [[.pkgsLocalLibFile]]: `pkgsLocal.libsonnet` file is identical to `pkgsLibFile`
+    except that it is checked first. If the `pkgReq` exists here then it will
+    override any `getPkg` call.
   - [[.runFile]]: `run.jsonnet` which is used for executing each cycle. Essentially
     each cycle is a call to `jsonnet .wake/run.jsonnet`, with the `pkgsLibFile`
     updated each time.

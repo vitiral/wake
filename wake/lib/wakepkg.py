@@ -115,6 +115,9 @@ class PkgSimple(object):
     def get_fsentries(self):
         return itertools.chain(self.get_def_fsentries(), self.paths)
 
+    def get_pkg_req(self):
+        """Convert to just the pkg req key (no hash)."""
+
     def is_unresolved(self):
         return False
 
@@ -158,6 +161,7 @@ class PkgConfig(object):
         self.wakedir = pjoin(self.base, ".wake")
         self.pkg_fingerprint = pjoin(self.wakedir, FILE_FINGERPRINT)
         self.path_local_deps = pjoin(self.wakedir, FILE_LOCAL_DEPS)
+        self.pkgs_local_lib = pjoin(self.wakedir, FILE_PKGS_LOCAL_LIB)
 
     def init_wakedir(self):
         assert path.exists(self.base)

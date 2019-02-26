@@ -21,7 +21,7 @@ class Store(object):
         self.store_dir = store_dir
         self.defined = pjoin(self.store_dir, "pkgsDefined")
         self.pkgs = pjoin(self.store_dir, "pkgs")
-        self.pkgs_local = pjoin(base, "pkgsLocal")
+        self.pkgs_local = path.join(base, ".wake", "pkgsLocal")
 
     def init_store(self):
         os.makedirs(self.pkgs_local, exist_ok=True)
@@ -39,6 +39,9 @@ class Store(object):
         else:
             pcache = pjoin(self.pkgs, simple_pkg.pkg_id)
 
+        if path.exists(pcache):
+            return # TODO: check that it is done
+
         if os.path.exists(pcache):
             pkg_exists = PkgConfig(pcache)
             fingerprintexists = pkg_exists.get_current_fingerprint()
@@ -54,7 +57,6 @@ class Store(object):
             # TODO: load, validate hash, validate that .wake doesn't exist, etc
             # TODO: write that state=done in fingerprint
             copy_fsentry(pkg_config.pkg_fingerprint, pcache)
-
 
     def read_pkg_path(self, pkg_id, def_okay=False):
         pkgPath = pjoin(self.pkgs_local, pkg_id)

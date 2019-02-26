@@ -60,12 +60,14 @@ DIR_WAKE = ".wake"
 FILE_PKG = "PKG.libsonnet"
 FILE_LOCAL_DEPS = "localDeps.json"
 FILE_FINGERPRINT = "fingerprint.json"
+FILE_PKGS_LOCAL_LIB = "pkgsLocal.libsonnet"
 
 ## FILE WRITERS
 
 RUN_TEMPLATE = """
 local wakelib = import "{wakelib}";
-local pkgsDefined = (import "{pkgs_defined}");
+local pkgsDefined = import "{pkgs_defined}";
+# local pkgsLocal = import "{pkgs_local}";
 
 local wake =
     wakelib

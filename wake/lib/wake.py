@@ -51,6 +51,7 @@ class Config(object):
             wakelib=wakelib,
             pkgs_defined=self.pkgs_defined,
             pkg_root=pkg_config.pkg_root,
+            pkgs_local=pkg_config.pkgs_local_lib,
         )
 
         with open(self.pkgs_defined, 'w') as fd:
@@ -90,6 +91,7 @@ class Config(object):
         return fingerprint
 
     def handle_unresolved_pkg(self, pkg):
+
         from_ = pkg.from_
         if not isinstance(from_, str):
             raise NotYetImplementedError()
@@ -146,7 +148,8 @@ def store_local(config, local_abs):
     config.store.add_pkg_path(
         local_config,
         # Note: we don't pass deps here because we only care about hashes
-        local_pkg
+        local_pkg,
+        local=True,
     )
 
     return local_pkg
