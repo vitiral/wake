@@ -1,4 +1,4 @@
-# wake: the pkg manager and build system for the web
+# ⏾🌊🛠 **wake** software's true potential
 
 > **!! EXTREMELY EXPERIMENTAL, IN DESIGN !!**
 >
@@ -6,27 +6,29 @@
 > it aims to accomplish is within reach, but is not yet functional. Currently
 > it can only store local dependencies in a store and resolve a local PKG file.
 
-Wake is a functional package manger and build system for the web. Its basic
+**wake** is a functional package manger and build system for the web. Its basic
 architecture is to enable the utmost _simplicity_ and _extensibility_ in a pkg
-and build system. It is inspired from other build tools such as Nix and Bazel,
-but is not related to any of them directly.
+and build system. It is inspired from other build tools such as Nix, Bazel and
+portage but is not related to any of them directly.
 
 Its tennets are:
-- Simplicity: pkg retrieval and module builds are fully reproducible and are
+- **Simplicity**: pkg retrieval and module builds are fully reproducible and are
   simply inputs and outputs which can be hashed. The build language is
   [jsonnet], which is familiar, full featured and easy to understand.
-- Orthogonal features: wake has very few features on its own, letting its
+- **Orthogonal features**: wake has very few features on its own, letting its
   simple extensibility provide features for any specific usecase (large or
-  small).
-- Build once, build anywhere: arbitrary containers are supported nearly natively,
-  allowing developers and organizations to decide how their build system
-  should scale. Once a module is built, it can always be used from the cache
-  without any worry of its determinism.
+  small). Jsonnet is kept pure (no native extenstions), while analyzing the
+  build tree is done in easy to understand (and debug) cycles.
+- **Build once, build anywhere**: specificying containers or pkg retrievers is
+  done inline with the rest of the build system, allowing developers and
+  organizations to fully control how their build system should scale. Once a
+  module is built, it can always be used from the cache without any worry of
+  its determinism.
 
 The basic questions that wake is trying to answer is "why is it so hard
 to include software as a dependency" and "why do I have to rebuild something
-that has already been built by an agent I trust"? Both of these questions
-are ones which wake can and will answer.
+that has already been built with the exact same environment by an agent I
+trust"? Both of these questions are ones which wake can and will answer.
 
 For more information on how wake is being designed, check out the
 [ARCHITECTURE](ARCHITECTURE.md) docs.
