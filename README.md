@@ -2,45 +2,66 @@
 
 > **!! EXTREMELY EXPERIMENTAL, IN DESIGN !!**
 >
-> Status: This project currently has a nearly valid libsonnet file and some
-> experimental rust code... and that is it.
+> Status: this project has demonstrated (to the author) that the functionality
+> it aims to accomplish is within reach, but is not yet functional. Currently
+> it can only store local dependencies in a store and resolve a local PKG file.
 
-Wake is a functional package manger for the web. Its basic architecture is to
-enable the utmost _simplicity_ in a pkg and build system. It is inspired from
-other build tools such as Nix and Bazel, but is not related to any of them
-directly.
+Wake is a functional package manger and build system for the web. Its basic
+architecture is to enable the utmost _simplicity_ and _extensibility_ in a pkg
+and build system. It is inspired from other build tools such as Nix and Bazel,
+but is not related to any of them directly.
 
 Its tennets are:
 - Simplicity: pkg retrieval and module builds are fully reproducible and are
-  simply inputs and outputs which can be hashed.
+  simply inputs and outputs which can be hashed. The build language is
+  [jsonnet], which is familiar, full featured and easy to understand.
 - Orthogonal features: wake has very few features on its own, letting its
   simple extensibility provide features for any specific usecase (large or
   small).
-- [jsonnet]: all configuration is jsonnet, which reduces to json when
-  executing in wasm. [jsonnet] is a highly intuitive language made in the
-  crucible of Google's configuration languages.
+- Build once, build anywhere: arbitrary containers are supported nearly natively,
+  allowing developers and organizations to decide how their build system
+  should scale. Once a module is built, it can always be used from the cache
+  without any worry of its determinism.
 
-Wake diverges heavily from Nix and Blaze:
-- Its goal (as a language) is to be _both_ a first-class pkg manager and a
-  first class build system.
-- Wake uses the [jsonnet] language for constructing its pkg and module (build)
-  objects and provides very little functionality by itself.
-- Wake is not built for any specific system, allowing globals to define usecase
-  specific functionality.
-- Wake has the concept of `sideEffects`, which are non-deterministic operations
-  that can be executed on top of a build in order to (for example) run tests,
-  start servers, analyze data, etc.
+The basic questions that wake is trying to answer is "why is it so hard
+to include software as a dependency" and "why do I have to rebuild something
+that has already been built by an agent I trust"? Both of these questions
+are ones which wake can and will answer.
 
 For more information on how wake is being designed, check out the
 [ARCHITECTURE](ARCHITECTURE.md) docs.
 
 [jsonnet]: https://jsonnet.org/
 
+
 ## Future goals
-Wake intends to provide a build-path to enable webassembly only building, where
-all executables are `.wasm` (which could produce binaries for any platform).
-This dream is still a _long_ ways away, but props to projects like
-[wasmer](https://wasmer.io/) for building the necessary infrastructure.
+Wake is currently in the early implementation phase. The following features are planned
+before version 0.1.0 (alpha):
+
+- (60% complete) `wake.libsonnet` library
+- (90% complete) local pkg resolution overrides
+- (0% complete) `pkg-retrieval` plugin
+- (0% complete) `fsentry-resolver` plugin
+- (0% complete) pkg tree resolution
+- (0% complete) exec implementation
+- (0% complete) exec.container implementation
+
+It is believed by the author that once the above work is complete, wake will be
+usable as an alpha quality product.
+
+The goals afterwards are:
+- Add a pkg-retriever to retrieve and auto-generate [portage] and ebuild
+  packages, allowing for fast expansion of supported features.
+- Nix-pkg integration (possible)
+- Support of other language rules, especially the google ones.
+
+[portage]: https://wiki.gentoo.org/wiki/Portage
+
+
+# Notice
+I am an employee at google but this software is made soley by me in my freetime
+and is not endorsed or sponsored by google in any way.
+
 
 # LICENSE
 

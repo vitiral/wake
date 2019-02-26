@@ -2,7 +2,19 @@
     local wake = self,
     local U = wake.util,
 
-    // A pkg requirement with a semantic version.
+    // (#SPC-api.pkgId): The exact id of a pkg.
+    //
+    // This is similar to pkgReq except it is the _exact_ pkg, with the hash
+    // included in the Id.
+    pkgId(name, version, namespace, hash):
+        assert std.isString(hash) : "hash must be string";
+        // Note: the version must be an exact semver, but is checked later.
+        "%s,%s" % [
+            wake.pkgReq(name, version, namespace),
+            hash,
+        ],
+
+    // (#SPC-api.pkgReq): a pkg requirement with a semantic version.
     //
     // This is used as (partof) the filepath for pkgs and modules.
     //
@@ -41,26 +53,12 @@
         ],
     }.result,
 
-    // The exact pkgId of the pkg.
-    //
-    // This is similar to pkgReq except it is the _exact_ pkg, with the hash
-    // included in the Id.
-    pkgId(name, version, namespace, hash):
-        assert std.isString(hash) : "hash must be string";
-        // Note: the version must be an exact semver, but is checked later.
-        "%s,%s" % [
-            wake.pkgReq(name, version, namespace),
-            hash,
-        ],
-
-    // Retrieve a pkg.
-    //
-    // #SPC-api.getPkg
+    // (#SPC-api.getPkg): retrieve a pkg lazily.
     getPkg(
         // The pkgReq(...) to retrieve.
         pkgReq,
 
-        // A string or exec(...) to use to retrieve the pkg from.
+        // A local path (string) or `exec` to use for retrieving the path.
         from=null
     ):
         # TODO: check in completePkgs first
@@ -74,11 +72,19 @@
         else
             wake._private.unresolvedPkg(pkgReq, from),
 
-    // Declare a pkg.
+    // (#SPC-api.declarePkg): declare a pkg.
     //
-    // Must be the only return of the function PKG.libsonnet.
+    // Must be the only return of the function in PKG.libsonnet of the form
     //
-    // #SPC-api.declarePkg
+    // ```
+    // function(wake)
+    //    wake.declarePkg(
+    //        fingerprint=import "./.wake/fingerprint.json",
+    //        name="mypkg",
+    //        version="1.0.0",
+    //        # ... etc
+    //    )
+    // ```
     declarePkg(
         // The fingerprint, **imported** from .wake/fingerprint.json
         fingerprint,
@@ -144,6 +150,123 @@
         pkgs: U.objDefault(pkgs),
         exports: exports,
     },
+
+    // (#SPC-api.declareModule): declare how to build something with a pkg.
+    //
+    // Modules are included in `pkg.exports`, as they are tied to the pkg.
+    // It is allowed for a pkg to export another pkg's modules (meta modules).
+    //
+    // Note that when `exec` is running it is within its `container` and has read
+    // access to all files and inputs the local `pkg` the module is defined in, as
+    // well as any pkgs and modules it is dependt on.
+    declareModule(
+        // The pkg this module is defined in.
+        pkg,
+
+        // Module objects this module depends on.
+        modules,
+
+        // (lazy) Additional required `fsentry`s (files or dirs)
+        //
+        // Type: `function(wake, pkg, moduleDef) -> list[fsentry]`
+        reqFsEntries=null,
+
+        // function which behaves identically to `pkg.exports`.
+        //
+        // Contains a key/value map of the objects exported by this module.
+        // Must not contain any unresolved objects (unresolved objects will
+        // never be resolved).
+        exports=null,
+
+        // (lazy) The primary `exec` object used for building this module.
+        //
+        // Type `function(wake, module) -> wake.exec(...)`
+        exec=null,
+
+        // The origin of the module, such as author, license, etc
+        origin=null,
+    ): null, // TODO
+
+    // (#SPC-api.fsentry): Specify a file system object within a pkg or module.
+    //
+    // `fsentry` is an object which specifies a file or a directory.
+    //
+    // - `from=pkg` or `from=module` acts as a reference to a file at `path` that
+    //   is local to the pkg or built by the module, so that dependent objects
+    //   can include references to them in their container.
+    // - `from=fsentryRef` can be used in `pkg.reqFiles` to specify that a file
+    //   needs to be linked from `fsentryRef.pkg.pkgId/$path` to `./path` of
+    //   the dependent module.
+    //
+    // As a demonstration, if you wanted to link a file within your own pkg,
+    // you could write:
+    //
+    // ```
+    // local data_txt = "./data.txt",
+    // declarePkg(
+    //     ...,
+    //     files=[data_txt],
+    //     reqFiles=function(wake, pkg) [
+    //         wake.fsentry(
+    //             "linked-data.txt",
+    //             from=wake.fsentry(data_txt, from=pkg)
+    //         ),
+    //     ],
+    // )
+    // ```
+    fsentry(
+        // The local path to the resulting file or directory.
+        path,
+
+        // A pkg or another fsentry.
+        from,
+    ),
+
+    // (#SPC-api.exec): specify an executable from within a pkg and container.
+    //
+    // Where other pkg managers or build systems might have "hooks" or "plugins", wake
+    // has `exec`. Exec is a fully flexible specification on how to execute something.
+    // You sepcify what _files_ are available via `within` (a pkg or module) and you
+    // specify _where_ the execution happens with `container`. Finally you specify
+    // the exact arguments to use.
+    //
+    // Exec is not executed directly. It is manifested as json and passed to
+    // the specified container, which performs the actual exection. Therefore it
+    // is perfectly legal to override any of the returned arguments. For instance,
+    // a module can include an `exec` in `exports`, and another module can use
+    // it with a few overriden params.
+    exec(
+        // The pkg to execute within. Should be a pkg or a module.
+        within,
+
+        // The path to execute within the given pkg or module.
+        //
+        // Type: string to local or linked path
+        path,
+
+        // Config object to manifest and store in .wake/config.json
+        //
+        // Type: arbitrary manifestable value
+        config=null,
+
+        // List of strings to pass as arguments to the executable.
+        //
+        // Type: list[string]
+        args=null,
+
+        // Environment variables to pass to the executable. Must be an object of strings
+        // for the keys and values.
+        //
+        // Consider using `config` instead.
+        env=null,
+
+        // Another `exec` to use specifying how to execute.
+        //
+        // `container.container` must == `wake.RUN_LOCAL` and have the required
+        // permissions. If `null` the default container will be used.
+        container=null,
+    ): null, // TODO
+
 
     _private: {
         local P = self,
