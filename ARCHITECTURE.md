@@ -19,14 +19,17 @@ The basic API of wake is:
   a call to `wake.declarePkg(...)`
     - A pkg is _just data_ (files)
 - The pkg then goes through multiple states as its dependencies are resolved.
-  These states are `declared` -> `defined` -> `ready`.
-  - Closures on the pkg (like `exports`) are called when the pkg has achieved a state.
-    The state is demarked with the name of the input, i.e. `pkgDefined`
+  These states are _declared_ -> _defined_ -> [_ready_ ->] _completed_, where
+  _ready_ is only for modules.
+  - Closures on the pkg (like `exports`) are called when the pkg has achieved a
+    state marked with the name of the input, i.e. `pkgDefined` is a pkg in
+    state _defined_.
 - Modules are of type `function(wake, pkgReady, config)` and return a call to
   `wake.defineModule`. Modules define what is built and how it is built.
   - Modules are hashed as the pkg (just data) the `config` passed to them, and
     finally the modules they depend on.
 
+## Wake API
 
 - <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[18]" style="color: #0074D9"><b><i>.pkgId</i></b></span>: the uniq id (including exact version and hash) of a specific
   pkg. Used for pkg lookup.
@@ -57,7 +60,7 @@ completely distinct pieces:
 - <a style="font-weight: bold; color: #FF851B" title="SPC-API" href="#SPC-API">SPC-api</a>: the "wake.libsonnet" library, which is a pure jsonnet library
   that provides the user interface within `PKG.libsonnet` files and its
   dependencies.
-- <a style="font-weight: bold; color: #FF4136" title="SPC-EVAL" href="#SPC-EVAL">SPC-eval</a>: the wake "evaluation engine", which is a cmdline frontend that
+- <a style="font-style: italic; color: #B10DC9" title="SPC-EVAL not found" >SPC-eval</a>: the wake "evaluation engine", which is a cmdline frontend that
   injests files and executes the steps necessary to evaluate local hashes,
   retrieve pkg dependencies, and execute `exec` objects in order to complete
   modules.
@@ -336,86 +339,8 @@ packages. Therefore constructing the tree is relatively cheap, even over the
 internet.
 
 
-# SPC-eval
-<details>
-<summary><b>metadata</b></summary>
-<b>partof:</b> <i>none</i></a><br>
-<b>parts:</b> <i>none</i></a><br>
-<b>file:</b> design/api.md<br>
-<b>impl:</b> <i>not implemented</i><br>
-<b>spc:</b>0.00&nbsp;&nbsp;<b>tst:</b>0.00<br>
-<hr>
-</details>
-
-
-
-# SPC-lib-eval
-<details>
-<summary><b>metadata</b></summary>
-<b>partof:</b> <i>none</i></a><br>
-<b>parts:</b> <i>none</i></a><br>
-<b>file:</b> design/api.md<br>
-<b>impl:</b> <i>not implemented</i><br>
-<b>spc:</b>0.00&nbsp;&nbsp;<b>tst:</b>0.00<br>
-<hr>
-</details>
-
-
-
-
-### <span title="Not Implemented" style="color: #FF4136"><b><i>.user</i></b></span>
-There are user configurations that are required, such as credentials and default
-global pkgs. These files and folders are searched for at `$WAKEPATH/` and uses
-a function in the wake library that is only available to users.
-
-`user(...)`: user configuration
-
-Define a user environment. This is necessary for running local commands and starting
-the build process.
-
-Arguments:
-- username: the name to give to the user, used for logging.
-- email: the user's email, used for logging.
-- credential-resolver: a `sh` executable to use for generating credentials necessary
-  to run external services. If it is defined, credentials will be requested for
-  each pkg retrieved and resolved; as well as modules instantiated and sideEffect
-  executed.
-- pkg-retriever-initial: set the _initial_ (overrideable) pkg retriever when
-  building.  The default one can only handle local paths.
-- pkg-initializer-initial: set the _initial_ (overrideable) pkg resolver. The
-  default one can only store pkgs in `wakeGlobalDir` (defined here).
-- module-initializer: set the _initial_ (overrideable) pkg resolver.
-- wakeStore: directory used to (locally) store instantiated packages and
-  modules. Default is `/wake/`. Contains:
-  - `pkgDefs`: local pkg definitions and symlinks.
-  - `pkgs`: local partial or fully complete pkgs (data only, no links)
-  - `modules`: local fully complete modules (data only, no links)
-  - `store`: future directory of symlinked local modules, could be used to (for
-    example) create a WakeOS.
-
-
-### <span title="Not Implemented" style="color: #FF4136"><b><i>.config</i></b></span>
-
-- `PKG.libsonnet`: Defines the pkg, including files to include and
-  dependencies. Must return a single function (see <a style="font-style: italic; color: #B10DC9" title="SPC-API.PKG not found" >SPC-api.pkg</a>).
-- `PKG.meta`: defines the pre-pkg and pkg hashes. The downloaded pkg is
-  validated against these values and they are used to identify the pkg.
-  This also contains the version of `wake` used to create the pkg. This also
-  includes the version of wake used to create this file, which is used for
-  debugging purposes only.
-- `.wake/`: this directory is created automatically and must NOT exist. Can be
-  overriden with the `outputsDir`.
-- `.wake.jsonnet`: can be located in the `$base/.wake.jsonnet` file of any pkg.
-  Is is a jsonnet file that must not contain any imports, since it is used
-  for determining what files must be retrieved to determine the pkg metadata.
-  If it does not exist, the defaults will be used.  It contains the following
-  fields:
-  - `pkgLib`: override the location of `PKG.libsonnet`
-  - `pkgMeta: override the location of `PKG.meta`
-  - `wakeDir`: override the location of `.wake/`. Must be a local path with a
-    single component.
-
-### <span title="Not Implemented" style="color: #FF4136"><b><i>.outputs</i></b></span>
+### Appendix C: Outputs considerations
+> This section is still in early concept phase.
 
 The `.wake/` folder contains
 - `pkg.json` and `module.json`: the fully instantiated config manifest for a
@@ -463,17 +388,5 @@ The `.wake/` folder contains
 Special files:
 - `getPkg.json`: only exists when executing a `getPkg` call. Contains the json
   manifest of the `getJson` call.
-
-
-### <span title="Not Implemented" style="color: #FF4136"><b><i>.processing</i></b></span>
-A processing folder exists in an (unspecified) location determined by
-`pkg-retriever` and `pkg-initializer` (they can be separate places, traditionally
-this is in `/tmp`).
-
-When the download is complete (and `state.json` has been set), they return the
-path, which gets passed to `pkg-initializer`. The resolver then moves the files to
-the proper place in `pkgs`. Similarily, modules are set up here, and when
-complete they are moved to `modules/`. Traditionally, this is backed by a
-temporary filesystem.
 
 

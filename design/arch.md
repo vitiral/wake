@@ -282,3 +282,54 @@ Also note that the metadata downloaded per-pkg is very small in this stage --
 it should only include the files in `pkgFiles` except for the smallest of
 packages. Therefore constructing the tree is relatively cheap, even over the
 internet.
+
+
+### Appendix C: Outputs considerations
+> This section is still in early concept phase.
+
+The `.wake/` folder contains
+- `pkg.json` and `module.json`: the fully instantiated config manifest for a
+  pkg and module, exists only when the pkg is `pkg-complete` or ready to be
+  builtin a container (respectively). This has all of the same fields and data
+  that was returned in `PKG.jsonnet` except:
+  - all `getPkg` calls are now full `pkgId`.
+  - all `getModule` calls are now `moduleId`
+  - all `file` objects are now paths to valid files or symlinks
+  - the `exec` object will have all it's attributes expanded and files
+    realized.
+- `pkg-ready.json` and `module-ready.json`: the instantiated config manifest
+  for a module/pkg. The same as `config.json` except the `file` objects are still `file` objects
+  (but with pkgIds), since the paths have not been created in the build container.
+- `pkgPaths.json`: a json file containing an object with key=pkgId, value=path.
+  Exists only in the container (when paths exist).
+  This file exists when a module is inside its execution container and the paths
+  resolve to their corresponding pkg.
+- `modulePaths.json`: a json file containing an object with key=moduleId, value=path.
+  Exists only in the build container (when paths exist).
+- `container.json`: metadata around the container the pkg is executing within,
+  such as platform information. Exists only in the exec container.
+- `file.lock`: lockfile taken by the process that is processing the pkg. If no
+  process has the lockfile and `state.json::state==unknown` then the folder
+  will be deleted by the GC.
+- `state.json`: json file containing pkg or module state. Includes:
+  - `type`: one of [pkg, module]
+  - `from`: a _list_ of the full metadata of all the ways folks tried to
+    retrieve the pkg using `getPkg`. Each attempt must check that the hashes
+    remain identical.
+  - `state`: one of
+    - unknown: unknown state, not ready.
+    - pkg-def: the pkgDef files have all been retrieved and validated.
+    - pkg-retrieved: _all_ data has been retrieved, but required files and
+      dependencies have not been linked,
+    - pkg-completed: all data has been retrieved and all pkg dependencies are done.
+    - module-ready: all of the module's dependencies are done and the module is
+      ready to be built in a container.
+    - module-completed: the module has been built and contains all declared outputs.
+  - `inputsHash`: hash of the inputs, must match `PKG.meta::hash`.
+  - `allHash`: contains a hash of all individual files, inputs and outputs,
+     as well as a hash of all members. Used when validating module integrity
+     and transfering modules over a network.
+
+Special files:
+- `getPkg.json`: only exists when executing a `getPkg` call. Contains the json
+  manifest of the `getJson` call.
