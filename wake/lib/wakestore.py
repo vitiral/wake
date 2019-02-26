@@ -63,7 +63,7 @@ class Store(object):
             # TODO: write that state=done in fingerprint
             copy_fsentry(pkg_config.pkg_fingerprint, pcache)
 
-    def read_pkg_path(self, pkg_id, def_okay=False):
+    def get_pkg_path(self, pkg_id, def_okay=False):
         pkgPath = pjoin(self.pkgs_local, pkg_id)
         if os.path.exists(pkgPath):
             return pkgPath

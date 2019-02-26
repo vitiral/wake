@@ -90,16 +90,16 @@ class Config(object):
         return fingerprint
 
     def handle_unresolved_pkg(self, pkg):
-
         from_ = pkg.from_
+
         if not isinstance(from_, str):
             raise NotYetImplementedError()
         else:
-            # TODO: retrieve from local store
-            from_config = PkgConfig(from_)
-            self.dump_pkg_fingerprint(from_config)
-            pkg = self.run_pkg(from_config).root
-            self.store.add_pkg_path(from_config, pkg)
+            # It is a path, it must _already_ be in the store
+            out = self.store.get_pkg_path(pkg.pkg_id, def_okay=True)
+            if out is None:
+                raise ValueError("{} was not in the store".format(pkg.pkg_id))
+            return out
 
     def create_defined_pkgs(self, pkgs_defined):
         out = ["{"]

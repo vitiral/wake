@@ -55,10 +55,13 @@ S_DEFINED = wakeConstants["S_DEFINED"]
 S_COMPLETED = wakeConstants["S_COMPLETED"]
 
 ## COMMON PATHS
+
+FILE_PKG = wakeConstants["FILE_PKG"]  # #SPC-arch.pkgFile
+
+# See #SPC-arch.wakeDir
 DIR_WAKE = wakeConstants["DIR_WAKE"]
 DIR_LOCAL_STORE = wakeConstants["DIR_LOCAL_STORE"]
 
-FILE_PKG = wakeConstants["FILE_PKG"]
 FILE_RUN = wakeConstants["FILE_RUN"]
 FILE_PKGS = wakeConstants["FILE_PKGS"]
 
