@@ -51,7 +51,6 @@ class Config(object):
             wakelib=wakelib,
             pkgs_defined=self.pkgs_defined,
             pkg_root=pkg_config.pkg_root,
-            pkgs_local=pkg_config.pkgs_local_lib,
         )
 
         with open(self.pkgs_defined, 'w') as fd:

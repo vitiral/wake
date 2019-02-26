@@ -13,5 +13,15 @@
     "S_UNRESOLVED": "unresolved",
     "S_DECLARED": "declared",
     "S_DEFINED": "defined",
-    "S_COMPLETED": "completed"
+    "S_COMPLETED": "completed",
+
+    "DIR_WAKE": ".wake",
+    "DIR_LOCAL_STORE": "localStore",
+
+    "FILE_PKG": "PKG.libsonnet",
+    "FILE_RUN": "run.jsonnet",
+    "FILE_PKGS": "pkgs.libsonnet",
+
+    "FILE_FINGERPRINT": "fingerprint.json",
+    "FILE_LOCAL_DEPENDENCIES": "localDependencies.json"
 }

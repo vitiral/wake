@@ -73,7 +73,7 @@ class PkgSimple(object):
 
         self.state = state
         self.pkg_root = path.join("./", FILE_PKG)
-        self.pkg_local_deps = path.join("./", DIR_WAKE, FILE_LOCAL_DEPS)
+        self.pkg_local_deps = path.join("./", DIR_WAKE, FILE_LOCAL_DEPENDENCIES)
         self.pkg_id = pkg_id
         self.name = name
         self.namespace = namespace
@@ -160,8 +160,7 @@ class PkgConfig(object):
         self.pkg_root = pjoin(self.base, "PKG.libsonnet")
         self.wakedir = pjoin(self.base, ".wake")
         self.pkg_fingerprint = pjoin(self.wakedir, FILE_FINGERPRINT)
-        self.path_local_deps = pjoin(self.wakedir, FILE_LOCAL_DEPS)
-        self.pkgs_local_lib = pjoin(self.wakedir, FILE_PKGS_LOCAL_LIB)
+        self.path_local_deps = pjoin(self.wakedir, FILE_LOCAL_DEPENDENCIES)
 
     def init_wakedir(self):
         assert path.exists(self.base)

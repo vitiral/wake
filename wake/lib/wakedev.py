@@ -55,19 +55,21 @@ S_DEFINED = wakeConstants["S_DEFINED"]
 S_COMPLETED = wakeConstants["S_COMPLETED"]
 
 ## COMMON PATHS
-DIR_WAKE = ".wake"
+DIR_WAKE = wakeConstants["DIR_WAKE"]
+DIR_LOCAL_STORE = wakeConstants["DIR_LOCAL_STORE"]
 
-FILE_PKG = "PKG.libsonnet"
-FILE_LOCAL_DEPS = "localDeps.json"
-FILE_FINGERPRINT = "fingerprint.json"
-FILE_PKGS_LOCAL_LIB = "pkgsLocal.libsonnet"
+FILE_PKG = wakeConstants["FILE_PKG"]
+FILE_RUN = wakeConstants["FILE_RUN"]
+FILE_PKGS = wakeConstants["FILE_PKGS"]
+
+FILE_FINGERPRINT = wakeConstants["FILE_FINGERPRINT"]
+FILE_LOCAL_DEPENDENCIES = wakeConstants["FILE_LOCAL_DEPENDENCIES"]
 
 ## FILE WRITERS
 
 RUN_TEMPLATE = """
 local wakelib = import "{wakelib}";
 local pkgsDefined = import "{pkgs_defined}";
-# local pkgsLocal = import "{pkgs_local}";
 
 local wake =
     wakelib

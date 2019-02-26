@@ -99,24 +99,25 @@ If the pkg has a [[.localDependenciesFile]] then it must also retrieve the
 required dependencies and put them in the directories specified in that file.
 
 
-## Store
+## [[.store]] Store
 The **store** (always in bold) has a presentation API to both the libsonnet and
 eval engines:
 
 - [[.wakeStoreSonnet]]: For `wake.libsonnet` API, the **store** appears as the
   [[SPC-api.getPkg]] API, which lazily retrieves pkgs.
-- eval: for the evaluation engine, there are multiple aspects
-  of the **store** depending on the **phase**.
-  - [[.wakeStoreLocal]]: in [[SPC-phase.pkgComplete]], the **store** is always
-    a local file directory (pkg definitions should always be very small),
-    although an arbitrary retriever can get them.
-  - [[.wakeStoreModule]]: in [[SPC-phase.moduleComplete]], the **store** can be
-    either the local filesystem, or overriden with [[SPC-arch.wakeStoreOverride]].
+- eval: for the evaluation engine, there are multiple stages of the **store**
+  depending on the **phase**.
+  - In [[SPC-arch.phaseLocal]] and [[SPC-arch.phasePkgComplete]] the store is always
+    the local filesystem who's behavior is defined by the wake CLI.
+  - In [[SPC-arch.phaseModuleComplete]]: the **store** can be either the local
+    filesystem, or overriden with [[SPC-arch.wakeStoreOverride]].
 
 
 ## Phases
-There are only two phases to wake execution:
+There are only three phases to wake execution:
 
+- [[.phaseLocal]]: where the local pkg's hashes are calculated and exported
+  into `.wake/fingerprint.json`, then put into [[SPC-arch.wakeStoreLocal]]
 - [[.phasePkgComplete]]: where pkgs are retrieved and put in the
   [[SPC-arch.wakeStoreLocal]]. This can run multiple cycles until all pkgs
   are resolved and the proper dependency tree is determined.
@@ -137,12 +138,9 @@ whereas module inputs remain only pure data.
 - [[.pkgFile]] `./PKG.libsonnet` file which contains the call to [[SPC-api.declarePkg]]
 - [[.wakeDir]] `./.wake/`: reserved directory for containing wake metadata. Should
   not be used by users. Can contain the following fsentries:
-  - [[.pkgsLibFile]]:  `pkgs.libsonnet` file containing the imports to already
+  - [[.pkgsFile]]:  `pkgs.libsonnet` file containing the imports to already
     defined pkgs. This is regenerated each cycle in the **phasePkgComplete**
     with the currently known pkgs.
-  - [[.pkgsLocalLibFile]]: `pkgsLocal.libsonnet` file is identical to `pkgsLibFile`
-    except that it is checked first. If the `pkgReq` exists here then it will
-    override any `getPkg` call.
   - [[.runFile]]: `run.jsonnet` which is used for executing each cycle. Essentially
     each cycle is a call to `jsonnet .wake/run.jsonnet`, with the `pkgsLibFile`
     updated each time.

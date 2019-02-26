@@ -17,6 +17,11 @@ from wakepkg import *
 
 
 class Store(object):
+    """
+    (#SPC-arch.store): The default pkg and module storage boject.
+
+    Stores objects on the local filesystem.
+    """
     def __init__(self, base, store_dir):
         self.store_dir = store_dir
         self.defined = pjoin(self.store_dir, "pkgsDefined")
