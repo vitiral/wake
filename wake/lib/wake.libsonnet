@@ -49,6 +49,9 @@
         // The namespace to find the pkg.
         namespace=null
     ): {
+        # TODO: convert to this form, as `,` is allowed in semver requirements.
+        # name#namespace#version
+        # name##version
         local versionStr = U.stringDefault(versionReq),
         local namespaceStr = U.stringDefault(namespace),
         local namespaceLen = std.length(namespaceStr),

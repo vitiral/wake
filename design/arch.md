@@ -159,7 +159,97 @@ whereas module inputs remain only pure data.
 ## Appendixes
 These are a few "risks of the current architecture.
 
-### Appendix A: Consideration of version changes as cycles progress
+### Appendix A: Consideration of version retrieval
+There are a few known facts that are important about version retrieval:
+
+- When retrieving pkgs, the retriever is allowed to return as many
+  pkgDefinitions as it wants.
+  - Generally it should return only a sampling. It will be given opportunities
+    to retrieve more once the reqs have been narrowed.
+- Executing `PKG.libsonnet` with no dependencies available (along with the
+  local path dependencies) is sufficient to obtain its _static dependencies_.
+- A flat map can then be created of all dependencies, by retrieving all of
+  their definitions.
+
+For example, these are the pkgs to solve:
+
+- pkgA(2.3) requries pkgB(>1.0), pkgE(>=1.0, <3.0)
+- pkgB(1.2 requires pkgE(>=1.2, <2.0)
+
+We retrieve some pkgs and create a flat map which specifies which pkgs have
+which requirements.
+
+```
+pkgsReqs = {
+    pkgA(2.3): [
+        "pkgB(>1.0)"
+        "pkgE(>=1,0,<3.0)"
+    ],
+    pkgB(1.2): [
+        "pkgE(>=1.2, <2.0)"
+    ],
+    pkgE(1.0): [],
+    pkgE(1.1): [],
+    pkgE(1.2): [],
+    ...
+    pkgE(1.9): [],
+}
+```
+
+We then create a hashmap of pkgs with OrderedSets of all the versions available
+
+```
+pkgsAvailable = {
+    pkgA: [2.3],
+    pkgB: [1.2],
+    pkgE: [1.0, 1.1, 1.2, ..., 1.9],
+}
+
+def choose_latest(req):
+    pkgKey = req.pkgKey()  # i.e. pkgB(>2.0) -> pkgB
+    for available in pkgsAvailable[pkgKey].reverse():
+        if req.matches(available):
+            return available
+    return None
+```
+
+There is now one more step. We reduce all reqs down to groups by joining them
+all together.
+
+```
+def construct_req_muts():
+    req_muts = {}  # Map[pkgKey, set[req]]
+
+    for pkgId, reqs in pkgsReqs:
+        for req in reqs:
+            reqKey = req.key()
+            req_mut = req_muts.get(reqKey)
+            if req_mut is None:
+                req_mut = ReqMut()
+
+            req_mut.extend_constraints(req)
+
+    return req_muts
+
+req_muts = construct_req_muts()
+```
+
+ReqMut calls `.finalize()` to become ReqFinal. ReqFinal is an object which
+contains a list of only `ReqRange` objects, representing all of the
+non-overlapping "groups" that need to be solved for.
+
+ReqRange(min, max)
+- the min and max can both be None.
+- the min and max can be inclusive or exclusive.
+- if min(inclusive)==max(exclusive) it is an exact version.
+
+We have now constructed a map of objects `Map[PkgKey, FinalReq]`.
+We just need to feed the pkgsAvailable to it and we will have
+PkgChoices objects. We then walk through the `pkgsReqs` to choose
+the dependencies of each pkg and write it to `pkgsImport.libsonnet`
+
+
+### Appendix B: Consideration of version changes as cycles progress
 There is a possible issue in what happens during pkg resolution. Ideally we would
 retrieve aas _few_ pkgs as possible to meet all semver requirements. This ideal
 is difficult to implement, and is itself an NP-hard problem. The problem is
@@ -169,7 +259,7 @@ every cycle (as they can here).
 Let's say we had the following cycles:
 
 - pkg-local requires pkg a(>=1.0), a(1.3 - 2.0), b(1.0 - 2.3)
-- cycle A: we end up with a(2.0), b(3.0)
+- cycle A: we end up with a(2.0), b(2.3)
   - pkg-a(2.0) requires b(1.0 - 1.8)
 - cycle B: we end up with a(2.0), b(1.8)
   - **notice that b changed**
