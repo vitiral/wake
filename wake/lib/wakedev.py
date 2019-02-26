@@ -16,7 +16,6 @@ DEBUG = "debug"
 MODE = DEBUG
 
 path = os.path
-pjoin = os.path.join
 
 def pjoin(base, p):
     if p.startswith('./'):
@@ -160,6 +159,10 @@ def is_unresolved(dct):
 def rmtree(d):
     if path.exists(d):
         shutil.rmtree(d)
+
+
+def pkg_key(pkg_id):
+    """Convert a pkg_id to the more general pkg_key."""
 
 
 

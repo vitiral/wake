@@ -96,8 +96,9 @@ class Config(object):
         else:
             # It is a path, it must _already_ be in the store
             out = self.store.get_pkg_path(pkg.pkg_req, def_okay=True)
-            if out is None:
-                raise ValueError("{} was not in the store".format(pkg.pkg_id))
+            # TODO: to do this, I need the proper req tree
+            # if out is None:
+            #     raise ValueError("{} was not in the store".format(pkg))
             return out
 
     def create_defined_pkgs(self, pkgs_defined):
@@ -129,6 +130,7 @@ def store_local(config, local_abs):
 
     # recursively store all local dependencies first
     deps = {}
+    import pdb; pdb.set_trace()
     for dep in local_manifest.all:
         if dep.is_unresolved() and dep.is_from_local():
             deps[dep.from_] = store_local(

@@ -52,10 +52,15 @@ It is believed by the author that once the above work is complete, wake will be
 usable as an alpha quality product.
 
 The goals afterwards are:
-- Add a pkg-retriever to retrieve and auto-generate [portage] and ebuild
+- (hopefully) Add a pkg-retriever to retrieve and auto-generate [portage] and ebuild
   packages, allowing for fast expansion of supported features.
-- Nix-pkg integration (possible)
-- Support of other language rules, especially the google ones.
+- (probably) Nix-pkg integration
+- (probably) Create external pkgs to Support common languages, especially the
+  google ones.
+- (pie in the sky) Support an end-to-end wasm build system, whereby all `exec`
+  items are run in a wasm runtime, but which can build for any system. This
+  would achieve the highest possible level of build simplicity (all inputs
+  are wasm, all outputs could be wasm).
 
 [portage]: https://wiki.gentoo.org/wiki/Portage
 

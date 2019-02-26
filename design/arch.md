@@ -179,26 +179,26 @@ For example, these are the pkgs to solve:
 We retrieve some pkgs and create a flat map which specifies which pkgs have
 which requirements.
 
-```
+```python
 pkgsReqs = {
-    pkgA(2.3): [
+    "pkgA(2.3)": [
         "pkgB(>1.0)"
         "pkgE(>=1,0,<3.0)"
     ],
-    pkgB(1.2): [
+    "pkgB(1.2)": [
         "pkgE(>=1.2, <2.0)"
     ],
-    pkgE(1.0): [],
-    pkgE(1.1): [],
-    pkgE(1.2): [],
+    "pkgE(1.0)": [],
+    "pkgE(1.1)": [],
+    "pkgE(1.2)": [],
     ...
-    pkgE(1.9): [],
+    "pkgE(1.9)": [],
 }
 ```
 
 We then create a hashmap of pkgs with OrderedSets of all the versions available
 
-```
+```python
 pkgsAvailable = {
     pkgA: [2.3],
     pkgB: [1.2],
@@ -216,7 +216,7 @@ def choose_latest(req):
 There is now one more step. We reduce all reqs down to groups by joining them
 all together.
 
-```
+```python
 def construct_req_muts():
     req_muts = {}  # Map[pkgKey, set[req]]
 

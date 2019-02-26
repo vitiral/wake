@@ -28,14 +28,14 @@ The basic API of wake is:
     finally the modules they depend on.
 
 
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[4]" style="color: #0074D9"><b><i>.pkgId</i></b></span>: the uniq id (including exact version and hash) of a specific
+- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[18]" style="color: #0074D9"><b><i>.pkgId</i></b></span>: the uniq id (including exact version and hash) of a specific
   pkg. Used for pkg lookup.
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[16]" style="color: #0074D9"><b><i>.pkgReq</i></b></span>: defines a semver requirement for a `getPkg` call to retreive.
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[55]" style="color: #0074D9"><b><i>.getPkg</i></b></span>: retrieve a pkg lazily.
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[74]" style="color: #0074D9"><b><i>.declarePkg</i></b></span>: declare a pkg.
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[153]" style="color: #0074D9"><b><i>.declareModule</i></b></span>: declare how to build something with a pkg.
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[189]" style="color: #0074D9"><b><i>.fsentry</i></b></span>: specify a file-system object within a pkg or module.
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[224]" style="color: #0074D9"><b><i>.exec</i></b></span>: a declared executable. Is typically a member of `module.exec`
+- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[30]" style="color: #0074D9"><b><i>.pkgReq</i></b></span>: defines a semver requirement for a `getPkg` call to retreive.
+- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[72]" style="color: #0074D9"><b><i>.getPkg</i></b></span>: retrieve a pkg lazily.
+- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[91]" style="color: #0074D9"><b><i>.declarePkg</i></b></span>: declare a pkg.
+- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[170]" style="color: #0074D9"><b><i>.declareModule</i></b></span>: declare how to build something with a pkg.
+- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[206]" style="color: #0074D9"><b><i>.fsentry</i></b></span>: specify a file-system object within a pkg or module.
+- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[241]" style="color: #0074D9"><b><i>.exec</i></b></span>: a declared executable. Is typically a member of `module.exec`
   or can be a member of `exports` for a pkg or module.
 
 
@@ -47,7 +47,7 @@ The basic API of wake is:
 <li><a style="font-weight: bold; color: #FF851B" title="SPC-API" href="#SPC-API">SPC-api</a></li>
 <b>file:</b> design/arch.md<br>
 <b>impl:</b> <i>not implemented</i><br>
-<b>spc:</b>4.90&nbsp;&nbsp;<b>tst:</b>0.00<br>
+<b>spc:</b>27.70&nbsp;&nbsp;<b>tst:</b>0.00<br>
 <hr>
 </details>
 
@@ -151,26 +151,27 @@ If the pkg has a <span title="Not Implemented" style="color: #FF4136"><b><i>.loc
 required dependencies and put them in the directories specified in that file.
 
 
-## Store
+## <span title="/home/rett/open/wake/wake/lib/wakestore.py[20]" style="color: #0074D9"><b><i>.store</i></b></span> Store
 The **store** (always in bold) has a presentation API to both the libsonnet and
 eval engines:
 
 - <span title="Not Implemented" style="color: #FF4136"><b><i>.wakeStoreSonnet</i></b></span>: For `wake.libsonnet` API, the **store** appears as the
   <a style="font-weight: bold; color: #FF851B" title="SPC-API.GETPKG" href="#SPC-API">SPC-api.getPkg</a> API, which lazily retrieves pkgs.
-- eval: for the evaluation engine, there are multiple aspects
-  of the **store** depending on the **phase**.
-  - <span title="Not Implemented" style="color: #FF4136"><b><i>.wakeStoreLocal</i></b></span>: in <a style="font-style: italic; color: #B10DC9" title="SPC-PHASE not found" >SPC-phase</a>, the **store** is always
-    a local file directory (pkg definitions should always be very small),
-    although an arbitrary retriever can get them.
-  - <span title="Not Implemented" style="color: #FF4136"><b><i>.wakeStoreModule</i></b></span>: in <a style="font-style: italic; color: #B10DC9" title="SPC-PHASE not found" >SPC-phase</a>, the **store** can be
-    either the local filesystem, or overriden with <a style="font-weight: bold; color: #FF4136" title="SPC-ARCH.WAKESTOREOVERRIDE" href="#SPC-ARCH">SPC-arch.wakeStoreOverride</a>.
+- eval: for the evaluation engine, there are multiple stages of the **store**
+  depending on the **phase**.
+  - In <a style="font-weight: bold; color: #FF4136" title="SPC-ARCH.PHASELOCAL" href="#SPC-ARCH">SPC-arch.phaseLocal</a> and <a style="font-weight: bold; color: #FF4136" title="SPC-ARCH.PHASEPKGCOMPLETE" href="#SPC-ARCH">SPC-arch.phasePkgComplete</a> the store is always
+    the local filesystem who's behavior is defined by the wake CLI.
+  - In <a style="font-weight: bold; color: #FF4136" title="SPC-ARCH.PHASEMODULECOMPLETE" href="#SPC-ARCH">SPC-arch.phaseModuleComplete</a>: the **store** can be either the local
+    filesystem, or overriden with <a style="font-weight: bold; color: #FF4136" title="SPC-ARCH.WAKESTOREOVERRIDE" href="#SPC-ARCH">SPC-arch.wakeStoreOverride</a>.
 
 
 ## Phases
-There are only two phases to wake execution:
+There are only three phases to wake execution:
 
+- <span title="Not Implemented" style="color: #FF4136"><b><i>.phaseLocal</i></b></span>: where the local pkg's hashes are calculated and exported
+  into `.wake/fingerprint.json`, then put into <a style="font-style: italic; color: #B10DC9" title="SPC-ARCH.WAKESTORELOCAL not found" >SPC-arch.wakeStoreLocal</a>
 - <span title="Not Implemented" style="color: #FF4136"><b><i>.phasePkgComplete</i></b></span>: where pkgs are retrieved and put in the
-  <a style="font-weight: bold; color: #FF4136" title="SPC-ARCH.WAKESTORELOCAL" href="#SPC-ARCH">SPC-arch.wakeStoreLocal</a>. This can run multiple cycles until all pkgs
+  <a style="font-style: italic; color: #B10DC9" title="SPC-ARCH.WAKESTORELOCAL not found" >SPC-arch.wakeStoreLocal</a>. This can run multiple cycles until all pkgs
   are resolved and the proper dependency tree is determined.
 - <span title="Not Implemented" style="color: #FF4136"><b><i>.phaseModuleComplete</i></b></span>: all pkgs have been retrieved and configuration calculated
   in the pure jsonnet manifest. The `exec` objects are then executed within
@@ -186,22 +187,22 @@ whereas module inputs remain only pure data.
 
 ## Special Files and Directories
 
-- <span title="Not Implemented" style="color: #FF4136"><b><i>.pkgFile</i></b></span> `./PKG.libsonnet` file which contains the call to <a style="font-weight: bold; color: #FF851B" title="SPC-API.DECLAREPKG" href="#SPC-API">SPC-api.declarePkg</a>
-- <span title="Not Implemented" style="color: #FF4136"><b><i>.wakeDir</i></b></span> `./.wake/`: reserved directory for containing wake metadata. Should
+- <span title="/home/rett/open/wake/wake/lib/wakedev.py[58]" style="color: #0074D9"><b><i>.pkgFile</i></b></span> `./PKG.libsonnet` file which contains the call to <a style="font-weight: bold; color: #FF851B" title="SPC-API.DECLAREPKG" href="#SPC-API">SPC-api.declarePkg</a>
+- <span title="/home/rett/open/wake/wake/lib/wakedev.py[60]" style="color: #0074D9"><b><i>.wakeDir</i></b></span> `./.wake/`: reserved directory for containing wake metadata. Should
   not be used by users. Can contain the following fsentries:
-  - <span title="Not Implemented" style="color: #FF4136"><b><i>.pkgsLibFile</i></b></span>:  `pkgs.libsonnet` file containing the imports to already
+  - `pkgs.libsonnet` file containing the imports to already
     defined pkgs. This is regenerated each cycle in the **phasePkgComplete**
     with the currently known pkgs.
-  - <span title="Not Implemented" style="color: #FF4136"><b><i>.runFile</i></b></span>: `run.jsonnet` which is used for executing each cycle. Essentially
+  - `run.jsonnet` which is used for executing each cycle. Essentially
     each cycle is a call to `jsonnet .wake/run.jsonnet`, with the `pkgsLibFile`
     updated each time.
-  - <span title="Not Implemented" style="color: #FF4136"><b><i>.fingerprintFile</i></b></span>: `fingerprint.json` file which is auto-generated by
+  - `fingerprint.json` file which is auto-generated by
     the build system for local pkgs, and required to match the cryptographic
     hash for retrieved pkgs or modules. This can also contain other
     non-hashable data like the signature of the fingerprint hash.
-  - <span title="Not Implemented" style="color: #FF4136"><b><i>.localStoreDir</i></b></span>: `localStore/` directory containing only _local_ pkg
+  - `localStore/` directory containing only _local_ pkg
     definitions. Used for pkg overrides.
-  - <span title="Not Implemented" style="color: #FF4136"><b><i>.localDependenciesFile</i></b></span>: `localDependencies.json` file containing a map of
+  - `localDependencies.json` file containing a map of
     `path: pkgId`. This is automatically generated when building local
     dependencies and is used to retrieve "locked" dependencies of external
     depdendencies.
@@ -210,7 +211,97 @@ whereas module inputs remain only pure data.
 ## Appendixes
 These are a few "risks of the current architecture.
 
-### Appendix A: Consideration of version changes as cycles progress
+### Appendix A: Consideration of version retrieval
+There are a few known facts that are important about version retrieval:
+
+- When retrieving pkgs, the retriever is allowed to return as many
+  pkgDefinitions as it wants.
+  - Generally it should return only a sampling. It will be given opportunities
+    to retrieve more once the reqs have been narrowed.
+- Executing `PKG.libsonnet` with no dependencies available (along with the
+  local path dependencies) is sufficient to obtain its _static dependencies_.
+- A flat map can then be created of all dependencies, by retrieving all of
+  their definitions.
+
+For example, these are the pkgs to solve:
+
+- pkgA(2.3) requries pkgB(>1.0), pkgE(>=1.0, <3.0)
+- pkgB(1.2 requires pkgE(>=1.2, <2.0)
+
+We retrieve some pkgs and create a flat map which specifies which pkgs have
+which requirements.
+
+```python
+pkgsReqs = {
+    "pkgA(2.3)": [
+        "pkgB(>1.0)"
+        "pkgE(>=1,0,<3.0)"
+    ],
+    "pkgB(1.2)": [
+        "pkgE(>=1.2, <2.0)"
+    ],
+    "pkgE(1.0)": [],
+    "pkgE(1.1)": [],
+    "pkgE(1.2)": [],
+    ...
+    "pkgE(1.9)": [],
+}
+```
+
+We then create a hashmap of pkgs with OrderedSets of all the versions available
+
+```python
+pkgsAvailable = {
+    pkgA: [2.3],
+    pkgB: [1.2],
+    pkgE: [1.0, 1.1, 1.2, ..., 1.9],
+}
+
+def choose_latest(req):
+    pkgKey = req.pkgKey()  # i.e. pkgB(>2.0) -> pkgB
+    for available in pkgsAvailable[pkgKey].reverse():
+        if req.matches(available):
+            return available
+    return None
+```
+
+There is now one more step. We reduce all reqs down to groups by joining them
+all together.
+
+```python
+def construct_req_muts():
+    req_muts = {}  # Map[pkgKey, set[req]]
+
+    for pkgId, reqs in pkgsReqs:
+        for req in reqs:
+            reqKey = req.key()
+            req_mut = req_muts.get(reqKey)
+            if req_mut is None:
+                req_mut = ReqMut()
+
+            req_mut.extend_constraints(req)
+
+    return req_muts
+
+req_muts = construct_req_muts()
+```
+
+ReqMut calls `.finalize()` to become ReqFinal. ReqFinal is an object which
+contains a list of only `ReqRange` objects, representing all of the
+non-overlapping "groups" that need to be solved for.
+
+ReqRange(min, max)
+- the min and max can both be None.
+- the min and max can be inclusive or exclusive.
+- if min(inclusive)==max(exclusive) it is an exact version.
+
+We have now constructed a map of objects `Map[PkgKey, FinalReq]`.
+We just need to feed the pkgsAvailable to it and we will have
+PkgChoices objects. We then walk through the `pkgsReqs` to choose
+the dependencies of each pkg and write it to `pkgsImport.libsonnet`
+
+
+### Appendix B: Consideration of version changes as cycles progress
 There is a possible issue in what happens during pkg resolution. Ideally we would
 retrieve aas _few_ pkgs as possible to meet all semver requirements. This ideal
 is difficult to implement, and is itself an NP-hard problem. The problem is
@@ -220,7 +311,7 @@ every cycle (as they can here).
 Let's say we had the following cycles:
 
 - pkg-local requires pkg a(>=1.0), a(1.3 - 2.0), b(1.0 - 2.3)
-- cycle A: we end up with a(2.0), b(3.0)
+- cycle A: we end up with a(2.0), b(2.3)
   - pkg-a(2.0) requires b(1.0 - 1.8)
 - cycle B: we end up with a(2.0), b(1.8)
   - **notice that b changed**
