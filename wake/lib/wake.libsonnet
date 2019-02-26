@@ -244,6 +244,10 @@
         // Type: string to local or linked path
         path,
 
+        // A `exec` (with `container=wake.LOCAL`) to specify _where_ the
+        // module or pkg should be executed.
+        container,
+
         // Config object to manifest and store in .wake/config.json
         //
         // Type: arbitrary manifestable value
@@ -259,12 +263,6 @@
         //
         // Consider using `config` instead.
         env=null,
-
-        // Another `exec` to use specifying how to execute.
-        //
-        // `container.container` must == `wake.RUN_LOCAL` and have the required
-        // permissions. If `null` the default container will be used.
-        container=null,
     ): null, // TODO
 
 

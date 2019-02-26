@@ -1,5 +1,5 @@
 # SPC-api
-partof: REQ-purpose
+partof: SPC-arch
 ###
 
 This details the API of `wake.jsonnet`. See links in the ".subarts" below to
@@ -30,8 +30,12 @@ The basic API of wake is:
   or can be a member of `exports` for a pkg or module.
 
 
-## SPC-files
-The following files are default or required:
+# SPC-eval
+
+
+# SPC-lib-eval
+
+
 
 ### [[.user]]
 There are user configurations that are required, such as credentials and default
