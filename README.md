@@ -14,7 +14,8 @@ portage but is not related to any of them directly.
 Its tennets are:
 - **Simplicity**: pkg retrieval and module builds are fully reproducible and are
   simply inputs and outputs which can be hashed. The build language is
-  [jsonnet], which is familiar, full featured and easy to understand.
+  [jsonnet] which is familiar, full featured, deterministic, hermetic and easy
+  to understand.
 - **Orthogonal features**: wake has very few features on its own, letting its
   simple extensibility provide features for any specific usecase (large or
   small). Jsonnet is kept pure (no native extenstions), while analyzing the
@@ -25,10 +26,27 @@ Its tennets are:
   module is built, it can always be used from the cache without any worry of
   its determinism.
 
-The basic questions that wake is trying to answer is "why is it so hard
-to include software as a dependency" and "why do I have to rebuild something
-that has already been built with the exact same environment by an agent I
-trust"? Both of these questions are ones which wake can and will answer.
+The basic use cases are:
+- "normal" developers (open source, small companies, etc) should be able to
+  depend on pkgs either localy (via a path) or from a server. Their language
+  of choice should be easily export "plugins" that can retrieve pkgs from the
+  standard pkg server and convert them to PKG.libsonnet. They should be able
+  to run their builds either locally, on the "cloud", or a combination of the
+  above as applicable. It should be easy for them to use their own
+  configurations or get a built solution (examples: build flags, compiler
+  versions, pkg retrievers used, file storage, etc)
+- "large organizational" developers and devops should be able to override
+  how pkgs are defined, retrieved, stored and built to fully control every
+  aspect.
+- Any developer should be able to use caches (public, private, enterprise)
+  which store built modules. wake's determinism allows them to trust these
+  completed builds as API compatibile with the dependency they would build
+  locally.
+
+All of the above features should be "native" to the user -- plugins are defined
+as normal depdendencies of their `PKG.libsonnet` (but overrideable via a
+`$WAKEPATH`). A pkg local directory is its own "environment" that has control
+of exactly how it is built.
 
 For more information on how wake is being designed, check out the
 [ARCHITECTURE](ARCHITECTURE.md) docs.
@@ -40,11 +58,11 @@ For more information on how wake is being designed, check out the
 Wake is currently in the early implementation phase. The following features are planned
 before version 0.1.0 (alpha):
 
-- (60% complete) `wake.libsonnet` library
+- (70% complete) `wake.libsonnet` library
 - (90% complete) local pkg resolution overrides
+- (50% complete) [pkg version tree resolution](https://github.com/vitiral/python-semanticversion/blob/master/ARCH_EDGES.md)
 - (0% complete) `pkg-retrieval` plugin
 - (0% complete) `fsentry-resolver` plugin
-- (0% complete) pkg tree resolution
 - (0% complete) exec implementation
 - (0% complete) exec.container implementation
 
