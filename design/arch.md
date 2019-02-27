@@ -15,8 +15,7 @@ completely distinct pieces:
 These two pieces work together by the evaluation engine executing the jsonnet
 configuration within `cycles`, moving the state of wake objects through
 the following flow. States are always in _italics_ within this documentation.
-- _undefined_: the object is _declared_ as a dependency, but it has not yet
-  been _declared_.
+- _undefined_: the object is a dependency in a _declared_ pkg or module.
 - _declared_: the object's _declaration_ has been retrieved, but not all of its
   dependencies have been _defined_.
 - _defined_: the object has ben _declared_ and all of its dependencies have been
@@ -35,7 +34,7 @@ phases ([[SPC-phase]]). All of these objects are `exec` objects who's `args`
 and `config` are both set to `null` (they will be overriden), and who's
 `container=wake.LOCAL`.
 
-### [[.wakeStoreOverride]]: Override where to store artifacts
+### [[.wakeStoreOverride]]: Override where to store completed objects
 
 `root.pkgs.wakeStoreOverride` can be (optionally) set to an `exec` who's `config=null`.
 
@@ -76,27 +75,56 @@ Something like that... more design is necessary.
 
 If an `exec` is specified as the in a [[SPC-api.getPkg]] call, then it will be
 used to retrieve the pkg specified. The `exec` must adhere to the following
-API, where:
+API, whereby a file will be put at `./getPkg.json` containing the following
+information. Any downloaded pkgs should be put in `./retrieved/`, with
+directories named the `pkgId`.
 
-- `dir` is a path to a (local) temporary directory to store the files. (Note
-  that this directory can be a link to a distributed fileystem.)
+
+## `T_GET_PKGS`
+
+- `dir` is a path to a (local) temporary directory to put the files.
 - `definitionOnly` is a bool regarding whether to retrieve only the
-  `fsentriesDef` or the full `fsentries`.
-- `..getPkg` is the `getPkg` arguments flattened
+  `fsentriesDef` or the full `fsentries`. It is up to the retriever whether
+  to follow this rule (some source code is so small it is better to retrieve
+  the full pkg)
+- `pkgVersions`: is a list of pkgs of the form `["name(namespace)(=1.3.2)"]`. Note
+  that only exact versions will ever be retrieved by `T_GET_PKGS`
+- `pkgExists`: is a list of existing pkgIds (so they are not re-retrieved).
 
 ```
 {
     F_TYPE:T_GET_PKG,
     dir: <tmpDir>,
     definitionOnly: bool,
-    ..getPkg
+    pkgVersions: <list-of-pkgVersion strings>
 }
 ```
 
-It must then return `rc=0` and have the pkg retrieved within the `dir` passed to it.
-
 If the pkg has a [[.localDependenciesFile]] then it must also retrieve the
 required dependencies and put them in the directories specified in that file.
+
+## `T_GET_CANDIDATES`
+
+```jsonnet
+{
+    F_TYPE:T_GET_CANDIDATES,
+    pkgReqs: <list of pkg requiremnts>,
+    known: list[pkgKey],
+}
+```
+
+- `pkgReqs` is a list of pkg reqs of the form `["name(namespace)(>=1.2,<=3)"]`.
+  Note: all semverReq will be of the form `(min,max)`.
+
+The retriever should return a list of possible candidates. The list should have
+items of the form:
+
+```
+{
+    pkgVer: <version>,
+    pkgs: [pkgReq],
+}
+```
 
 
 ## [[.store]] Store

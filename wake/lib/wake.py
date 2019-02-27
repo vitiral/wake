@@ -130,7 +130,6 @@ def store_local(config, local_abs):
 
     # recursively store all local dependencies first
     deps = {}
-    import pdb; pdb.set_trace()
     for dep in local_manifest.all:
         if dep.is_unresolved() and dep.is_from_local():
             deps[dep.from_] = store_local(
