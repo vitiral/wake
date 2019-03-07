@@ -341,13 +341,13 @@
 
         recurseSimplify(pkg):
             if U.isUnresolved(pkg) then
-                pkg
+                [pkg]
             else
                 local simpleDeps = [
                     P.recurseSimplify(pkg.pkgs[dep])
                     for dep in std.objectFields(pkg.pkgs)
                 ];
-                [P.simplify(pkg)] + simpleDeps,
+                [P.simplify(pkg)] + std.flattenArrays(simpleDeps),
 
         simplify(pkg): {
             [wake.F_TYPE]: pkg[wake.F_TYPE],

@@ -117,14 +117,15 @@ class Config(object):
 
 def run_cycle(config, root_config, locked):
     """Run a cycle with the config and root_config at the current setting."""
-    pkgs = config.run_pkg(root_config, locked).all
+    manifest = config.run_pkg(root_config, locked)
 
     num_unresolved = 0
-    for pkg in pkgs:
+    for pkg in manifest.all:
         if isinstance(pkg, PkgUnresolved):
             num_unresolved += 1
             config.handle_unresolved_pkg(pkg)
 
+    return (num_unresolved, manifest)
 
 def store_local(config, local_abs, locked):
     """Recursively traverse local dependencies, putting them in the store.
@@ -193,14 +194,18 @@ def build(args):
     locked = {}
     store_local(config, config.base, locked)
 
-    print("-> Starting build cycles")
+
+    print("## BUILD CYCLES")
+
+    cycle = 0
+    print("-- cycle", cycle, "--")
+    print("-> locked pkgs")
+    pp(locked)
     # TODO: run in loop
-    run_cycle(config, root_config, locked)
+    unresolved, manifest = run_cycle(config, root_config, locked)
 
-    set_trace()
-
-    print("## MANIFEST")
-    pp(config.run_pkg(root_config).to_dict())
+    print("-> manifest below. unresolved={}".format(unresolved))
+    pp(manifest.to_dict())
 
 
 def parse_args(argv):
