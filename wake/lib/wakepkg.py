@@ -249,15 +249,5 @@ class PkgConfig(object):
     def paths_abs(self, relpaths):
         return map(self.path_abs, relpaths)
 
-    def assert_fingerprint_matches(self, pkgSimple, check_against=None):
-        """Assert that the defined fingerprints all match.
-        """
-        fingerprint = self.get_current_fingerprint()
-        computed = self.compute_pkg_fingerprint()
-        assert fingerprint == computed, "own fingerprint does not match."
-
-        if check_against is not None:
-            assert fingerprint == check_against
-
     def __repr__(self):
         return "PkgConfig({})".format(self.base)

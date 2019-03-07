@@ -67,6 +67,7 @@ DIR_LOCAL_STORE = wakeConstants["DIR_LOCAL_STORE"]
 FILE_RUN = wakeConstants["FILE_RUN"]
 FILE_PKG = wakeConstants["FILE_PKG"]
 FILE_PKGS = wakeConstants["FILE_PKGS"]
+FILE_STORE_META = "storeMeta.json"
 
 FILE_FINGERPRINT = wakeConstants["FILE_FINGERPRINT"]
 FILE_LOCAL_DEPENDENCIES = wakeConstants["FILE_LOCAL_DEPENDENCIES"]
@@ -100,7 +101,6 @@ local root = wake._private.recurseDefinePkg(wake, pkgInitial);
 def manifest_jsonnet(path):
     """Manifest a jsonnet path."""
     cmd = ["jsonnet", path]
-    print("calling", cmd)
     completed = subprocess.run(
         cmd,
         stdout=subprocess.PIPE,

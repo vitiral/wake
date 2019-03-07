@@ -44,39 +44,71 @@ class Store(object):
         else:
             pcache = pjoin(self.pkgs, simple_pkg.pkg_id)
 
-        if path.exists(pcache):
-            return # TODO: check that it is done
+        if load_pkg_meta(pcache):
+            return
 
-        if os.path.exists(pcache):
-            pkg_exists = PkgConfig(pcache)
-            fingerprintexists = pkg_exists.get_current_fingerprint()
-            # TODO: do this
-            # pkg_config.assert_fingerprint_matches(fingerprintexists)
-        else:
-            assert path.exists(self.pkgs), self.pkgs
-            os.mkdir(pcache)
-            for fsentry_rel in simple_pkg.get_fsentries():
-                assert_valid_path(fsentry_rel)
-                copy_fsentry(pkg_config.path_abs(fsentry_rel), pjoin(pcache, fsentry_rel))
+        os.mkdir(pcache)
+        wake_path = pjoin(pcache, DIR_WAKE)
+        for fsentry_rel in simple_pkg.get_fsentries():
+            assert_valid_path(fsentry_rel)
+            fsentry_abs = pjoin(pcache, fsentry_rel)
+            if fsentry_abs == wake_path:
+                raise ValueError(
+                    "package {} has .wake/ in its defFiles.".format(simple_pkg.pkg_id)
+                )
+            copy_fsentry(pkg_config.path_abs(fsentry_rel), fsentry_abs)
 
-            # TODO: load, validate hash, validate that .wake doesn't exist, etc
-            # TODO: write that state=done in fingerprint
-            copy_fsentry(pkg_config.pkg_fingerprint, pcache)
+        copy_fsentry(pkg_config.pkg_fingerprint, pcache)
+        meta = StoreMeta(state=S_DECLARED)
+        jsondumpf(pkg_meta_path(pcache), meta.to_dict())
 
     def get_pkg_path(self, pkg_id, def_okay=False):
         pkg_str = str(pkg_id)
         pkgPath = pjoin(self.pkgs_local, pkg_str)
-        if os.path.exists(pkgPath):
+        if load_pkg_meta(pkgPath):
             return pkgPath
 
         pkgPath = pjoin(self.pkgs, pkg_str)
-        if os.path.exists(pkgPath):
+        if load_pkg_meta(pkgPath):
             return pkgPath
 
         if def_okay:
             pkgPath = pjoin(self.defined, pkg_str)
-            if os.path.exists(pkgPath):
+            if load_pkg_meta(pkgPath):
                 return pkgPath
 
         return None
 
+
+class StoreMeta(object):
+    def __init__(self, state):
+        self.state = state
+
+    @classmethod
+    def from_dict(cls, dct):
+        return cls(
+            state = dct['state'],
+        )
+
+    def to_dict(self):
+        return {
+            'state': self.state,
+        }
+
+
+def load_pkg_meta(pcache_path):
+    if not os.path.exists(pcache_path):
+        return None
+
+    try:
+        dct = jsonloadf(pkg_meta_path(pcache_path))
+        return StoreMeta.from_dict(dct)
+    except (json.decoder.JSONDecodeError, KeyError):
+        # There was something at the path, but it was a partial pkg. It must be
+        # removed.
+        shutil.rmtree(pcache_path)
+        return None
+
+
+def pkg_meta_path(pcache_path):
+    return path.join(pcache_path, DIR_WAKE, FILE_STORE_META)

@@ -53,7 +53,6 @@ class Config(object):
             pkg_root=pkg_config.pkg_root,
         )
 
-        print(">> dumping defined to", self.pkgs_defined)
         with open(self.pkgs_defined, 'w') as fd:
             fd.write("{\n")
             for pkg_key, pkg_id in locked.items():
@@ -82,6 +81,16 @@ class Config(object):
         hashstuff.update_paths(pkg_config.paths_abs(root.paths))
         hashstuff.update_paths(pkg_config.paths_abs(root.def_paths))
         return Fingerprint(hash_=hashstuff.reduce(), hash_type=hashstuff.hash_type)
+
+    def assert_fingerprint_matches(self, pkg_config):
+        fingerprint = pkg_config.get_current_fingerprint()
+        computed = self.compute_pkg_fingerprint(pkg_config)
+
+        if fingerprint != computed:
+            raise ValueError("fingerprints do no match:\nfingerprint.json={}\ncomputed={}".format(
+                fingerprint,
+                computed,
+            ))
 
     def dump_pkg_fingerprint(self, pkg_config, local_deps=None):
         local_deps = local_deps or {}
@@ -198,14 +207,26 @@ def build(args):
     print("## BUILD CYCLES")
 
     cycle = 0
-    print("-- cycle", cycle, "--")
-    print("-> locked pkgs")
-    pp(locked)
-    # TODO: run in loop
-    unresolved, manifest = run_cycle(config, root_config, locked)
+    unresolved = -1
+    while unresolved:
+        print("### CYCLE={}".format(cycle))
+        print("-> locked pkgs")
+        pp(locked)
+        # TODO: run in loop
+        new_unresolved, manifest = run_cycle(config, root_config, locked)
 
-    print("-> manifest below. unresolved={}".format(unresolved))
-    pp(manifest.to_dict())
+        print("-> manifest below. unresolved={}".format(new_unresolved))
+        pp(manifest.to_dict())
+
+        if unresolved == new_unresolved:
+            fail("deadlock detected: unresolved has not changed for a cycle")
+        unresolved = new_unresolved
+        cycle += 1
+
+
+
+def fail(msg):
+    raise RuntimeError("FAIL: " + msg)
 
 
 def parse_args(argv):
