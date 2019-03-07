@@ -9,7 +9,7 @@ function(wake) {
             "./wake",
         ],
         pkgs= {
-            libA: wake.getPkg(wake.pkgReq("libA"), from="./experiment/libA"),
+            libA: wake.getPkg(wake.pkgReq(null, "libA"), from="./experiment/libA"),
         },
         exports = function(wake, pkg) {
             answer: 42,

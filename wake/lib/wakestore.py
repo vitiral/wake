@@ -38,7 +38,7 @@ class Store(object):
         rmtree(self.defined)
         rmtree(self.pkgs)
 
-    def add_pkg_path(self, pkg_config, simple_pkg, local=False):
+    def add_pkg(self, pkg_config, simple_pkg, local=False):
         if local:
             pcache = pjoin(self.pkgs_local, simple_pkg.pkg_id)
         else:

@@ -15,18 +15,19 @@
 (import "wakeConstants.json") + {
     local wake = self,
     local U = wake.util,
+    local _P = wake._private,
 
     // (#SPC-api.pkgId): The exact id of a pkg.
     //
     // This is similar to pkgReq except it is the _exact_ pkg, with the hash
     // included in the Id.
-    pkgId(name, version, namespace, hash):
+    pkgId(namespace, name, version, hash):
         assert std.isString(hash) : "hash must be string";
         // Note: the version must be an exact semver, but is checked later.
-        "%s,%s" % [
-            wake.pkgReq(name, version, namespace),
+        std.join(wake.WAKE_SEP, [
+            wake.pkgReq(namespace, name, version),
             hash,
-        ],
+        ]),
 
     // (#SPC-api.pkgReq): a pkg requirement with a semantic version.
     //
@@ -37,7 +38,10 @@
     // - It is an error for any field to have commas.
     // - versionReq must be a valid semverReq
     pkgReq(
-        // The name of the pkgReq.
+        // The namespace to find the pkg.
+        namespace,
+
+        // The name of the pkg.
         name,
 
         // The version requirements of the pkgReq.
@@ -46,29 +50,33 @@
         // into account other pkgs to use as few pkgs as possible.
         versionReq=null,
 
-        // The namespace to find the pkg.
-        namespace=null
     ): {
-        # TODO: convert to this form, as `,` is allowed in semver requirements.
-        # name#namespace#version
-        # name##version
         local versionStr = U.stringDefault(versionReq),
-        local namespaceStr = U.stringDefault(namespace),
-        local namespaceLen = std.length(namespaceStr),
-        local hasComma = function(s) U.containsChr(',', s),
 
-        assert std.length(name) > 3: "name length must be > 3",
-        assert namespaceLen == 0 || namespaceLen > 3: "namespace length must be > 3",
-        assert !hasComma(name): "name must not contain ','",
-        assert !hasComma(versionStr): "versionReq must not contain ','",
-        assert !hasComma(namespaceStr): "namespace must not contain ','",
+        assert !_P.hasSep(versionStr): "versionReq must not contain '#'",
 
-        result: '%s,%s,%s' %[
-            name,
+        result: std.join(wake.WAKE_SEP, [
+            wake.pkgKey(namespace, name),
             versionStr,
-            namespaceStr,
-        ],
+        ]),
     }.result,
+
+
+    // A more generalized version of the pkg. Used when looking up pkgs from
+    // locked packages.
+    pkgKey(namespace, name):
+        local namespaceStr = U.stringDefault(namespace);
+        local namespaceLen = std.length(namespaceStr);
+
+        assert namespaceLen == 0 || namespaceLen > 3: "namespace length must be > 3";
+        assert !_P.hasSep(namespaceStr): "namespace must not contain '#'";
+        assert std.length(name) > 3: "name length must be > 3";
+        assert !_P.hasSep(name): "name must not contain '#'";
+
+        std.join(wake.WAKE_SEP, [
+            namespaceStr,
+            name,
+        ]),
 
     // (#SPC-api.getPkg): retrieve a pkg lazily.
     getPkg(
@@ -79,15 +87,15 @@
         from=null
     ):
         # TODO: check in completePkgs first
-        local pkgsDefined = wake._private.pkgsDefined;
-        local pkgCompletes = wake._private.pkgCompletes;
+        local pkgsDefined = _P.pkgsDefined;
+        local pkgCompletes = _P.pkgCompletes;
 
         if pkgReq in pkgsDefined then
             // TODO: must keep track of all ways we got the pkg
             local pkgFn = pkgsDefined[pkgReq];
             pkgFn(wake)
         else
-            wake._private.unresolvedPkg(pkgReq, from),
+            _P.unresolvedPkg(pkgReq, from),
 
     // (#SPC-api.declarePkg): declare a pkg.
     //
@@ -160,7 +168,7 @@
         name: name,
         version: version,
         namespace: U.stringDefault(namespace),
-        pkgId: wake.pkgId(name, version, namespace, fingerprint.hash),
+        pkgId: wake.pkgId(namespace, name, version, fingerprint.hash),
 
         defPaths: U.arrayDefault(defPaths),
         paths: U.arrayDefault(paths),
@@ -366,6 +374,8 @@
             },
             exports: pkg.exports,
         },
+
+        hasSep(s): U.containsChr(wake.WAKE_SEP, s),
     },
 
     util: {
@@ -388,9 +398,6 @@
         // General Helpers
         boolToInt(bool): if bool then 1 else 0,
         containsChr(c, str): !(std.length(std.splitLimit(str, c, 1)) == 1),
-        isVersionSingle(ver): {
-            local arr = ver.split(ver, '.')
-        },
 
         // Default functions return empty containers on null
         arrayDefault(arr): if arr == null then [] else arr,

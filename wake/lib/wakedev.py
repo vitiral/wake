@@ -39,6 +39,8 @@ HERE_DIR = path.dirname(abspath(__file__))
 wakelib = pjoin(HERE_DIR, "wake.libsonnet")
 wakeConstants = jsonloadf(pjoin(HERE_DIR, "wakeConstants.json"))
 
+WAKE_SEP = wakeConstants["WAKE_SEP"]
+
 F_TYPE = wakeConstants["F_TYPE"]
 F_STATE = wakeConstants["F_STATE"]
 F_HASH = wakeConstants["F_HASH"]

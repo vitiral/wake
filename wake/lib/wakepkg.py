@@ -17,28 +17,31 @@ from wakehash import *
 
 
 class PkgKey(object):
-    def __init__(self, name, namespace):
-        self.name = name
+    def __init__(self, namespace, name):
         self.namespace = namespace
+        self.name = name
+
+    def __hash__(self):
+        return hash((self.namespace, self.name))
 
     def __str__(self):
-        return ','.join((self.name, self.namespace))
+        return WAKE_SEP.join((self.namespace, self.name))
 
     def __repr__(self):
         return "PkgKey({})".format(self)
 
 
 class PkgReq(object):
-    def __init__(self, name, namespace, version, hash_=None):
-        self.name = name
+    def __init__(self, namespace, name, version, hash_=None):
         self.namespace = namespace
+        self.name = name
         self.version = version
         self.hash = hash_
 
     @classmethod
     def from_str(cls, s):
-        spl = s.split(',')
-        name, namespace, version = spl[:3]
+        spl = s.split(WAKE_SEP)
+        namespace, name, version = spl[:3]
         if len(spl) > 4:
             raise ValueError(s)
         elif len(spl) == 4:
@@ -46,21 +49,20 @@ class PkgReq(object):
         else:
             hash_ = None
 
-        return cls(name, namespace, version, hash_)
+        return cls(namespace, name, version, hash_)
 
     def __str__(self):
         out = [
-            self.name,
             self.namespace,
+            self.name,
             self.version,
         ]
         if self.hash:
             out.append(self.hash)
-        return ",".join(out)
+        return WAKE_SEP.join(out)
 
     def __repr__(self):
         return "PkgReq({})".format(self)
-
 
 
 
@@ -109,11 +111,11 @@ class Fingerprint(object):
 
 class PkgSimple(object):
     """Pull out only the data we care about."""
-    def __init__(self, state, pkg_id, name, version, namespace, fingerprint, paths, def_paths):
+    def __init__(self, state, pkg_id, namespace, name, version, fingerprint, paths, def_paths):
         hash_ = fingerprint['hash']
-        expected_pkg_id = [name, version, namespace, hash_]
-        assert expected_pkg_id == pkg_id.split(','), (
-            "pkgId != 'name,version,namespace,hash':\n{}\n{}".format(
+        expected_pkg_id = [namespace, name, version, hash_]
+        assert expected_pkg_id == pkg_id.split(WAKE_SEP), (
+            "pkgId != 'namespace#name#version#hash':\n{}\n{}".format(
                 pkg_id, expected_pkg_id))
 
         assert_valid_paths(paths)
@@ -122,14 +124,25 @@ class PkgSimple(object):
         self.state = state
         self.pkg_root = path.join("./", FILE_PKG)
         self.pkg_local_deps = path.join("./", DIR_WAKE, FILE_LOCAL_DEPENDENCIES)
+        # TODO: pkg_id_str and pkg_id
         self.pkg_id = pkg_id
-        self.name = name
         self.namespace = namespace
+        self.name = name
         self.version = version
         self.fingerprint = fingerprint
 
         self.paths = paths
         self.def_paths = def_paths
+
+    def get_pkg_key(self):
+        return PkgKey(self.namespace, self.name)
+
+    def __repr__(self):
+        return "{}(id={}, state={})".format(
+            self.__class__.__name__,
+            self.pkg_id,
+            self.state
+        )
 
     @classmethod
     def from_dict(cls, dct):
@@ -139,9 +152,9 @@ class PkgSimple(object):
         return cls(
             state=dct[F_STATE],
             pkg_id=dct['pkgId'],
+            namespace=dct['namespace'],
             name=dct['name'],
             version=dct['version'],
-            namespace=dct['namespace'],
             fingerprint=dct['fingerprint'],
             paths=dct['paths'],
             def_paths=dct['defPaths'],

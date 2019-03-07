@@ -44,8 +44,8 @@ class Config(object):
     def remove_caches(self):
         self.store.remove_store()
 
-    def run_pkg(self, pkg_config, pkgs_defined=None):
-        pkgs_defined = {} if pkgs_defined is None else pkgs_defined
+    def run_pkg(self, pkg_config, locked=None):
+        locked = {} if locked is None else locked
 
         runtxt = RUN_TEMPLATE.format(
             wakelib=wakelib,
@@ -55,10 +55,10 @@ class Config(object):
 
         with open(self.pkgs_defined, 'w') as fd:
             fd.write("{\n")
-            for pkg_id, pkg_path_abs in pkgs_defined.items():
+            for pkg_key, pkg_id in locked.items():
                 line = "  \"{}\": import \"{}\",\n".format(
-                    pkg_id,
-                    pkg_path_abs
+                    pkg_key,
+                    self.store.get_pkg_path(pkg_id),
                 )
                 fd.write(line)
             fd.write("}\n")
@@ -112,7 +112,7 @@ class Config(object):
 
 ## COMMANDS AND MAIN
 
-def run_cycle(config, root_config):
+def run_cycle(config, root_config, locked):
     """Run a cycle with the config and root_config at the current setting."""
     pkgs = config.run_pkg(root_config).all
 
@@ -152,12 +152,14 @@ def store_local(config, local_abs, locked):
     config.dump_pkg_fingerprint(local_config, deps)
 
     local_pkg = config.run_pkg(local_config).root
-    config.store.add_pkg_path(
+    config.store.add_pkg(
         local_config,
         # Note: we don't pass deps here because we only care about hashes
         local_pkg,
         local=True,
     )
+
+    locked[local_pkg.get_pkg_key()] = local_pkg.pkg_id
 
     return local_pkg
 
@@ -190,7 +192,7 @@ def build(args):
 
     print("-> Starting build cycles")
     # TODO: run in loop
-    run_cycle(config, root_config)
+    run_cycle(config, root_config, locked)
 
     print("## MANIFEST")
     pp(config.run_pkg(root_config).to_dict())

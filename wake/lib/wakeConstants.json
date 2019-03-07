@@ -1,5 +1,7 @@
 
 {
+    "WAKE_SEP": "#",
+
     "F_TYPE": "__WAKETYPE__",
     "F_STATE": "__WAKESTATE__",
     "F_HASH": "hashType",
