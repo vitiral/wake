@@ -124,6 +124,7 @@ class PkgSimple(object):
         self.state = state
         self.pkg_root = path.join("./", FILE_PKG)
         self.pkg_local_deps = path.join("./", DIR_WAKE, FILE_LOCAL_DEPENDENCIES)
+        self.pkg_fingerprint = path.join("./", DIR_WAKE, FILE_FINGERPRINT)
         # TODO: pkg_id_str and pkg_id
         self.pkg_id = pkg_id
         self.namespace = namespace
@@ -171,7 +172,11 @@ class PkgSimple(object):
 
     def get_def_fsentries(self):
         """Return all defined pkgs, including root."""
-        default = [self.pkg_root, self.pkg_local_deps]
+        default = [
+            self.pkg_root,
+            self.pkg_local_deps,
+            self.pkg_fingerprint,
+        ]
         return itertools.chain(default, self.def_paths)
 
     def get_fsentries(self):
@@ -223,7 +228,7 @@ class PkgUnresolved(object):
 class PkgConfig(object):
     def __init__(self, base):
         self.base = abspath(base)
-        self.pkg_root = pjoin(self.base, "PKG.libsonnet")
+        self.pkg_root = pjoin(self.base, FILE_PKG)
         self.wakedir = pjoin(self.base, ".wake")
         self.pkg_fingerprint = pjoin(self.wakedir, FILE_FINGERPRINT)
         self.path_local_deps = pjoin(self.wakedir, FILE_LOCAL_DEPENDENCIES)

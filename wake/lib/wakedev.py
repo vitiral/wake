@@ -65,6 +65,7 @@ DIR_WAKE = wakeConstants["DIR_WAKE"]
 DIR_LOCAL_STORE = wakeConstants["DIR_LOCAL_STORE"]
 
 FILE_RUN = wakeConstants["FILE_RUN"]
+FILE_PKG = wakeConstants["FILE_PKG"]
 FILE_PKGS = wakeConstants["FILE_PKGS"]
 
 FILE_FINGERPRINT = wakeConstants["FILE_FINGERPRINT"]

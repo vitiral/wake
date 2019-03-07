@@ -53,15 +53,18 @@ class Config(object):
             pkg_root=pkg_config.pkg_root,
         )
 
+        print(">> dumping defined to", self.pkgs_defined)
         with open(self.pkgs_defined, 'w') as fd:
             fd.write("{\n")
             for pkg_key, pkg_id in locked.items():
-                line = "  \"{}\": import \"{}\",\n".format(
+                line = "  \"{}\": import \"{}/{}\",\n".format(
                     pkg_key,
                     self.store.get_pkg_path(pkg_id),
+                    FILE_PKG,
                 )
                 fd.write(line)
             fd.write("}\n")
+            os.fsync(fd)
 
         dumpf(self.run, runtxt)
 
@@ -114,7 +117,7 @@ class Config(object):
 
 def run_cycle(config, root_config, locked):
     """Run a cycle with the config and root_config at the current setting."""
-    pkgs = config.run_pkg(root_config).all
+    pkgs = config.run_pkg(root_config, locked).all
 
     num_unresolved = 0
     for pkg in pkgs:
@@ -131,10 +134,9 @@ def store_local(config, local_abs, locked):
     local_config = PkgConfig(local_abs)
     local_manifest = config.run_pkg(local_config)
     local_pkg = local_manifest.root
-    local_key = str(PkgKey(local_pkg.name, local_pkg.namespace))
+    local_key = local_pkg.get_pkg_key()
     if local_key in locked:
         raise ValueError("Attempted to add {} to local overrides twice.".format(local_key))
-    locked[local_key] = local_pkg.version
 
     # recursively store all local dependencies first
     deps = {}
@@ -152,14 +154,15 @@ def store_local(config, local_abs, locked):
     config.dump_pkg_fingerprint(local_config, deps)
 
     local_pkg = config.run_pkg(local_config).root
+    if local_key in locked:
+        raise ValueError("Attempted to add {} to local overrides twice.".format(local_key))
+    locked[local_key] = local_pkg.pkg_id
     config.store.add_pkg(
         local_config,
         # Note: we don't pass deps here because we only care about hashes
         local_pkg,
         local=True,
     )
-
-    locked[local_pkg.get_pkg_key()] = local_pkg.pkg_id
 
     return local_pkg
 
@@ -193,6 +196,8 @@ def build(args):
     print("-> Starting build cycles")
     # TODO: run in loop
     run_cycle(config, root_config, locked)
+
+    set_trace()
 
     print("## MANIFEST")
     pp(config.run_pkg(root_config).to_dict())

@@ -86,13 +86,11 @@
         // A local path (string) or `exec` to use for retrieving the path.
         from=null
     ):
-        # TODO: check in completePkgs first
-        local pkgsDefined = _P.pkgsDefined;
-        local pkgCompletes = _P.pkgCompletes;
-
-        if pkgReq in pkgsDefined then
+        local pkgKey = _P.getPkgKey(pkgReq);
+        # TODO: check in pkgsComplete first
+        if pkgKey in _P.pkgsDefined then
             // TODO: must keep track of all ways we got the pkg
-            local pkgFn = pkgsDefined[pkgReq];
+            local pkgFn = _P.pkgsDefined[pkgKey];
             pkgFn(wake)
         else
             _P.unresolvedPkg(pkgReq, from),
@@ -376,6 +374,10 @@
         },
 
         hasSep(s): U.containsChr(wake.WAKE_SEP, s),
+
+        getPkgKey(str):
+            local items = std.splitLimit(str, wake.WAKE_SEP, 3);
+            wake.pkgKey(items[0], items[1]),
     },
 
     util: {
