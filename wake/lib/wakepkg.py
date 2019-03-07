@@ -118,8 +118,16 @@ class PkgSimple(object):
             "pkgId != 'namespace#name#version#hash':\n{}\n{}".format(
                 pkg_id, expected_pkg_id))
 
-        assert_valid_paths(paths)
-        assert_valid_paths(def_paths)
+        invalid_paths = []
+        for p in itertools.chain(paths, def_paths):
+            try:
+                assert_valid_path(p)
+                assert_not_wake(p)
+            except ValueError as e:
+                invalid_paths.append("{}: {}".format(p, e.message))
+
+        if invalid_paths:
+            raise ValueError("{} has Invalid paths:\n{}".format(pkg_id, "\n".join(invalid_paths)))
 
         self.state = state
         self.pkg_root = path.join("./", FILE_PKG)

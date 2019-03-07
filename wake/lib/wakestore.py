@@ -48,15 +48,8 @@ class Store(object):
             return
 
         os.mkdir(pcache)
-        wake_path = pjoin(pcache, DIR_WAKE)
         for fsentry_rel in simple_pkg.get_fsentries():
-            assert_valid_path(fsentry_rel)
-            fsentry_abs = pjoin(pcache, fsentry_rel)
-            if fsentry_abs == wake_path:
-                raise ValueError(
-                    "package {} has .wake/ in its defFiles.".format(simple_pkg.pkg_id)
-                )
-            copy_fsentry(pkg_config.path_abs(fsentry_rel), fsentry_abs)
+            copy_fsentry(pkg_config.path_abs(fsentry_rel), pjoin(pcache, fsentry_rel))
 
         copy_fsentry(pkg_config.pkg_fingerprint, pcache)
         meta = StoreMeta(state=S_DECLARED)

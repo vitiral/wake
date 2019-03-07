@@ -62,6 +62,7 @@ FILE_PKG = wakeConstants["FILE_PKG"]  # #SPC-arch.pkgFile
 
 # See #SPC-arch.wakeDir
 DIR_WAKE = wakeConstants["DIR_WAKE"]
+DIR_WAKE_REL = path.join(".", DIR_WAKE)
 DIR_LOCAL_STORE = wakeConstants["DIR_LOCAL_STORE"]
 
 FILE_RUN = wakeConstants["FILE_RUN"]
@@ -149,6 +150,10 @@ def assert_valid_path(p):
         raise ValueError("all paths must start with ./: " + p)
     if sum(filter(lambda c: c == '..', p.split('/'))):
         raise ValueError("paths must not have `..` components: " + p)
+
+def assert_not_wake(p):
+    if p.startswith(DIR_WAKE_REL):
+        raise ValueError("paths must not start with {}: {}".format(DIR_WAKE_REL, p))
 
 
 def is_pkg(dct):
