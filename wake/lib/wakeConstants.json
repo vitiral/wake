@@ -1,6 +1,6 @@
 
 {
-    "WAKE_SEP": "#",
+    "WAKE_SEP": "@",
 
     "F_TYPE": "__WAKETYPE__",
     "F_STATE": "__WAKESTATE__",
