@@ -6,10 +6,10 @@
 > it aims to accomplish is within reach, but is not yet functional. Currently
 > it can only store local dependencies in a store and resolve a local PKG file.
 
-**wake** is a functional package manger and build system for the web. Its basic
-architecture is to enable the utmost _simplicity_ and _extensibility_ in a pkg
-and build system. It is inspired from other build tools such as Nix, Bazel and
-portage but is not related to any of them directly.
+**wake** is a functional package manager and build system for the web. Its
+basic architecture is to enable the utmost _simplicity_ and _extensibility_ in
+a pkg and build system. It is inspired from other build tools such as Nix,
+Bazel and portage but is not related to any of them directly.
 
 Its tennets are:
 - **Simplicity**: pkg retrieval and module builds are fully reproducible and are
@@ -60,7 +60,7 @@ before version 0.1.0 (alpha):
 
 - (70% complete) `wake.libsonnet` library
 - (90% complete) local pkg resolution overrides
-- (50% complete) [pkg version tree resolution](https://github.com/vitiral/python-semanticversion/blob/master/ARCH_EDGES.md)
+- (10% complete) pkg version tree resolution
 - (0% complete) `pkg-retrieval` plugin
 - (0% complete) `fsentry-resolver` plugin
 - (0% complete) exec implementation

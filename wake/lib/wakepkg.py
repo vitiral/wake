@@ -16,6 +16,54 @@ from wakedev import *
 from wakehash import *
 
 
+class PkgKey(object):
+    def __init__(self, name, namespace):
+        self.name = name
+        self.namespace = namespace
+
+    def __str__(self):
+        return ','.join((self.name, self.namespace))
+
+    def __repr__(self):
+        return "PkgKey({})".format(self)
+
+
+class PkgReq(object):
+    def __init__(self, name, namespace, version, hash_=None):
+        self.name = name
+        self.namespace = namespace
+        self.version = version
+        self.hash = hash_
+
+    @classmethod
+    def from_str(cls, s):
+        spl = s.split(',')
+        name, namespace, version = spl[:3]
+        if len(spl) > 4:
+            raise ValueError(s)
+        elif len(spl) == 4:
+            hash_ = spl[3]
+        else:
+            hash_ = None
+
+        return cls(name, namespace, version, hash_)
+
+    def __str__(self):
+        out = [
+            self.name,
+            self.namespace,
+            self.version,
+        ]
+        if self.hash:
+            out.append(self.hash)
+        return ",".join(out)
+
+    def __repr__(self):
+        return "PkgReq({})".format(self)
+
+
+
+
 class PkgManifest(object):
     """The result of "running" a pkg."""
     def __init__(self, root, all_pkgs):
@@ -77,6 +125,7 @@ class PkgSimple(object):
         self.pkg_id = pkg_id
         self.name = name
         self.namespace = namespace
+        self.version = version
         self.fingerprint = fingerprint
 
         self.paths = paths
@@ -123,13 +172,16 @@ class PkgSimple(object):
 
 
 class PkgUnresolved(object):
-    def __init__(self, pkg_req, from_):
+    def __init__(self, pkg_req, from_, full):
         if isinstance(from_, str) and not from_.startswith('./'):
             raise TypeError(
                 "{}: from must start with ./ for local pkgs: {}"
                 .format(pkg_req, from_))
+        if isinstance(pkg_req, str):
+            pkg_req = PkgReq.from_str(pkg_req)
         self.pkg_req = pkg_req
         self.from_ = from_
+        self.full = full
 
     @classmethod
     def from_dict(cls, dct):
@@ -139,6 +191,7 @@ class PkgUnresolved(object):
         return cls(
             pkg_req=dct['pkgReq'],
             from_=dct['from'],
+            full=dct,
         )
 
     def to_dict(self):

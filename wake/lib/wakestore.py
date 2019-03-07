@@ -64,16 +64,17 @@ class Store(object):
             copy_fsentry(pkg_config.pkg_fingerprint, pcache)
 
     def get_pkg_path(self, pkg_id, def_okay=False):
-        pkgPath = pjoin(self.pkgs_local, pkg_id)
+        pkg_str = str(pkg_id)
+        pkgPath = pjoin(self.pkgs_local, pkg_str)
         if os.path.exists(pkgPath):
             return pkgPath
 
-        pkgPath = pjoin(self.pkgs, pkg_id)
+        pkgPath = pjoin(self.pkgs, pkg_str)
         if os.path.exists(pkgPath):
             return pkgPath
 
         if def_okay:
-            pkgPath = pjoin(self.defined, pkg_id)
+            pkgPath = pjoin(self.defined, pkg_str)
             if os.path.exists(pkgPath):
                 return pkgPath
 

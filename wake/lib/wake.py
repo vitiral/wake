@@ -24,6 +24,7 @@ class Config(object):
         self.base = os.getcwd()
 
         root_config = PkgConfig(self.base)
+        self.pkgs_locked = pjoin(root_config.wakedir, "pkgsLocked.json")
         self.pkgs_defined = pjoin(root_config.wakedir, "pkgsDefined.jsonnet")
         self.run = pjoin(root_config.wakedir, "run.jsonnet")
 
@@ -122,11 +123,18 @@ def run_cycle(config, root_config):
             config.handle_unresolved_pkg(pkg)
 
 
-def store_local(config, local_abs):
+def store_local(config, local_abs, locked):
     """Recursively traverse local dependencies, putting them in the store.
+
+    Also stores own version in the lockfile.
     """
     local_config = PkgConfig(local_abs)
     local_manifest = config.run_pkg(local_config)
+    local_pkg = local_manifest.root
+    local_key = str(PkgKey(local_pkg.name, local_pkg.namespace))
+    if local_key in locked:
+        raise ValueError("Attempted to add {} to local overrides twice.".format(local_key))
+    locked[local_key] = local_pkg.version
 
     # recursively store all local dependencies first
     deps = {}
@@ -134,7 +142,8 @@ def store_local(config, local_abs):
         if dep.is_unresolved() and dep.is_from_local():
             deps[dep.from_] = store_local(
                 config,
-                pjoin(local_abs, dep.from_)
+                pjoin(local_abs, dep.from_),
+                locked,
             ).pkg_id
 
     deps = OrderedDict(sorted(deps.items()))
@@ -176,7 +185,8 @@ def build(args):
     #   is stored in the local store.
     # - When retieving pkgs, we first check if the VERSION is in the local store.
     #   if it is, we take it.
-    store_local(config, config.base)
+    locked = {}
+    store_local(config, config.base, locked)
 
     print("-> Starting build cycles")
     # TODO: run in loop
