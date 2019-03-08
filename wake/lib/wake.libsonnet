@@ -356,10 +356,6 @@ C + { local wake = self
             local recurseMaybe = function(depPkg)
                 if U.isUnresolved(depPkg) then
                     depPkg
-                    // if depPkg.fromPkg == null then
-                    //     depPkg
-                    // else
-                    //     _P.handleGetPkgFromExec(depPkg)
                 else
                     P.recurseDefinePkg(wake, depPkg),
 
@@ -378,7 +374,7 @@ C + { local wake = self
                         if depPkg.fromPkg == null then
                             depPkg
                         else
-                            _P.handleGetPkgFromExec(depPkg)
+                            _P.handleGetPkgFromExec(this.returnPkg, depPkg)
                     else
                         depPkg
 
@@ -399,28 +395,18 @@ C + { local wake = self
             }
         }.returnPkg
 
-        , handleGetPkgFromExec(depPkg):
-            depPkg
-            # if U.isAtLeastDefined(depPkg.fromPkg) then
-            #     depPkg
-            #     # The exec is defined, this pkg is ready to be retrieved.
-            #     # local exec = U.getKeys(depPkg.fromPkg.exports, depPkg.from);
-            #     # assert U.isExecLocal(exec) :
-            #     #     "getPkg must use a local exec: "
-            #     #     + std.manifestJsonEx(exec, 2);
-            #     # depPkg + {
-            #     #     exec: exec,
-            #     #     fromPkg: depPkg.pkgId,
-            #     # }
-            # else
-            #     # The exec is not yet defined. Just strip the pkg for now.
-            #     depPkg
-            #     # + {
-            #     #     fromPkg: if 'pkgId' in depPkg.fromPkg then
-            #     #         depPkg.fromPkg['pkgId']
-            #     #     else
-            #     #         depPkg.fromPkg['pkgReq']
-            #     # }
+        , handleGetPkgFromExec(parentPkg, getPkg):
+            local pkgKey = getPkg.fromPkg;
+            assert pkgKey in parentPkg.pkgs :
+                parentPkg.pkgId + " does not contain " + pkgKey;
+            local execPkg = parentPkg.pkgs[pkgKey];
+
+            if U.isAtLeastDefined(execPkg) then
+                getPkg + {
+                    exec: U.getKeys(execPkg.exports, getPkg.from),
+                }
+            else
+                getPkg
 
         // Return if the newPkg is defined.
         , hasBeenDefined(oldPkg, newPkg):
@@ -488,16 +474,16 @@ C + { local wake = self
 
         // Wake status-check functions.
         , isUnresolved(obj):
-            assert U.isWakeObject(obj) : "value must be a wake object";
-            obj[C.F_STATE] == C.S_UNRESOLVED
+            U.isWakeObject(obj)
+            && obj[C.F_STATE] == C.S_UNRESOLVED
 
         , isDeclared(obj):
-            assert U.isWakeObject(obj) : "value must be a wake object";
-            obj[C.F_STATE] == C.S_DECLARED
+            U.isWakeObject(obj)
+            && obj[C.F_STATE] == C.S_DECLARED
 
         , isDefined(obj):
-            assert U.isWakeObject(obj) : "value must be a wake object";
-            obj[C.F_STATE] == C.S_DEFINED
+            U.isWakeObject(obj)
+            && obj[C.F_STATE] == C.S_DEFINED
 
         , isAtLeastDefined(obj):
             U.isDefined(obj)
@@ -508,8 +494,8 @@ C + { local wake = self
                 || obj[C.F_TYPE] == C.T_PATH_REF_MODULE)
 
         , isExec(obj):
-            assert U.isWakeObject(obj) : "value must be a wake object";
-            obj[C.F_TYPE] == C.T_EXEC
+            U.isWakeObject(obj)
+            && obj[C.F_TYPE] == C.T_EXEC
 
         , isExecLocal(obj):
             U.isExec(obj) && obj.container == C.EXEC_LOCAL
