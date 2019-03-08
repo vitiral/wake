@@ -103,17 +103,17 @@ class Config(object):
 
     def handle_unresolved_pkg(self, pkg):
         from_ = pkg.from_
+        from_pkg = pkg.from_pkg
 
-        if not isinstance(from_, str):
-            # raise NotYetImplementedError()
-            pass
-        else:
+        if pkg.is_from_local():
             # It is a path, it must _already_ be in the store
             out = self.store.get_pkg_path(pkg.pkg_req, def_okay=True)
             # TODO: to do this, I need the proper req tree
             # if out is None:
             #     raise ValueError("{} was not in the store".format(pkg))
             return out
+        else:
+            print("UNIMPLEMENTED: retrieve pkg", pkg.from_pkg, pkg.from_)
 
     def create_defined_pkgs(self, pkgs_defined):
         out = ["{"]

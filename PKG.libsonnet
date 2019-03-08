@@ -15,7 +15,7 @@ function(W)
         paths=[
             "./wake",
         ],
-        pkgs= {
+        pkgs = {
             libA: W.getPkg(W.pkgReq(null, "libA"), from="./experiment/libA"),
             fake: W.getPkg(W.pkgReq(null, "fake"), from='getFake', fromPkg=self.libA),
         },

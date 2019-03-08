@@ -353,23 +353,39 @@ C + { local wake = self
             local _ = std.trace("recurseDefinePkg in " + pkg.pkgId, null),
             local recurseMaybe = function(depPkg)
                 if U.isUnresolved(depPkg) then
-                    if depPkg.fromPkg == null then
-                        depPkg
-                    else
-                        _P.handleGetPkgFromExec(depPkg)
+                    depPkg
+                    // if depPkg.fromPkg == null then
+                    //     depPkg
+                    // else
+                    //     _P.handleGetPkgFromExec(depPkg)
                 else
                     P.recurseDefinePkg(wake, depPkg),
 
             returnPkg: pkg + {
-                [C.F_STATE]: if P.hasBeenDefined(pkg, this.returnPkg) then
-                    C.S_DEFINED else pkg[C.F_STATE],
-
-                pkgs: {
+                # Do a first pass on the pkgs.
+                local pkgsPass = {
                     [dep]: recurseMaybe(pkg.pkgs[dep])
                     for dep in std.objectFields(pkg.pkgs)
-                },
+                }
 
-                exports:
+                , [C.F_STATE]: if P.hasBeenDefined(pkg, this.returnPkg) then
+                    C.S_DEFINED else pkg[C.F_STATE]
+
+                , local defineGetPkg = function(depPkg)
+                    if U.isUnresolved(depPkg) then
+                        if depPkg.fromPkg == null then
+                            depPkg
+                        else
+                            _P.handleGetPkgFromExec(depPkg)
+                    else
+                        depPkg
+
+                , pkgs: {
+                    [dep]: defineGetPkg(pkgsPass[dep])
+                    for dep in std.objectFields(pkgsPass)
+                }
+
+                , exports:
                     if U.isDefined(this.returnPkg) then
                         local out = pkg.exports(wake, this.returnPkg);
                         assert std.isObject(out)
@@ -377,7 +393,7 @@ C + { local wake = self
                             % [this.returnPkg.pkgId];
                         out
                     else
-                        null,
+                        null
             }
         }.returnPkg
 
