@@ -166,7 +166,7 @@ class PkgSimple(object):
             version=dct['version'],
             fingerprint=dct['fingerprint'],
             paths=dct['paths'],
-            def_paths=dct['defPaths'],
+            def_paths=dct['pathsDef'],
         )
 
     def to_dict(self):
@@ -175,7 +175,7 @@ class PkgSimple(object):
             F_STATE: self.state,
             'pkgId': self.pkg_id,
             'paths': self.paths,
-            'defPaths': self.def_paths,
+            'pathsDef': self.def_paths,
         }
 
     def get_def_fsentries(self):

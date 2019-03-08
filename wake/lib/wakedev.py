@@ -49,7 +49,7 @@ F_HASHTYPE = wakeConstants["F_HASHTYPE"]
 T_OBJECT = wakeConstants["T_OBJECT"]
 T_PKG = wakeConstants["T_PKG"]
 T_MODULE = wakeConstants["T_MODULE"]
-T_FILE = wakeConstants["T_FILE"]
+T_PATH_REF = wakeConstants["T_PATH_REF"]
 
 S_UNRESOLVED = wakeConstants["S_UNRESOLVED"]
 S_DECLARED = wakeConstants["S_DECLARED"]

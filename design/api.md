@@ -28,6 +28,6 @@ The basic API of wake is:
 - [[.getPkg]]: retrieve a pkg lazily.
 - [[.declarePkg]]: declare a pkg.
 - [[.declareModule]]: declare how to build something with a pkg.
-- [[.fsentry]]: specify a file-system object within a pkg or module.
+- [[.pathRef]]: Reference a path from within a pkg or module.
 - [[.exec]]: a declared executable. Is typically a member of `module.exec`
   or can be a member of `exports` for a pkg or module.

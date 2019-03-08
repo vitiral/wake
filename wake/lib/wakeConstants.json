@@ -10,7 +10,7 @@
     "T_OBJECT": "object",
     "T_PKG": "pkg",
     "T_MODULE": "module",
-    "T_FILE": "file",
+    "T_PATH_REF": "pathRef",
 
     "S_UNRESOLVED": "unresolved",
     "S_DECLARED": "declared",

@@ -138,7 +138,7 @@
         // included in this list.
         //
         // Type: list[string]
-        defPaths=null,
+        pathsDef=null,
 
         // Local paths (files or dirs) this pkg depends on for building.
         //
@@ -168,7 +168,7 @@
         namespace: U.stringDefault(namespace),
         pkgId: wake.pkgId(namespace, name, version, fingerprint.hash),
 
-        defPaths: U.arrayDefault(defPaths),
+        pathsDef: U.arrayDefault(pathsDef),
         paths: U.arrayDefault(paths),
         pkgs: U.objDefault(pkgs),
         exports: exports,
@@ -210,40 +210,33 @@
         origin=null,
     ): null, // TODO
 
-    // (#SPC-api.fsentry): Specify a file system object within a pkg or module.
+    // (#SPC-api.pathRef): Reference a path from within a pkg or module.
     //
-    // `fsentry` is an object which specifies a file or a directory.
-    //
-    // - `from=pkg` or `from=module` acts as a reference to a file at `path` that
-    //   is local to the pkg or built by the module, so that dependent objects
-    //   can include references to them in their container.
-    // - `from=fsentryRef` can be used in `pkg.reqFiles` to specify that a file
-    //   needs to be linked from `fsentryRef.pkg.pkgId/$path` to `./path` of
-    //   the dependent module.
-    //
-    // As a demonstration, if you wanted to link a file within your own pkg,
-    // you could write:
+    // As a demonstration, if you required a path from another pkg you could
+    // write:
     //
     // ```
     // local data_txt = "./data.txt",
     // declarePkg(
     //     ...,
-    //     files=[data_txt],
-    //     reqFiles=function(wake, pkg) [
-    //         wake.fsentry(
-    //             "linked-data.txt",
-    //             from=wake.fsentry(data_txt, from=pkg)
-    //         ),
-    //     ],
+    //     pkgs={libA: wake.getPkg(null, 'libA')},
+    //     paths=[],
+    //     pathsReq=function(wake, pkg) {
+    //         data_txt: wake.pathRef(pkg.pkgs.libA, "./linked-data.txt"),
+    //     },
     // )
     // ```
-    fsentry(
-        // The local path to the resulting file or directory.
-        path,
+    pathRef(
+        // a pkg or module object to reference.
+        ref,
 
-        // A pkg or another fsentry.
-        from,
-    ): null,
+        // The local path within the ref
+        path,
+    ): {
+        [wake.F_TYPE]: wake.T_PATH_REF,
+        ref: ref,
+        path: path,
+    },
 
     // (#SPC-api.exec): specify an executable from within a pkg and container.
     //
@@ -358,16 +351,17 @@
             namespace: pkg.namespace,
             fingerprint: pkg.fingerprint,
 
-            local onlyIdOrUnresolved = function(dep)
+            local getIdOrUnresolved = function(dep)
                 if U.isUnresolved(dep) then
                     dep
                 else
                     dep.pkgId,
 
-            defPaths: pkg.defPaths,
+            pathsDef: pkg.pathsDef,
             paths: pkg.paths,
+            # FIXME: pathsReq
             pkgs: {
-                [dep]: onlyIdOrUnresolved(pkg.pkgs[dep])
+                [dep]: getIdOrUnresolved(pkg.pkgs[dep])
                 for dep in std.objectFields(pkg.pkgs)
             },
             exports: pkg.exports,
