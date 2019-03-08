@@ -22,6 +22,7 @@
 
     "DIR_WAKE": ".wake",
     "DIR_LOCAL_STORE": "localStore",
+    "DIR_RETRIEVED": "retrieved",
 
     "FILE_PKG": "PKG.libsonnet",
     "FILE_RUN": "run.jsonnet",

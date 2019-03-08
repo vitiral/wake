@@ -113,12 +113,12 @@ Read candiates for pkgs. The command is of the form:
 }
 ```
 
-The retriever must return an object of possible candidates. The object must be of
-the form:
+The retriever must return an object of possible candidates over stdout. The
+object must be of the form:
 
 ```
 {
-    # Candidates for a request
+    # Returned candidates for a request.
     "sp@pkgA@>=1.0.2": [
         {
             version: "1.2.3",                # a specific version
@@ -137,19 +137,16 @@ the form:
 ## `T_READ_PKGS`
 
 Retrieve full pkgs from the retriever, putting any downloaded pkgs in
-`./$DIR_RETRIEVED`, with directories named the `pkgId`.
-
-- `definitionOnly` is a bool regarding whether to retrieve only the
-  `fsentriesDef` or the full `fsentries`. It is up to the retriever whether
-  to follow this rule (some source code is so small it is better to retrieve
-  the full pkg)
-- `pkgVersions`: is a list of pkg versions to retrieve. Note that only exact
-  versions will ever be retrieved by `T_READ_PKGS`
+`.wake/DIR_RETRIEVED`
 
 ```
 {
     F_TYPE: T_READ_PKGS,
+
+    # bool. If true, can retrieve only the files necessary for the definition.
     definitionOnly: true,
+
+    # The specific versions to retrieve.
     pkgVersions: ["sp@pkgA@1.2.3", "sp@pkgB@2.3.2"],
 }
 ```
