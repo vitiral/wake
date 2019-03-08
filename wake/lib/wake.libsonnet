@@ -259,17 +259,34 @@ C + {
     // is perfectly legal to override any of the returned arguments. For instance,
     // a module can include an `exec` in `exports`, and another module can use
     // it with a few overriden params.
+    //
+    // All values given to `exec` must be immediately manifestable.
+    //
+    // ## How an `exec` operates.
+    //
+    // A temporary directory is instantiated by the **store** which contains ONLY
+    // a `.wake/` directory containing the following files:
+    //
+    // - `store`: an executable which follows @SPC-arch.wakeStoreOverride, allowing
+    //   the executable to retrieve links to paths, probably according to the config.
+    // - `exec.json`: this object directly manifested.
+    //
+    // If the `container=wake.EXEC_LOCAL` then the `pathRef` is executed directly,
+    // with the given env and args.
+    //
+    // Otherwise, the `container.pathRef` is executed with env `__WAKE_CONTAINER=y`.
+    // It is then the job of the container exec to set up the execution environment
+    // and run the exec.
     exec(
-        // Executed the path within the specified ref (pkg or module).
+        // Where the exec is located. Note that this is not necessarily the exec's
+        // "environment" (files and folders). That is determined by the container.
         pathRef,
 
-        // A `exec` (with `container=wake.LOCAL`) to specify _where_ the
-        // module or pkg should be executed.
+        // A `exec` (itself with `container=wake.LOCAL_CONTAINER`) to specify
+        // _where_ the module or pkg should be executed.
         container,
 
-        // Config object to manifest and store in .wake/config.json
-        //
-        // Type: arbitrary manifestable value
+        // Arbitrary config object.
         config=null,
 
         // List of strings to pass as arguments to the executable.
@@ -281,9 +298,22 @@ C + {
         // for the keys and values.
         //
         // Consider using `config` instead.
+        //
+        // Anything beginning with `__WAKE_` is reserved for use by wake.
         env=null,
     ): {
+        [C.F_TYPE]: C.T_EXEC,
+        [C.F_STATE]: C.T_DEFINED,
 
+        assert U.isPathRef(pathRef) : "pathRef is wrong type",
+        assert container == C.EXEC_LOCAL || U.isExecLocal(container) :
+            "container must == EXEC_LOCAL or a container which is EXEC_LOCAL",
+
+        pathRef: pathRef,
+        container: container,
+        config: config,
+        args: U.arrayDefault(args),
+        env: U.objDefault(env),
     },
 
 
@@ -409,6 +439,13 @@ C + {
 
         isPathRef(obj):
              U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_PATH_REF,
+
+        isExec(obj):
+            assert U.isWakeObject(obj) : "value must be a wake object";
+            obj[C.F_TYPE] == C.T_EXEC,
+
+        isExecLocal(obj):
+            U.isExec(obj) && obj.container == C.EXEC_LOCAL,
 
         // General Helpers
         boolToInt(bool): if bool then 1 else 0,

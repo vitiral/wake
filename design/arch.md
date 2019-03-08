@@ -45,21 +45,18 @@ which all types of containers (and the user's computer) use to mount the
 required fsentries for building modules.
 
 These are the following `config` objects the **wakeStoreOverride** must handle:
-- `{F_TYPE:T_STORE_READ, pkgId: <pkgId>, moduleId: <moduleId>}`: the **store** must
-  return the _path_ to the given `pkgId` or `moduleId` with all of its local fsentries
-  properly created/linked, or an empty string if no such object exists. This is
-  used both:
-  - To check if a pkg or module exists before retrieving or building it.
-  - To create the fsentries for building a module within a container. The
-    path must therefore have the characteristic that all files within it are
-    copy-on-write (since the module may mutate them).
+- `{F_TYPE:T_STORE_READ, pkgIds: <pkgIds>, moduleIds: <moduleIds>}`: the
+  **store** must return a json blob with keys `pkgs` and `modules`, each containing
+  objects with key=id, value=absolute-path to the given completed pkg or module,
+  or null if no such pkg or module exists. It is recommended that all paths are
+  permission of read-only.
 - `{F_TYPE:T_STORE_TMP}`: the **store** must return a local filesystem _path_ to
   a directory where files can be retrieved, or an empty string if the system
   default should be used. This is used as a place to put files, so that later
   storing  them is more performant then re-sending them over the network.
-- `{F_TYPE:T_STORE_CREATE, dir: <pkg-dir>, pkgId: <pkgId>, moduleId:
-  <moduleId>}`: the store is passed a directory to an _completed_ pkg or module
-  and it must put it in the store.
+- `{F_TYPE:T_STORE_CREATE, dir: <dir>, pkgId: <pkgId or null>`
+    `, moduleId: <moduleId or null>}`: the store is passed a directory to a
+    _completed_ pkg or module and it must put it in the store.
 
 ### [[.wakeCredentialsOverride]]: Override how credentials are retrieved
 This is currently poorly defined, but the basic idea is:

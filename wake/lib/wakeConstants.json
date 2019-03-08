@@ -12,6 +12,7 @@
     "T_MODULE": "module",
     "T_PATH_REF_PKG": "pathRefPkg",
     "T_PATH_REF_MODULE": "pathRefModule",
+    "T_EXEC": "exec",
 
     "S_UNRESOLVED": "unresolved",
     "S_DECLARED": "declared",
@@ -24,7 +25,10 @@
     "FILE_PKG": "PKG.libsonnet",
     "FILE_RUN": "run.jsonnet",
     "FILE_PKGS": "pkgs.libsonnet",
+    "FILE_EXEC": "exec.json",
 
     "FILE_FINGERPRINT": "fingerprint.json",
-    "FILE_LOCAL_DEPENDENCIES": "localDependencies.json"
+    "FILE_LOCAL_DEPENDENCIES": "localDependencies.json",
+
+    "EXEC_LOCAL": "execLocal"
 }
