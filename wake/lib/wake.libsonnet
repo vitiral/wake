@@ -14,22 +14,21 @@
 
 local C = import "wakeConstants.json";
 
-C + {
-    local wake = self,
-    local U = wake.util,
-    local _P = wake._private,
+C + { local wake = self
+    , local U = wake.util
+    , local _P = wake._private
 
     // (#SPC-api.pkgId): The exact id of a pkg.
     //
     // This is similar to pkgReq except it is the _exact_ pkg, with the hash
     // included in the Id.
-    pkgId(namespace, name, version, hash):
+    , pkgId(namespace, name, version, hash):
         assert std.isString(hash) : "hash must be string";
         // Note: the version must be an exact semver, but is checked later.
         std.join(C.WAKE_SEP, [
             wake.pkgReq(namespace, name, version),
             hash,
-        ]),
+        ])
 
     // (#SPC-api.pkgReq): a pkg requirement with a semantic version.
     //
@@ -39,7 +38,7 @@ C + {
     // - name and namespace must be length > 3
     // - It is an error for any field to have commas.
     // - versionReq must be a valid semverReq
-    pkgReq(
+    , pkgReq(
         // The namespace to find the pkg.
         namespace,
 
@@ -61,12 +60,12 @@ C + {
             wake.pkgKey(namespace, name),
             versionStr,
         ]),
-    }.result,
+    }.result
 
 
     // A more generalized version of the pkg. Used when looking up pkgs from
     // locked packages.
-    pkgKey(namespace, name):
+    , pkgKey(namespace, name):
         local namespaceStr = U.stringDefault(namespace);
         local namespaceLen = std.length(namespaceStr);
 
@@ -78,10 +77,10 @@ C + {
         std.join(C.WAKE_SEP, [
             namespaceStr,
             name,
-        ]),
+        ])
 
     // (#SPC-api.getPkg): retrieve a pkg lazily.
-    getPkg(
+    , getPkg(
         // The pkgReq(...) to retrieve.
         pkgReq,
 
@@ -102,7 +101,7 @@ C + {
             local pkgFn = _P.pkgsDefined[pkgKey];
             pkgFn(wake)
         else
-            _P.unresolvedPkg(pkgReq, from, fromPkg),
+            _P.unresolvedPkg(pkgReq, from, fromPkg)
 
     // (#SPC-api.declarePkg): declare a pkg.
     //
@@ -117,7 +116,7 @@ C + {
     //        # ... etc
     //    )
     // ```
-    declarePkg(
+    , declarePkg(
         // The fingerprint, **imported** from .wake/fingerprint.json
         fingerprint,
 
@@ -187,7 +186,7 @@ C + {
 
         # lazy functions
         exports: exports,
-    },
+    }
 
     // (#SPC-api.declareModule): declare how to build something.
     //
@@ -197,7 +196,7 @@ C + {
     // Note that when `exec` is running it is within its `container` and has read
     // access to all files and inputs the local `pkg` the module is defined in, as
     // well as any pkgs and modules it is dependt on.
-    declareModule(
+    , declareModule(
         // The pkg this module is defined in.
         pkg,
 
@@ -223,7 +222,7 @@ C + {
 
         // The origin of the module, such as author, license, etc
         origin=null,
-    ): null, // TODO
+    ): null // TODO
 
     // (#SPC-api.pathRef): Reference a path from within a pkg or module.
     //
@@ -232,7 +231,7 @@ C + {
     // modules to use.
     //
     // Returns: pathRefPkg or pathRefModule
-    pathRef(
+    , pathRef(
         // A pkg or module to reference.
         ref,
 
@@ -251,7 +250,7 @@ C + {
         [C.F_STATE]: C.S_DEFINED,
         [if U.isPkg(ref) then 'pkgId' else "moduleId"]: vals.id,
         path: path,
-    },
+    }
 
     // (#SPC-api.exec): specify an executable from within a pkg and container.
     //
@@ -284,7 +283,7 @@ C + {
     // Otherwise, the `container.pathRef` is executed with env `__WAKE_CONTAINER=y`.
     // It is then the job of the container exec to set up the execution environment
     // and run the exec.
-    exec(
+    , exec(
         // Where the exec is located. Note that this is not necessarily the exec's
         // "environment" (files and folders). That is determined by the container.
         pathRef,
@@ -321,9 +320,9 @@ C + {
         config: config,
         args: U.arrayDefault(args),
         env: U.objDefault(env),
-    },
+    }
 
-    _private: {
+    , _private: {
         local P = self,
 
         F_IDS: {
@@ -357,24 +356,7 @@ C + {
                     if depPkg.fromPkg == null then
                         depPkg
                     else
-                        assert U.isPkg(depPkg.fromPkg) : "fromPkg must be a pkg";
-                        if U.isAtLeastDefined(depPkg.fromPkg) then
-                            local exec = U.getKeys(depPkg.fromPkg.exports, depPkg.from);
-                            assert U.isExecLocal(exec) :
-                                "getPkg must use a local exec: "
-                                + std.manifestJsonEx(exec, 2);
-                            depPkg + {
-                                exec: exec,
-                                fromPkg: depPkg.pkgId,
-                            }
-                        else
-                            # Just so the user knows which pkgs are unresolved.
-                            depPkg + {
-                                fromPkg: if 'pkgId' in depPkg.fromPkg then
-                                    depPkg.fromPkg['pkgId']
-                                else
-                                    depPkg.fromPkg['pkgReq']
-                            }
+                        _P.handleGetPkgFromExec(depPkg)
                 else
                     P.recurseDefinePkg(wake, depPkg),
 
@@ -397,10 +379,31 @@ C + {
                     else
                         null,
             }
-        }.returnPkg,
+        }.returnPkg
+
+        , handleGetPkgFromExec(depPkg):
+            assert U.isPkg(depPkg.fromPkg) : "fromPkg must be a pkg";
+            if U.isAtLeastDefined(depPkg.fromPkg) then
+                # The exec is defined, this pkg is ready to be retrieved.
+                local exec = U.getKeys(depPkg.fromPkg.exports, depPkg.from);
+                assert U.isExecLocal(exec) :
+                    "getPkg must use a local exec: "
+                    + std.manifestJsonEx(exec, 2);
+                depPkg + {
+                    exec: exec,
+                    fromPkg: depPkg.pkgId,
+                }
+            else
+                # The exec is not yet defined. Just strip the pkg for now.
+                depPkg + {
+                    fromPkg: if 'pkgId' in depPkg.fromPkg then
+                        depPkg.fromPkg['pkgId']
+                    else
+                        depPkg.fromPkg['pkgReq']
+                }
 
         // Return if the newPkg is defined.
-        hasBeenDefined(oldPkg, newPkg):
+        , hasBeenDefined(oldPkg, newPkg):
             local definedCount = std.foldl(
                 function(prev, v) prev + v,
                 [
@@ -409,9 +412,9 @@ C + {
                 ],
                 0,
             );
-            definedCount == std.length(oldPkg.pkgs),
+            definedCount == std.length(oldPkg.pkgs)
 
-        recurseSimplify(pkg):
+        , recurseSimplify(pkg):
             if U.isUnresolved(pkg) then
                 [pkg]
             else
@@ -419,9 +422,9 @@ C + {
                     P.recurseSimplify(pkg.pkgs[dep])
                     for dep in std.objectFields(pkg.pkgs)
                 ];
-                [P.simplify(pkg)] + std.flattenArrays(simpleDeps),
+                [P.simplify(pkg)] + std.flattenArrays(simpleDeps)
 
-        simplify(pkg): {
+        , simplify(pkg): {
             [C.F_TYPE]: pkg[C.F_TYPE],
             [C.F_STATE]: pkg[C.F_STATE],
             pkgId: pkg.pkgId,
@@ -445,16 +448,16 @@ C + {
                 for dep in std.objectFields(pkg.pkgs)
             },
             exports: pkg.exports,
-        },
+        }
 
-        hasSep(s): U.containsChr(C.WAKE_SEP, s),
+        , hasSep(s): U.containsChr(C.WAKE_SEP, s)
 
-        getPkgKey(str):
+        , getPkgKey(str):
             local items = std.splitLimit(str, C.WAKE_SEP, 3);
-            wake.pkgKey(items[0], items[1]),
-    },
+            wake.pkgKey(items[0], items[1])
+    }
 
-    util: {
+    , util: {
         // Wake typecheck functions
         isWakeObject(obj):
             std.isObject(obj)
@@ -508,5 +511,5 @@ C + {
         arrayDefault(arr): if arr == null then [] else arr,
         objDefault(obj): if obj == null then {} else obj,
         stringDefault(s): if s == null then "" else s,
-    },
+    }
 }
