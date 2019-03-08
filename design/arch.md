@@ -23,7 +23,8 @@ the following flow. States are always in _italics_ within this documentation.
 - _ready_: (modules only) all of a module's dependencies have been _completed_.
   The module is ready to be executed and _completed_.
 - _completed_:
-  - for `pkg`: the pkg is fully downloaded and in the **store**.
+  - for `pkg`: the pkg and all dependencies are fully downloaded and in the
+    **store**.
   - for `module`: `module.exec` has been executed (built) and the data is in
     the **store**.
 

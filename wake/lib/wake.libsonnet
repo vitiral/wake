@@ -112,6 +112,11 @@
         // The fingerprint, **imported** from .wake/fingerprint.json
         fingerprint,
 
+        // the (optional) namespace of the pkg.
+        //
+        // Type: string
+        namespace,
+
         // The name of the pkg.
         //
         // Type: string
@@ -122,10 +127,13 @@
         // Type: string
         version,
 
-        // the (optional) namespace of the pkg.
+        // Local paths (files or dirs) this pkg depends on for building.
         //
-        // Type: string
-        namespace=null,
+        // These are included when the full pkg is retrieved or setup in
+        // a sandbox.
+        //
+        // Type: list[string]
+        paths=null,
 
         // Local paths (files or dirs) this pkg depends on for its definition.
         //
@@ -140,14 +148,6 @@
         // Type: list[string]
         pathsDef=null,
 
-        // Local paths (files or dirs) this pkg depends on for building.
-        //
-        // These are included when the full pkg is retrieved or setup in
-        // a sandbox.
-        //
-        // Type: list[string]
-        paths=null,
-
         // pkgs that this pkg depends on.
         //
         // Type: object of key/getPkg(...) pairs
@@ -155,60 +155,36 @@
 
         // Exports of this pkg.
         //
-        // Called once the pkg has been fully defined (all dependencies resolved, etc).
+        // > Called once the pkg has been fully defined (all dependencies resolved, etc).
         //
         // Type: function(wake, pkgDefined) -> Object
         exports=null,
+
+        // References to paths this pkg depends on.
+        //
+        // > Called once the pkg has been fully defined (all dependencies resolved, etc).
+        //
+        // This must return an object, where the keys are relative paths to
+        // to the expected links and the values are pathRef.
+        //
+        // Type: function(wake, pkgDefined) -> Object
+        pathsRef=null,
     ): {
         [wake.F_TYPE]: wake.T_PKG,
         [wake.F_STATE]: wake.S_DECLARED,
         fingerprint: fingerprint,
+        namespace: U.stringDefault(namespace),
         name: name,
         version: version,
-        namespace: U.stringDefault(namespace),
         pkgId: wake.pkgId(namespace, name, version, fingerprint.hash),
-
-        pathsDef: U.arrayDefault(pathsDef),
         paths: U.arrayDefault(paths),
+        pathsDef: U.arrayDefault(pathsDef),
         pkgs: U.objDefault(pkgs),
+
+        # lazy functions
         exports: exports,
+        pathsRef: pathsRef,
     },
-
-    // (#SPC-api.declareModule): declare how to build something with a pkg.
-    //
-    // Modules are included in `pkg.exports`, as they are tied to the pkg.
-    // It is allowed for a pkg to export another pkg's modules (meta modules).
-    //
-    // Note that when `exec` is running it is within its `container` and has read
-    // access to all files and inputs the local `pkg` the module is defined in, as
-    // well as any pkgs and modules it is dependt on.
-    declareModule(
-        // The pkg this module is defined in.
-        pkg,
-
-        // Module objects this module depends on.
-        modules,
-
-        // (lazy) Additional required `fsentry`s (files or dirs)
-        //
-        // Type: `function(wake, pkg, moduleDef) -> list[fsentry]`
-        reqFsEntries=null,
-
-        // function which behaves identically to `pkg.exports`.
-        //
-        // Contains a key/value map of the objects exported by this module.
-        // Must not contain any unresolved objects (unresolved objects will
-        // never be resolved).
-        exports=null,
-
-        // (lazy) The primary `exec` object used for building this module.
-        //
-        // Type `function(wake, module) -> wake.exec(...)`
-        exec=null,
-
-        // The origin of the module, such as author, license, etc
-        origin=null,
-    ): null, // TODO
 
     // (#SPC-api.pathRef): Reference a path from within a pkg or module.
     //
@@ -252,13 +228,8 @@
     // a module can include an `exec` in `exports`, and another module can use
     // it with a few overriden params.
     exec(
-        // The pkg to execute within. Should be a pkg or a module.
-        within,
-
-        // The path to execute within the given pkg or module.
-        //
-        // Type: string to local or linked path
-        path,
+        // Executed the path within the specified ref (pkg or module).
+        pathRef,
 
         // A `exec` (with `container=wake.LOCAL`) to specify _where_ the
         // module or pkg should be executed.
@@ -281,6 +252,41 @@
         env=null,
     ): null, // TODO
 
+    // (#SPC-api.declareModule): declare how to build something with a pkg.
+    //
+    // Modules are included in `pkg.exports`, as they are tied to the pkg.
+    // It is allowed for a pkg to export another pkg's modules (meta modules).
+    //
+    // Note that when `exec` is running it is within its `container` and has read
+    // access to all files and inputs the local `pkg` the module is defined in, as
+    // well as any pkgs and modules it is dependt on.
+    declareModule(
+        // The pkg this module is defined in.
+        pkg,
+
+        // Module objects this module depends on.
+        modules,
+
+        // (lazy) Additional required `fsentry`s (files or dirs)
+        //
+        // Type: `function(wake, pkg, moduleDef) -> list[fsentry]`
+        reqFsEntries=null,
+
+        // function which behaves identically to `pkg.exports`.
+        //
+        // Contains a key/value map of the objects exported by this module.
+        // Must not contain any unresolved objects (unresolved objects will
+        // never be resolved).
+        exports=null,
+
+        // (lazy) The primary `exec` object used for building this module.
+        //
+        // Type `function(wake, module) -> wake.exec(...)`
+        exec=null,
+
+        // The origin of the module, such as author, license, etc
+        origin=null,
+    ): null, // TODO
 
     _private: {
         local P = self,

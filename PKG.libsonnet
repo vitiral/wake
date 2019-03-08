@@ -3,6 +3,7 @@ function(wake) {
 
     result: wake.declarePkg(
         fingerprint=import ".wake/fingerprint.json",
+        namespace=null,
         name="wake",
         version="0.1.0",
         paths=[
