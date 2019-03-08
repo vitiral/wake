@@ -37,26 +37,51 @@ and `config` are both set to `null` (they will be overriden), and who's
 
 ### [[.wakeStoreOverride]]: Override where to store completed objects
 
-`root.pkgs.wakeStoreOverride` can be (optionally) set to an `exec` who's `config=null`.
+`root.pkgs.wakeStoreOverride` can be (optionally) set to an `exec` who's
+`container=wake.LOCAL_CONTAINER` and `args`, `env` and `config` are all `null`
+(must be fully self contained and cross-platform).
+
+This exec must support the following cmdline API:
+
+```
+wakestore [subcmd]
+
+Subcommands:
+
+   $ wakestore read
+
+      Reads a list of pkgIds or moduleIds from stdin and outputs
+      a list of pkgIds or moduleIds on stdout.
+
+      Input list must be separated by newlines and be of the form:
+
+        PKG namespace#name#version#hash
+        MOD namespace#name#version#hash#moduleHash
+
+      Output list is line based and of the form
+
+        PKG namespace#name#version#hash#/path/to/id
+        MOD namespace#name#version#hash#moduleHash#/path/to/id
+
+      If the pkg or module doesn't exist then the path will be empty.
+
+
+    $ wakestore tmp
+
+        Returns the path to a temporary directory on the local filesystem.
+
+
+    $ wakestore create <dir> [--pkgId <pkgId>] [--moduleId <moduleId>]
+
+        Create an entry for the pkg or module at the specified directory.
+        This indicates the end of pkg retrieval or a module build.
+```
 
 The **wakeStoreOverride** is passed to every **container** and must be
 supported by all containers. A good example would be a distributed filesystem
 which all types of containers (and the user's computer) use to mount the
 required fsentries for building modules.
 
-These are the following `config` objects the **wakeStoreOverride** must handle:
-- `{F_TYPE:T_STORE_READ, pkgIds: <pkgIds>, moduleIds: <moduleIds>}`: the
-  **store** must return a json blob with keys `pkgs` and `modules`, each containing
-  objects with key=id, value=absolute-path to the given completed pkg or module,
-  or null if no such pkg or module exists. It is recommended that all paths are
-  permission of read-only.
-- `{F_TYPE:T_STORE_TMP}`: the **store** must return a local filesystem _path_ to
-  a directory where files can be retrieved, or an empty string if the system
-  default should be used. This is used as a place to put files, so that later
-  storing  them is more performant then re-sending them over the network.
-- `{F_TYPE:T_STORE_CREATE, dir: <dir>, pkgId: <pkgId or null>`
-    `, moduleId: <moduleId or null>}`: the store is passed a directory to a
-    _completed_ pkg or module and it must put it in the store.
 
 ### [[.wakeCredentialsOverride]]: Override how credentials are retrieved
 This is currently poorly defined, but the basic idea is:
@@ -71,58 +96,66 @@ Something like that... more design is necessary.
 
 ### [[.wakeGetPkgOverride]]
 
-If an `exec` is specified as the in a [[SPC-api.getPkg]] call, then it will be
-used to retrieve the pkg specified. The `exec` must adhere to the following
-API, whereby a file will be put at `./getPkg.json` containing the following
-information. Any downloaded pkgs should be put in `./retrieved/`, with
-directories named the `pkgId`.
+If a self-contained `exec` is specified as the in a [[SPC-api.getPkg]] call, then it will be
+used to retrieve the pkg specified.
+
+The `exec` must adhere to the following API, which will be sent over stdin.
 
 
-## `T_GET_PKGS`
+## `T_READ_CANDIDATES`
 
-- `dir` is a path to a (local) temporary directory to put the files.
+Read candiates for pkgs. The command is of the form:
+
+```jsonnet
+{
+    F_TYPE: T_READ_CANDIDATES,
+    pkgReqs: ["sp@pkgA@>=1.0.2", "sp@pkgB@>=0.2.3,<=3.2.0"],
+}
+```
+
+The retriever must return an object of possible candidates. The object must be of
+the form:
+
+```
+{
+    # Candidates for a request
+    "sp@pkgA@>=1.0.2": [
+        {
+            version: "1.2.3",                # a specific version
+            pkgs: ["sp@name@>=2.3.2", ...],  # the dependencies of this version
+        },
+        ...
+    ],
+    "sp@pkgB@>=0.2.3,<=3.2.0": [
+        ...
+    ],
+    ...
+}
+```
+
+
+## `T_READ_PKGS`
+
+Retrieve full pkgs from the retriever, putting any downloaded pkgs in
+`./$DIR_RETRIEVED`, with directories named the `pkgId`.
+
 - `definitionOnly` is a bool regarding whether to retrieve only the
   `fsentriesDef` or the full `fsentries`. It is up to the retriever whether
   to follow this rule (some source code is so small it is better to retrieve
   the full pkg)
-- `pkgVersions`: is a list of pkgs of the form `["name(namespace)(=1.3.2)"]`. Note
-  that only exact versions will ever be retrieved by `T_GET_PKGS`
-- `pkgExists`: is a list of existing pkgIds (so they are not re-retrieved).
+- `pkgVersions`: is a list of pkg versions to retrieve. Note that only exact
+  versions will ever be retrieved by `T_READ_PKGS`
 
 ```
 {
-    F_TYPE:T_GET_PKG,
-    dir: <tmpDir>,
-    definitionOnly: bool,
-    pkgVersions: <list-of-pkgVersion strings>
+    F_TYPE: T_READ_PKGS,
+    definitionOnly: true,
+    pkgVersions: ["sp@pkgA@1.2.3", "sp@pkgB@2.3.2"],
 }
 ```
 
 If the pkg has a [[.localDependenciesFile]] then it must also retrieve the
 required dependencies and put them in the directories specified in that file.
-
-## `T_GET_CANDIDATES`
-
-```jsonnet
-{
-    F_TYPE:T_GET_CANDIDATES,
-    pkgReqs: <list of pkg requiremnts>,
-    known: list[pkgKey],
-}
-```
-
-- `pkgReqs` is a list of pkg reqs of the form `["name(namespace)(>=1.2,<=3)"]`.
-  Note: all semverReq will be of the form `(min,max)`.
-
-The retriever should return a list of possible candidates. The list should have
-items of the form:
-
-```
-{
-    pkgVer: <version>,
-    pkgs: [pkgReq],
-}
-```
 
 
 ## [[.store]] Store
