@@ -312,17 +312,20 @@
                 [wake.F_STATE]: if P.hasBeenDefined(pkg, this.returnPkg) then
                     wake.S_DEFINED else pkg[wake.F_STATE],
 
-                exports:
-                    local out = pkg.exports(wake, this.returnPkg);
-                    assert std.isObject(out)
-                        : "%s exports did not return an object"
-                        % [this.returnPkg.pkgId];
-                    out,
-
                 pkgs: {
                     [dep]: recurseMaybe(pkg.pkgs[dep])
                     for dep in std.objectFields(pkg.pkgs)
                 },
+
+                exports:
+                    if U.isDefined(this.returnPkg) then
+                        local out = pkg.exports(wake, this.returnPkg);
+                        assert std.isObject(out)
+                            : "%s exports did not return an object"
+                            % [this.returnPkg.pkgId];
+                        out
+                    else
+                        null,
             }
         }.returnPkg,
 
