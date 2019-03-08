@@ -210,7 +210,7 @@ class PkgSimple(object):
 
 
 class PkgUnresolved(object):
-    def __init__(self, pkg_req, from_, from_pkg, full):
+    def __init__(self, pkg_req, from_, using_pkg, full):
         if isinstance(from_, str) and not from_.startswith('./'):
             raise TypeError(
                 "{}: from must start with ./ for local pkgs: {}"
@@ -219,7 +219,7 @@ class PkgUnresolved(object):
             pkg_req = PkgReq.from_str(pkg_req)
         self.pkg_req = pkg_req
         self.from_ = from_
-        self.from_pkg = from_pkg
+        self.using_pkg = using_pkg
         self.full = full
 
     @classmethod
@@ -230,7 +230,7 @@ class PkgUnresolved(object):
         return cls(
             pkg_req=dct['pkgReq'],
             from_=dct['from'],
-            from_pkg=dct['fromPkg'],
+            using_pkg=dct['usingPkg'],
             full=dct,
         )
 
@@ -239,14 +239,14 @@ class PkgUnresolved(object):
             F_STATE: S_UNRESOLVED,
             'pkgReq': self.pkg_req,
             'from': self.from_,
-            'fromPkg': self.from_pkg,
+            'usingPkg': self.using_pkg,
         }
 
     def is_unresolved(self):
         return True
 
     def is_from_local(self):
-        return self.from_pkg == None
+        return self.using_pkg == None
 
 class PkgConfig(object):
     def __init__(self, base):

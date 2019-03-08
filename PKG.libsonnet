@@ -20,7 +20,7 @@ function(W)
             fake: W.getPkg(
                 W.pkgReq(null, "echo", "1.2.3"),
                 from='getEchoer',
-                fromPkg='libA'
+                usingPkg='libA'
             ),
         },
         exports = function(W, pkg) {

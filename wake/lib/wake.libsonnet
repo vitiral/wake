@@ -86,14 +86,14 @@ C + { local wake = self
 
         // Where to "get" the pkg.
         //
-        // - If `fromPkg` is `null`: `from` must be a relative path to a local
+        // - If `usingPkg` is `null`: `from` must be a relative path to a local
         //   directory where the PKG.libsonnet exists.
-        // - else, `from` must be a key or array of keys to descend the `fromPkg`'s
+        // - else, `from` must be a key or array of keys to descend the `usingPkg`'s
         //   `exports`.
         from,
 
         // String specifying the sub-pkg who's exports to use.
-        fromPkg=null,
+        usingPkg=null,
     ):
         local pkgKey = _P.getPkgKey(pkgReq);
         # TODO: check in pkgsComplete first
@@ -101,7 +101,7 @@ C + { local wake = self
             local pkgFn = _P.pkgsDefined[pkgKey];
             pkgFn(wake)
         else
-            _P.unresolvedPkg(pkgReq, from, fromPkg)
+            _P.unresolvedPkg(pkgReq, from, usingPkg)
 
     // (#SPC-api.declarePkg): declare a pkg.
     //
@@ -330,22 +330,23 @@ C + { local wake = self
             'pkgReq': null,
         }
 
-        , unresolvedPkg(pkgReq, from, fromPkg):  {
+        , unresolvedPkg(pkgReq, from, usingPkg):  {
             [C.F_TYPE]: C.T_PKG,
             [C.F_STATE]: C.S_UNRESOLVED,
+            exec: null,
 
             pkgReq: pkgReq,
-            fromPkg: fromPkg,
-            from: if fromPkg == null then
-                assert std.isString(from) : "from must be a local path if fromPkg=null";
+            usingPkg: usingPkg,
+            from: if usingPkg == null then
+                assert std.isString(from) : "from must be a local path if usingPkg=null";
                 from
             else
-                assert std.isString(fromPkg) : "fromPkg must be a string representing the pkg key";
+                assert std.isString(usingPkg) : "usingPkg must be a string representing the pkg key";
                 if std.isString(from) then
                     [from]
                 else
                     assert std.isArray(from) :
-                        "from must be either a string or array[string] if fromPkg is specified";
+                        "from must be either a string or array[string] if usingPkg is specified";
                     from
         }
 
@@ -371,7 +372,7 @@ C + { local wake = self
 
                 , local defineGetPkg = function(depPkg)
                     if U.isUnresolved(depPkg) then
-                        if depPkg.fromPkg == null then
+                        if depPkg.usingPkg == null then
                             depPkg
                         else
                             _P.handleGetPkgFromExec(this.returnPkg, depPkg)
@@ -396,7 +397,7 @@ C + { local wake = self
         }.returnPkg
 
         , handleGetPkgFromExec(parentPkg, getPkg):
-            local pkgKey = getPkg.fromPkg;
+            local pkgKey = getPkg.usingPkg;
             assert pkgKey in parentPkg.pkgs :
                 parentPkg.pkgId + " does not contain " + pkgKey;
             local execPkg = parentPkg.pkgs[pkgKey];

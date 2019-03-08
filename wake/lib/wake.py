@@ -103,7 +103,7 @@ class Config(object):
 
     def handle_unresolved_pkg(self, pkg):
         from_ = pkg.from_
-        from_pkg = pkg.from_pkg
+        using_pkg = pkg.using_pkg
 
         if pkg.is_from_local():
             # It is a path, it must _already_ be in the store
@@ -113,7 +113,7 @@ class Config(object):
             #     raise ValueError("{} was not in the store".format(pkg))
             return out
         else:
-            print("UNIMPLEMENTED: retrieve pkg", pkg.from_pkg, pkg.from_)
+            print("UNIMPLEMENTED: retrieve pkg", pkg.using_pkg, pkg.from_)
 
     def create_defined_pkgs(self, pkgs_defined):
         out = ["{"]
