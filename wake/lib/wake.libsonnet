@@ -80,6 +80,21 @@ C + {
             name,
         ]),
 
+    // Lazily retrieve an export from a pkg, waiting until the pkg is defined.
+    //
+    // `keys` is either a string or an array of strings. `keys=['a', 'b']` will retrieve
+    // `pkg.exports['a']['b']`.
+    getExport(pkg, key): {
+        [C.F_TYPE]: C.T_GET_EXPORT,
+        [C.F_STATE]: C.S_DECLARED,
+
+        assert U.isPkg(pkg) : "can only lazily retrieve exports from a pkg",
+        assert std.isString(key) : "key must be a string",
+
+        pkg: pkg,
+        key: key,
+    },
+
     // (#SPC-api.getPkg): retrieve a pkg lazily.
     getPkg(
         // The pkgReq(...) to retrieve.
@@ -303,7 +318,7 @@ C + {
         env=null,
     ): {
         [C.F_TYPE]: C.T_EXEC,
-        [C.F_STATE]: C.T_DEFINED,
+        [C.F_STATE]: C.S_DEFINED,
 
         assert U.isPathRef(pathRef) : "pathRef is wrong type",
         assert container == C.EXEC_LOCAL || U.isExecLocal(container) :
@@ -315,7 +330,6 @@ C + {
         args: U.arrayDefault(args),
         env: U.objDefault(env),
     },
-
 
     _private: {
         local P = self,
@@ -333,7 +347,17 @@ C + {
             local _ = std.trace("recurseDefinePkg in " + pkg.pkgId, null),
             local recurseMaybe = function(depPkg)
                 if U.isUnresolved(depPkg) then
-                    depPkg
+                    local from = depPkg.from;
+                    if std.isString(from) then
+                        depPkg
+                    else
+                        assert U.isGetExport(from) : "was expecting to be getExport";
+                        if U.isDefined(from.pkg) then
+                            depPkg + {
+                                from: from.pkg.exports[from.key],
+                            }
+                        else
+                            depPkg
                 else
                     P.recurseDefinePkg(wake, depPkg),
 
@@ -418,8 +442,13 @@ C + {
         isWakeObject(obj):
             std.isObject(obj)
             && (C.F_TYPE in obj),
+
         isPkg(obj):
              U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_PKG,
+
+        isGetExport(obj):
+            assert U.isWakeObject(obj): "value must be a wake object";
+             U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_GET_EXPORT,
 
         // Wake status-check functions.
         isUnresolved(obj):
@@ -438,7 +467,9 @@ C + {
             U.isDefined(obj),
 
         isPathRef(obj):
-             U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_PATH_REF,
+             U.isWakeObject(obj) && (
+                obj[C.F_TYPE] == C.T_PATH_REF_PKG
+                || obj[C.F_TYPE] == C.T_PATH_REF_MODULE),
 
         isExec(obj):
             assert U.isWakeObject(obj) : "value must be a wake object";

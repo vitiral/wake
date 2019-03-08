@@ -5,8 +5,8 @@ local description = |||
     build systems and configuration management into the hands of anyone at any scale.
 |||;
 
-function(wake)
-    wake.declarePkg(
+function(W)
+    W.declarePkg(
         fingerprint=import ".wake/fingerprint.json",
         namespace=null,
         name="wake",
@@ -16,10 +16,13 @@ function(wake)
             "./wake",
         ],
         pkgs= {
-            libA: wake.getPkg(wake.pkgReq(null, "libA"), from="./experiment/libA"),
+            libA: W.getPkg(W.pkgReq(null, "libA"), from="./experiment/libA"),
+            fake: W.getPkg(W.pkgReq(null, "fake"), from=W.getExport(self.libA, 'getFake')),
         },
-        exports = function(wake, pkg) {
+        exports = function(W, pkg) {
+            local libA = pkg.pkgs.libA.exports,
+
             answer: 42,
-            // added: TODO,
+            added: libA.adder(1, 2),
         },
     )
