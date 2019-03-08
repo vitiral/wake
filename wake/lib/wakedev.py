@@ -49,7 +49,7 @@ F_HASHTYPE = wakeConstants["F_HASHTYPE"]
 T_OBJECT = wakeConstants["T_OBJECT"]
 T_PKG = wakeConstants["T_PKG"]
 T_MODULE = wakeConstants["T_MODULE"]
-T_PATH_REF = wakeConstants["T_PATH_REF"]
+T_PATH_REF_PKG = wakeConstants["T_PATH_REF_PKG"]
 
 S_UNRESOLVED = wakeConstants["S_UNRESOLVED"]
 S_DECLARED = wakeConstants["S_DECLARED"]
@@ -98,6 +98,7 @@ local root = wake._private.recurseDefinePkg(wake, pkgInitial);
     all: wake._private.recurseSimplify(root),
 }}
 """
+
 
 def manifest_jsonnet(path):
     """Manifest a jsonnet path."""
@@ -159,6 +160,10 @@ def assert_not_wake(p):
 
 def is_pkg(dct):
     return dct[F_TYPE] == T_PKG
+
+
+def is_path_pkg_ref(dct):
+    return dct[F_TYPE] == T_PATH_REF_PKG
 
 
 def is_unresolved(dct):

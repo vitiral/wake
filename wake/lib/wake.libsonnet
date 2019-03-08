@@ -129,6 +129,10 @@ C + {
         // Type: string
         version,
 
+        // General description of the pkg, for humans to read.
+        // Type: string
+        description=null,
+
         // Local paths (files or dirs) this pkg depends on for building.
         //
         // These are included when the full pkg is retrieved or setup in
@@ -161,16 +165,6 @@ C + {
         //
         // Type: function(wake, pkgDefined) -> Object
         exports=null,
-
-        // References to paths this pkg depends on.
-        //
-        // > Called once the pkg has been fully defined (all dependencies resolved, etc).
-        //
-        // This must return an object, where the keys are relative paths to
-        // to the expected links and the values are pathRef.
-        //
-        // Type: function(wake, pkgDefined) -> Object
-        pathsRef=null,
     ): {
         [C.F_TYPE]: C.T_PKG,
         [C.F_STATE]: C.S_DECLARED,
@@ -178,6 +172,7 @@ C + {
         namespace: U.stringDefault(namespace),
         name: name,
         version: version,
+        description: description,
         pkgId: wake.pkgId(namespace, name, version, fingerprint.hash),
         paths: U.arrayDefault(paths),
         pathsDef: U.arrayDefault(pathsDef),
@@ -185,35 +180,69 @@ C + {
 
         # lazy functions
         exports: exports,
-        pathsRef: pathsRef,
     },
+
+    // (#SPC-api.declareModule): declare how to build something.
+    //
+    // Modules are included in `pkg.exports`, as they are always tied to a pkg.
+    // It is allowed for a pkg to export another pkg's modules (meta modules).
+    //
+    // Note that when `exec` is running it is within its `container` and has read
+    // access to all files and inputs the local `pkg` the module is defined in, as
+    // well as any pkgs and modules it is dependt on.
+    declareModule(
+        // The pkg this module is defined in.
+        pkg,
+
+        // Module objects this module depends on.
+        modules,
+
+        // (lazy) Additional required `fsentry`s (files or dirs)
+        //
+        // Type: `function(wake, pkg, moduleDef) -> list[fsentry]`
+        reqFsEntries=null,
+
+        // function which behaves identically to `pkg.exports`.
+        //
+        // Contains a key/value map of the objects exported by this module.
+        // Must not contain any unresolved objects (unresolved objects will
+        // never be resolved).
+        exports=null,
+
+        // (lazy) The `exec` object used for building this module.
+        //
+        // Type `function(wake, module) -> wake.exec(...)`
+        exec=null,
+
+        // The origin of the module, such as author, license, etc
+        origin=null,
+    ): null, // TODO
 
     // (#SPC-api.pathRef): Reference a path from within a pkg or module.
     //
-    // As a demonstration, if you required a path from another pkg you could
-    // write:
+    // This is used by `exec` to declare exactly which file to execute,
+    // but it is also the standard way to "export" files for other packages and
+    // modules to use.
     //
-    // ```
-    // local data_txt = "./data.txt",
-    // declarePkg(
-    //     ...,
-    //     pkgs={libA: wake.getPkg(null, 'libA')},
-    //     paths=[],
-    //     pathsReq=function(wake, pkg) {
-    //         data_txt: wake.pathRef(pkg.pkgs.libA, "./linked-data.txt"),
-    //     },
-    // )
-    // ```
+    // Returns: pathRefPkg or pathRefModule
     pathRef(
-        // a pkg or module object to reference.
+        // A pkg or module to reference.
         ref,
 
         // The local path within the ref
         path,
     ): {
-        [C.F_TYPE]: C.T_PATH_REF,
-        [C.F_STATE]: C.S_DECLARED,
-        ref: ref,
+        assert U.isAtLeastDefined(ref) : "ref must be at least defined",
+
+        local vals = if U.isPkg(ref) then
+            {type: C.T_PATH_REF_PKG, id: ref['pkgId']}
+        else
+            assert false : "ref must be a pkg or a module.";
+            null,
+
+        [C.F_TYPE]: vals.type,
+        [C.F_STATE]: C.S_DEFINED,
+        [if U.isPkg(ref) then 'pkgId' else "moduleId"]: vals.id,
         path: path,
     },
 
@@ -253,43 +282,10 @@ C + {
         //
         // Consider using `config` instead.
         env=null,
-    ): null, // TODO
+    ): {
 
-    // (#SPC-api.declareModule): declare how to build something with a pkg.
-    //
-    // Modules are included in `pkg.exports`, as they are tied to the pkg.
-    // It is allowed for a pkg to export another pkg's modules (meta modules).
-    //
-    // Note that when `exec` is running it is within its `container` and has read
-    // access to all files and inputs the local `pkg` the module is defined in, as
-    // well as any pkgs and modules it is dependt on.
-    declareModule(
-        // The pkg this module is defined in.
-        pkg,
+    },
 
-        // Module objects this module depends on.
-        modules,
-
-        // (lazy) Additional required `fsentry`s (files or dirs)
-        //
-        // Type: `function(wake, pkg, moduleDef) -> list[fsentry]`
-        reqFsEntries=null,
-
-        // function which behaves identically to `pkg.exports`.
-        //
-        // Contains a key/value map of the objects exported by this module.
-        // Must not contain any unresolved objects (unresolved objects will
-        // never be resolved).
-        exports=null,
-
-        // (lazy) The primary `exec` object used for building this module.
-        //
-        // Type `function(wake, module) -> wake.exec(...)`
-        exec=null,
-
-        // The origin of the module, such as author, license, etc
-        origin=null,
-    ): null, // TODO
 
     _private: {
         local P = self,
@@ -329,16 +325,6 @@ C + {
                         out
                     else
                         null,
-
-                pathsRef:
-                    if U.isDefined(this.returnPkg) then
-                        if pkg.pathsRef == null then
-                            {}
-                        else
-                            pkg.pathsRef(wake, this.returnPkg)
-                    else
-                        null,
-
             }
         }.returnPkg,
 
@@ -368,9 +354,10 @@ C + {
             [C.F_TYPE]: pkg[C.F_TYPE],
             [C.F_STATE]: pkg[C.F_STATE],
             pkgId: pkg.pkgId,
+            namespace: pkg.namespace,
             name: pkg.name,
             version: pkg.version,
-            namespace: pkg.namespace,
+            description: pkg.description,
             fingerprint: pkg.fingerprint,
 
             local getIdOrUnresolved = function(dep)
@@ -387,12 +374,6 @@ C + {
                 for dep in std.objectFields(pkg.pkgs)
             },
             exports: pkg.exports,
-            pathsRef: if pkg.pathsRef == null then
-                pkg.pathsRef
-            else {
-                [path]: _P.pathRefId(pkg.pathsRef[path]),
-                for path in std.objectFields(pkg.pathsRef)
-            },
         },
 
         hasSep(s): U.containsChr(C.WAKE_SEP, s),
@@ -400,17 +381,6 @@ C + {
         getPkgKey(str):
             local items = std.splitLimit(str, C.WAKE_SEP, 3);
             wake.pkgKey(items[0], items[1]),
-
-        pathRefId(pathRef):
-            assert U.isPathRef(pathRef) : "pkg.pathRefs must bey key/value pair of path/pathRefs.";
-            if U.isDefined(pathRef) then
-                pathRef
-            else
-                pathRef + {
-                    [C.F_STATE]: C.S_DEFINED,
-                    # TODO: do moduleId as well.
-                    ref: pathRef.ref.pkgId,
-                }
     },
 
     util: {
@@ -433,6 +403,9 @@ C + {
         isDefined(obj):
             assert U.isWakeObject(obj) : "value must be a wake object";
             obj[C.F_STATE] == C.S_DEFINED,
+
+        isAtLeastDefined(obj):
+            U.isDefined(obj),
 
         isPathRef(obj):
              U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_PATH_REF,

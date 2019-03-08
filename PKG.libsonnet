@@ -1,11 +1,17 @@
-function(wake) {
-    local util = wake.util,
+local description = |||
+    wake: awaken software development.
 
-    result: wake.declarePkg(
+    Wake is a new kind of package manager. It aims to bring distributed package management,
+    build systems and configuration management into the hands of anyone at any scale.
+|||;
+
+function(wake)
+    wake.declarePkg(
         fingerprint=import ".wake/fingerprint.json",
         namespace=null,
         name="wake",
         version="0.1.0",
+        description=description,
         paths=[
             "./wake",
         ],
@@ -16,5 +22,4 @@ function(wake) {
             answer: 42,
             // added: TODO,
         },
-    ),
-}.result
+    )

@@ -112,8 +112,10 @@ class Fingerprint(object):
 class PkgSimple(object):
     """Pull out only the data we care about."""
     def __init__(self,
-            state, pkg_id, namespace, name, version, fingerprint,
-            paths, paths_def, paths_ref):
+            state, pkg_id, namespace, name, version, description,
+            fingerprint,
+            paths, paths_def,
+            exports):
         hash_ = fingerprint['hash']
         expected_pkg_id = [namespace, name, version, hash_]
         assert expected_pkg_id == pkg_id.split(WAKE_SEP), (
@@ -140,11 +142,12 @@ class PkgSimple(object):
         self.namespace = namespace
         self.name = name
         self.version = version
+        self.description = description
         self.fingerprint = fingerprint
 
         self.paths = paths
         self.paths_def = paths_def
-        self.paths_ref = paths_ref
+        self.exports = exports
 
     def get_pkg_key(self):
         return PkgKey(self.namespace, self.name)
@@ -167,10 +170,11 @@ class PkgSimple(object):
             namespace=dct['namespace'],
             name=dct['name'],
             version=dct['version'],
+            description=dct['description'],
             fingerprint=dct['fingerprint'],
             paths=dct['paths'],
             paths_def=dct['pathsDef'],
-            paths_ref=dct['pathsRef'],
+            exports=dct['exports'],
         )
 
     def to_dict(self):
@@ -180,7 +184,7 @@ class PkgSimple(object):
             'pkgId': self.pkg_id,
             'paths': self.paths,
             'pathsDef': self.paths_def,
-            'pathsRef': self.paths_ref,
+            'exports': self.exports,
         }
 
     def get_def_fsentries(self):
