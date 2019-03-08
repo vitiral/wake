@@ -100,8 +100,16 @@ C + {
         // The pkgReq(...) to retrieve.
         pkgReq,
 
-        // A local path (string) or `exec` to use for retrieving the path.
-        from=null
+        // From where to retrieve the pkg.
+        //
+        // - If `fromPkg` is `null`: this must be a relative path to a local directory
+        //   where the PKG.libsonnet exists.
+        // - else, this is either a `string` or `array[string]`, which correspond to the
+        //   key/keys to use to retrieve the `exec` from the `fromPkg.exports`.
+        from,
+
+        // The pkg to get the `exec` from.
+        fromPkg=null,
     ):
         local pkgKey = _P.getPkgKey(pkgReq);
         # TODO: check in pkgsComplete first
@@ -110,7 +118,7 @@ C + {
             local pkgFn = _P.pkgsDefined[pkgKey];
             pkgFn(wake)
         else
-            _P.unresolvedPkg(pkgReq, from),
+            _P.unresolvedPkg(pkgReq, from, fromPkg),
 
     // (#SPC-api.declarePkg): declare a pkg.
     //
@@ -334,11 +342,26 @@ C + {
     _private: {
         local P = self,
 
-        unresolvedPkg(pkgReq, from):  {
+        F_IDS: {
+            'pkgId': null,
+            'pkgReq': null,
+        },
+
+        unresolvedPkg(pkgReq, from, fromPkg):  {
             [C.F_TYPE]: C.T_PKG,
             [C.F_STATE]: C.S_UNRESOLVED,
+
             pkgReq: pkgReq,
-            from: from,
+            fromPkg: fromPkg,
+            from: if fromPkg == null then
+                assert std.isString(from) : "from must be a local path if fromPkg=null";
+                from
+            else if std.isString(from) then
+                [from]
+            else
+                assert std.isArray(from) :
+                    "from must be either a string or array[string] if fromPkg is specified";
+                from
         },
 
         // Used to lazily define the exports of the pkg and sub-pkgs.
@@ -357,19 +380,11 @@ C + {
                                 from: from.pkg.exports[from.key],
                             }
                         else
-                            local validFields = {
-                                [C.F_TYPE]: null,
-                                [C.F_STATE]: null,
-                                'pkgId': null,
-                                'pkgReq': null,
-                            };
                             depPkg + {
-                                from: from + {
-                                    pkg: {
-                                        [field]: from.pkg[field]
-                                        for field in std.objectFields(from.pkg)
-                                        if field in validFields
-                                    },
+                                from: {
+                                    [field]: from.pkg[field]
+                                    for field in std.objectFields(from.pkg)
+                                    if field in _P.F_IDS
                                 },
                             }
                 else
