@@ -79,7 +79,7 @@ class Config(object):
 
         hashstuff.update_file(pkg_config.pkg_root)
         hashstuff.update_paths(pkg_config.paths_abs(root.paths))
-        hashstuff.update_paths(pkg_config.paths_abs(root.def_paths))
+        hashstuff.update_paths(pkg_config.paths_abs(root.paths_def))
         return Fingerprint(hash_=hashstuff.reduce(), hash_type=hashstuff.hash_type)
 
     def assert_fingerprint_matches(self, pkg_config):

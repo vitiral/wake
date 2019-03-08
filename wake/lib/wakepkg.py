@@ -111,7 +111,9 @@ class Fingerprint(object):
 
 class PkgSimple(object):
     """Pull out only the data we care about."""
-    def __init__(self, state, pkg_id, namespace, name, version, fingerprint, paths, def_paths):
+    def __init__(self,
+            state, pkg_id, namespace, name, version, fingerprint,
+            paths, paths_def, paths_ref):
         hash_ = fingerprint['hash']
         expected_pkg_id = [namespace, name, version, hash_]
         assert expected_pkg_id == pkg_id.split(WAKE_SEP), (
@@ -119,7 +121,7 @@ class PkgSimple(object):
                 pkg_id, expected_pkg_id))
 
         invalid_paths = []
-        for p in itertools.chain(paths, def_paths):
+        for p in itertools.chain(paths, paths_def):
             try:
                 assert_valid_path(p)
                 assert_not_wake(p)
@@ -141,7 +143,8 @@ class PkgSimple(object):
         self.fingerprint = fingerprint
 
         self.paths = paths
-        self.def_paths = def_paths
+        self.paths_def = paths_def
+        self.paths_ref = paths_ref
 
     def get_pkg_key(self):
         return PkgKey(self.namespace, self.name)
@@ -166,7 +169,8 @@ class PkgSimple(object):
             version=dct['version'],
             fingerprint=dct['fingerprint'],
             paths=dct['paths'],
-            def_paths=dct['pathsDef'],
+            paths_def=dct['pathsDef'],
+            paths_ref=dct['pathsRef'],
         )
 
     def to_dict(self):
@@ -175,7 +179,8 @@ class PkgSimple(object):
             F_STATE: self.state,
             'pkgId': self.pkg_id,
             'paths': self.paths,
-            'pathsDef': self.def_paths,
+            'pathsDef': self.paths_def,
+            'pathsRef': self.paths_ref,
         }
 
     def get_def_fsentries(self):
@@ -185,7 +190,7 @@ class PkgSimple(object):
             self.pkg_local_deps,
             self.pkg_fingerprint,
         ]
-        return itertools.chain(default, self.def_paths)
+        return itertools.chain(default, self.paths_def)
 
     def get_fsentries(self):
         return itertools.chain(self.get_def_fsentries(), self.paths)

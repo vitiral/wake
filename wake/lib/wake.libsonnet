@@ -331,8 +331,11 @@ C + {
                         null,
 
                 pathsRef:
-                    if pkg.pathsRef != null && U.isDefined(this.returnPkg) then
-                        pkg.pathsRef(wake, this.returnPkg)
+                    if U.isDefined(this.returnPkg) then
+                        if pkg.pathsRef == null then
+                            {}
+                        else
+                            pkg.pathsRef(wake, this.returnPkg)
                     else
                         null,
 
