@@ -12,7 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-(import "wakeConstants.json") + {
+local C = import "wakeConstants.json";
+
+C + {
     local wake = self,
     local U = wake.util,
     local _P = wake._private,
@@ -24,7 +26,7 @@
     pkgId(namespace, name, version, hash):
         assert std.isString(hash) : "hash must be string";
         // Note: the version must be an exact semver, but is checked later.
-        std.join(wake.WAKE_SEP, [
+        std.join(C.WAKE_SEP, [
             wake.pkgReq(namespace, name, version),
             hash,
         ]),
@@ -55,7 +57,7 @@
 
         assert !_P.hasSep(versionStr): "versionReq must not contain '#'",
 
-        result: std.join(wake.WAKE_SEP, [
+        result: std.join(C.WAKE_SEP, [
             wake.pkgKey(namespace, name),
             versionStr,
         ]),
@@ -73,7 +75,7 @@
         assert std.length(name) > 3: "name length must be > 3";
         assert !_P.hasSep(name): "name must not contain '#'";
 
-        std.join(wake.WAKE_SEP, [
+        std.join(C.WAKE_SEP, [
             namespaceStr,
             name,
         ]),
@@ -170,8 +172,8 @@
         // Type: function(wake, pkgDefined) -> Object
         pathsRef=null,
     ): {
-        [wake.F_TYPE]: wake.T_PKG,
-        [wake.F_STATE]: wake.S_DECLARED,
+        [C.F_TYPE]: C.T_PKG,
+        [C.F_STATE]: C.S_DECLARED,
         fingerprint: fingerprint,
         namespace: U.stringDefault(namespace),
         name: name,
@@ -209,7 +211,8 @@
         // The local path within the ref
         path,
     ): {
-        [wake.F_TYPE]: wake.T_PATH_REF,
+        [C.F_TYPE]: C.T_PATH_REF,
+        [C.F_STATE]: C.S_DECLARED,
         ref: ref,
         path: path,
     },
@@ -292,8 +295,8 @@
         local P = self,
 
         unresolvedPkg(pkgReq, from):  {
-            [wake.F_TYPE]: wake.T_PKG,
-            [wake.F_STATE]: wake.S_UNRESOLVED,
+            [C.F_TYPE]: C.T_PKG,
+            [C.F_STATE]: C.S_UNRESOLVED,
             pkgReq: pkgReq,
             from: from,
         },
@@ -309,8 +312,8 @@
                     P.recurseDefinePkg(wake, depPkg),
 
             returnPkg: pkg + {
-                [wake.F_STATE]: if P.hasBeenDefined(pkg, this.returnPkg) then
-                    wake.S_DEFINED else pkg[wake.F_STATE],
+                [C.F_STATE]: if P.hasBeenDefined(pkg, this.returnPkg) then
+                    C.S_DEFINED else pkg[C.F_STATE],
 
                 pkgs: {
                     [dep]: recurseMaybe(pkg.pkgs[dep])
@@ -326,6 +329,13 @@
                         out
                     else
                         null,
+
+                pathsRef:
+                    if U.isDefined(this.returnPkg) then
+                        pkg.pathsRef(wake, this.returnPkg)
+                    else
+                        null,
+
             }
         }.returnPkg,
 
@@ -352,8 +362,8 @@
                 [P.simplify(pkg)] + std.flattenArrays(simpleDeps),
 
         simplify(pkg): {
-            [wake.F_TYPE]: pkg[wake.F_TYPE],
-            [wake.F_STATE]: pkg[wake.F_STATE],
+            [C.F_TYPE]: pkg[C.F_TYPE],
+            [C.F_STATE]: pkg[C.F_STATE],
             pkgId: pkg.pkgId,
             name: pkg.name,
             version: pkg.version,
@@ -374,31 +384,56 @@
                 for dep in std.objectFields(pkg.pkgs)
             },
             exports: pkg.exports,
+            pathsRef: null,
+            // if pkg.pathsRef == null then
+            //     pkg.pathsRef
+            // else {
+            //     [path]: _P.pathRefId(pkg.pathsRef[path]),
+            //     for path in std.objectFields(pkg.pathsRef)
+            // },
         },
 
-        hasSep(s): U.containsChr(wake.WAKE_SEP, s),
+        hasSep(s): U.containsChr(C.WAKE_SEP, s),
 
         getPkgKey(str):
-            local items = std.splitLimit(str, wake.WAKE_SEP, 3);
+            local items = std.splitLimit(str, C.WAKE_SEP, 3);
             wake.pkgKey(items[0], items[1]),
+
+        pathRefId(pathRef):
+            assert U.isPathRef(pathRef) : "pkg.pathRefs must bey key/value pair of path/pathRefs.";
+            if U.isDefined(pathRef) then
+                pathRef
+            else
+                pathRef + {
+                    [C.F_STATE]: C.S_DEFINED,
+                    # TODO: do moduleId as well.
+                    ref: pathRef.ref.pkgId,
+                }
     },
 
     util: {
         // Wake typecheck functions
         isWakeObject(obj):
             std.isObject(obj)
-            && (wake.F_TYPE in obj),
+            && (C.F_TYPE in obj),
         isPkg(obj):
-             U.isWakeObject(obj) && obj[wake.F_TYPE] == wake.T_PKG,
+             U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_PKG,
 
         // Wake status-check functions.
         isUnresolved(obj):
             assert U.isWakeObject(obj) : "value must be a wake object";
-            obj[wake.F_STATE] == wake.S_UNRESOLVED,
+            obj[C.F_STATE] == C.S_UNRESOLVED,
+
+        isDeclared(obj):
+            assert U.isWakeObject(obj) : "value must be a wake object";
+            obj[C.F_STATE] == C.S_DECLARED,
 
         isDefined(obj):
             assert U.isWakeObject(obj) : "value must be a wake object";
-            obj[wake.F_STATE] == wake.S_DEFINED,
+            obj[C.F_STATE] == C.S_DEFINED,
+
+        isPathRef(obj):
+             U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_PATH_REF,
 
         // General Helpers
         boolToInt(bool): if bool then 1 else 0,
