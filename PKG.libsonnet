@@ -17,7 +17,7 @@ function(W)
         ],
         pkgs = {
             libA: W.getPkg(W.pkgReq(null, "libA"), from="./experiment/libA"),
-            fake: W.getPkg(
+            echo: W.getPkg(
                 W.pkgReq(null, "echo", "1.2.3"),
                 from='getEchoer',
                 usingPkg='libA'

@@ -137,6 +137,7 @@ def run_cycle(config, root_config, locked):
 
     return (num_unresolved, manifest)
 
+
 def store_local(config, local_abs, locked):
     """Recursively traverse local dependencies, putting them in the store.
 
