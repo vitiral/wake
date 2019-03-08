@@ -1,6 +1,6 @@
 function(wake)
     local util = wake.util;
-    local getFakePath = "./getFake.py";
+    local getEchoerPath = "./getEchoer.py";
 
     wake.declarePkg(
         fingerprint=import ".wake/fingerprint.json",
@@ -10,13 +10,13 @@ function(wake)
         pkgs= {
         },
         paths=[
-            getFakePath,
+            getEchoerPath,
             "./data.txt",
         ],
         exports = function(wake, pkg) {
             adder(a, b):: a + b,
-            getFake: wake.exec(
-                pathRef=wake.pathRef(pkg, getFakePath),
+            getEchoer: wake.exec(
+                pathRef=wake.pathRef(pkg, getEchoerPath),
                 container=wake.EXEC_LOCAL,
             ),
         },
