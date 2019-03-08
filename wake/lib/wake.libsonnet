@@ -84,15 +84,15 @@ C + { local wake = self
         // The pkgReq(...) to retrieve.
         pkgReq,
 
-        // From where to retrieve the pkg.
+        // Where to "get" the pkg.
         //
-        // - If `fromPkg` is `null`: this must be a relative path to a local directory
-        //   where the PKG.libsonnet exists.
-        // - else, this is either a `string` or `array[string]`, which correspond to the
-        //   key/keys to use to retrieve the `exec` from the `fromPkg.exports`.
+        // - If `fromPkg` is `null`: `from` must be a relative path to a local
+        //   directory where the PKG.libsonnet exists.
+        // - else, `from` must be a key or array of keys to descend the `fromPkg`'s
+        //   `exports`.
         from,
 
-        // The pkg to get the `exec` from. Can be unresolved.
+        // String specifying the sub-pkg who's exports to use.
         fromPkg=null,
     ):
         local pkgKey = _P.getPkgKey(pkgReq);
@@ -339,12 +339,14 @@ C + { local wake = self
             from: if fromPkg == null then
                 assert std.isString(from) : "from must be a local path if fromPkg=null";
                 from
-            else if std.isString(from) then
-                [from]
             else
-                assert std.isArray(from) :
-                    "from must be either a string or array[string] if fromPkg is specified";
-                from
+                assert std.isString(fromPkg) : "fromPkg must be a string representing the pkg key";
+                if std.isString(from) then
+                    [from]
+                else
+                    assert std.isArray(from) :
+                        "from must be either a string or array[string] if fromPkg is specified";
+                    from
         }
 
         // Used to lazily define the exports of the pkg and sub-pkgs.
@@ -398,25 +400,27 @@ C + { local wake = self
         }.returnPkg
 
         , handleGetPkgFromExec(depPkg):
-            assert U.isPkg(depPkg.fromPkg) : "fromPkg must be a pkg";
-            if U.isAtLeastDefined(depPkg.fromPkg) then
-                # The exec is defined, this pkg is ready to be retrieved.
-                local exec = U.getKeys(depPkg.fromPkg.exports, depPkg.from);
-                assert U.isExecLocal(exec) :
-                    "getPkg must use a local exec: "
-                    + std.manifestJsonEx(exec, 2);
-                depPkg + {
-                    exec: exec,
-                    fromPkg: depPkg.pkgId,
-                }
-            else
-                # The exec is not yet defined. Just strip the pkg for now.
-                depPkg + {
-                    fromPkg: if 'pkgId' in depPkg.fromPkg then
-                        depPkg.fromPkg['pkgId']
-                    else
-                        depPkg.fromPkg['pkgReq']
-                }
+            depPkg
+            # if U.isAtLeastDefined(depPkg.fromPkg) then
+            #     depPkg
+            #     # The exec is defined, this pkg is ready to be retrieved.
+            #     # local exec = U.getKeys(depPkg.fromPkg.exports, depPkg.from);
+            #     # assert U.isExecLocal(exec) :
+            #     #     "getPkg must use a local exec: "
+            #     #     + std.manifestJsonEx(exec, 2);
+            #     # depPkg + {
+            #     #     exec: exec,
+            #     #     fromPkg: depPkg.pkgId,
+            #     # }
+            # else
+            #     # The exec is not yet defined. Just strip the pkg for now.
+            #     depPkg
+            #     # + {
+            #     #     fromPkg: if 'pkgId' in depPkg.fromPkg then
+            #     #         depPkg.fromPkg['pkgId']
+            #     #     else
+            #     #         depPkg.fromPkg['pkgReq']
+            #     # }
 
         // Return if the newPkg is defined.
         , hasBeenDefined(oldPkg, newPkg):
