@@ -357,7 +357,21 @@ C + {
                                 from: from.pkg.exports[from.key],
                             }
                         else
-                            depPkg
+                            local validFields = {
+                                [C.F_TYPE]: null,
+                                [C.F_STATE]: null,
+                                'pkgId': null,
+                                'pkgReq': null,
+                            };
+                            depPkg + {
+                                from: from + {
+                                    pkg: {
+                                        [field]: from.pkg[field]
+                                        for field in std.objectFields(from.pkg)
+                                        if field in validFields
+                                    },
+                                },
+                            }
                 else
                     P.recurseDefinePkg(wake, depPkg),
 

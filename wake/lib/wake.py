@@ -105,7 +105,8 @@ class Config(object):
         from_ = pkg.from_
 
         if not isinstance(from_, str):
-            raise NotYetImplementedError()
+            # raise NotYetImplementedError()
+            pass
         else:
             # It is a path, it must _already_ be in the store
             out = self.store.get_pkg_path(pkg.pkg_req, def_okay=True)
