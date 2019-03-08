@@ -113,7 +113,7 @@ class PkgSimple(object):
     """Pull out only the data we care about."""
     def __init__(self,
             state, pkg_id, namespace, name, version, description,
-            fingerprint,
+            fingerprint, pkgs,
             paths, paths_def,
             exports):
         hash_ = fingerprint['hash']
@@ -144,6 +144,7 @@ class PkgSimple(object):
         self.version = version
         self.description = description
         self.fingerprint = fingerprint
+        self.pkgs = pkgs
 
         self.paths = paths
         self.paths_def = paths_def
@@ -172,6 +173,7 @@ class PkgSimple(object):
             version=dct['version'],
             description=dct['description'],
             fingerprint=dct['fingerprint'],
+            pkgs=dct['pkgs'],
             paths=dct['paths'],
             paths_def=dct['pathsDef'],
             exports=dct['exports'],
@@ -185,6 +187,7 @@ class PkgSimple(object):
             'paths': self.paths,
             'pathsDef': self.paths_def,
             'exports': self.exports,
+            'pkgs': self.pkgs,
         }
 
     def get_def_fsentries(self):

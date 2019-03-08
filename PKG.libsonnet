@@ -17,7 +17,7 @@ function(W)
         ],
         pkgs= {
             libA: W.getPkg(W.pkgReq(null, "libA"), from="./experiment/libA"),
-            fake: W.getPkg(W.pkgReq(null, "fake"), from=W.getExport(self.libA, 'getFake')),
+            fake: W.getPkg(W.pkgReq(null, "fake"), from='getFake', fromPkg=self.libA),
         },
         exports = function(W, pkg) {
             local libA = pkg.pkgs.libA.exports,

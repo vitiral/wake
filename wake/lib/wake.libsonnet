@@ -80,21 +80,6 @@ C + {
             name,
         ]),
 
-    // Lazily retrieve an export from a pkg, waiting until the pkg is defined.
-    //
-    // `keys` is either a string or an array of strings. `keys=['a', 'b']` will retrieve
-    // `pkg.exports['a']['b']`.
-    getExport(pkg, key): {
-        [C.F_TYPE]: C.T_GET_EXPORT,
-        [C.F_STATE]: C.S_DECLARED,
-
-        assert U.isPkg(pkg) : "can only lazily retrieve exports from a pkg",
-        assert std.isString(key) : "key must be a string",
-
-        pkg: pkg,
-        key: key,
-    },
-
     // (#SPC-api.getPkg): retrieve a pkg lazily.
     getPkg(
         // The pkgReq(...) to retrieve.
@@ -108,13 +93,12 @@ C + {
         //   key/keys to use to retrieve the `exec` from the `fromPkg.exports`.
         from,
 
-        // The pkg to get the `exec` from.
+        // The pkg to get the `exec` from. Can be unresolved.
         fromPkg=null,
     ):
         local pkgKey = _P.getPkgKey(pkgReq);
         # TODO: check in pkgsComplete first
         if pkgKey in _P.pkgsDefined then
-            // TODO: must keep track of all ways we got the pkg
             local pkgFn = _P.pkgsDefined[pkgKey];
             pkgFn(wake)
         else
@@ -370,22 +354,26 @@ C + {
             local _ = std.trace("recurseDefinePkg in " + pkg.pkgId, null),
             local recurseMaybe = function(depPkg)
                 if U.isUnresolved(depPkg) then
-                    local from = depPkg.from;
-                    if std.isString(from) then
+                    if depPkg.fromPkg == null then
                         depPkg
                     else
-                        assert U.isGetExport(from) : "was expecting to be getExport";
-                        if U.isDefined(from.pkg) then
+                        assert U.isPkg(depPkg.fromPkg) : "fromPkg must be a pkg";
+                        if U.isAtLeastDefined(depPkg.fromPkg) then
+                            local exec = U.getKeys(depPkg.fromPkg.exports, depPkg.from);
+                            assert U.isExecLocal(exec) :
+                                "getPkg must use a local exec: "
+                                + std.manifestJsonEx(exec, 2);
                             depPkg + {
-                                from: from.pkg.exports[from.key],
+                                exec: exec,
+                                fromPkg: depPkg.pkgId,
                             }
                         else
+                            # Just so the user knows which pkgs are unresolved.
                             depPkg + {
-                                from: {
-                                    [field]: from.pkg[field]
-                                    for field in std.objectFields(from.pkg)
-                                    if field in _P.F_IDS
-                                },
+                                fromPkg: if 'pkgId' in depPkg.fromPkg then
+                                    depPkg.fromPkg['pkgId']
+                                else
+                                    depPkg.fromPkg['pkgReq']
                             }
                 else
                     P.recurseDefinePkg(wake, depPkg),
@@ -475,10 +463,6 @@ C + {
         isPkg(obj):
              U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_PKG,
 
-        isGetExport(obj):
-            assert U.isWakeObject(obj): "value must be a wake object";
-             U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_GET_EXPORT,
-
         // Wake status-check functions.
         isUnresolved(obj):
             assert U.isWakeObject(obj) : "value must be a wake object";
@@ -510,6 +494,15 @@ C + {
         // General Helpers
         boolToInt(bool): if bool then 1 else 0,
         containsChr(c, str): !(std.length(std.splitLimit(str, c, 1)) == 1),
+
+        // Retrieve a value from an object at an arbitrary depth.
+        getKeys(obj, keys, cur_index=0):
+            local value = obj[keys[cur_index]];
+            local new_index = cur_index + 1;
+            if new_index == std.length(keys) then
+                value
+            else
+                U.getKeys(value, keys, new_index),
 
         // Default functions return empty containers on null
         arrayDefault(arr): if arr == null then [] else arr,
