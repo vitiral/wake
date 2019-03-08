@@ -109,7 +109,8 @@ def manifest_jsonnet(path):
         universal_newlines=True,
     )
     if completed.returncode != 0:
-        fail("Manifesting jsonnet at {}\n{}".format(path, completed.stderr))
+        fail("Manifesting jsonnet at {}\n## STDOUT:\n{}\n\n## STDERR:\n{}\n".format(
+            path, completed.stdout, completed.stderr))
     return json.loads(completed.stdout)
 
 

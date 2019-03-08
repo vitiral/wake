@@ -224,11 +224,6 @@ def build(args):
         cycle += 1
 
 
-
-def fail(msg):
-    raise RuntimeError("FAIL: " + msg)
-
-
 def parse_args(argv):
     parser = argparse.ArgumentParser(
         description='Wake: the pkg manager and build system of the web',

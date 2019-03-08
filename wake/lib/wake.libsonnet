@@ -331,7 +331,7 @@ C + {
                         null,
 
                 pathsRef:
-                    if U.isDefined(this.returnPkg) then
+                    if pkg.pathsRef != null && U.isDefined(this.returnPkg) then
                         pkg.pathsRef(wake, this.returnPkg)
                     else
                         null,
@@ -384,13 +384,12 @@ C + {
                 for dep in std.objectFields(pkg.pkgs)
             },
             exports: pkg.exports,
-            pathsRef: null,
-            // if pkg.pathsRef == null then
-            //     pkg.pathsRef
-            // else {
-            //     [path]: _P.pathRefId(pkg.pathsRef[path]),
-            //     for path in std.objectFields(pkg.pathsRef)
-            // },
+            pathsRef: if pkg.pathsRef == null then
+                pkg.pathsRef
+            else {
+                [path]: _P.pathRefId(pkg.pathsRef[path]),
+                for path in std.objectFields(pkg.pathsRef)
+            },
         },
 
         hasSep(s): U.containsChr(C.WAKE_SEP, s),
