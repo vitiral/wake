@@ -323,14 +323,14 @@ C + { local wake = self
     }
 
     , _private: {
-        local P = self,
+        local P = self
 
-        F_IDS: {
+        , F_IDS: {
             'pkgId': null,
             'pkgReq': null,
-        },
+        }
 
-        unresolvedPkg(pkgReq, from, fromPkg):  {
+        , unresolvedPkg(pkgReq, from, fromPkg):  {
             [C.F_TYPE]: C.T_PKG,
             [C.F_STATE]: C.S_UNRESOLVED,
 
@@ -345,10 +345,10 @@ C + { local wake = self
                 assert std.isArray(from) :
                     "from must be either a string or array[string] if fromPkg is specified";
                 from
-        },
+        }
 
         // Used to lazily define the exports of the pkg and sub-pkgs.
-        recurseDefinePkg(wake, pkg): {
+        , recurseDefinePkg(wake, pkg): {
             local this = self,
             local _ = std.trace("recurseDefinePkg in " + pkg.pkgId, null),
             local recurseMaybe = function(depPkg)
@@ -461,55 +461,55 @@ C + { local wake = self
         // Wake typecheck functions
         isWakeObject(obj):
             std.isObject(obj)
-            && (C.F_TYPE in obj),
+            && (C.F_TYPE in obj)
 
-        isPkg(obj):
-             U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_PKG,
+        , isPkg(obj):
+             U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_PKG
 
         // Wake status-check functions.
-        isUnresolved(obj):
+        , isUnresolved(obj):
             assert U.isWakeObject(obj) : "value must be a wake object";
-            obj[C.F_STATE] == C.S_UNRESOLVED,
+            obj[C.F_STATE] == C.S_UNRESOLVED
 
-        isDeclared(obj):
+        , isDeclared(obj):
             assert U.isWakeObject(obj) : "value must be a wake object";
-            obj[C.F_STATE] == C.S_DECLARED,
+            obj[C.F_STATE] == C.S_DECLARED
 
-        isDefined(obj):
+        , isDefined(obj):
             assert U.isWakeObject(obj) : "value must be a wake object";
-            obj[C.F_STATE] == C.S_DEFINED,
+            obj[C.F_STATE] == C.S_DEFINED
 
-        isAtLeastDefined(obj):
-            U.isDefined(obj),
+        , isAtLeastDefined(obj):
+            U.isDefined(obj)
 
-        isPathRef(obj):
+        , isPathRef(obj):
              U.isWakeObject(obj) && (
                 obj[C.F_TYPE] == C.T_PATH_REF_PKG
-                || obj[C.F_TYPE] == C.T_PATH_REF_MODULE),
+                || obj[C.F_TYPE] == C.T_PATH_REF_MODULE)
 
-        isExec(obj):
+        , isExec(obj):
             assert U.isWakeObject(obj) : "value must be a wake object";
-            obj[C.F_TYPE] == C.T_EXEC,
+            obj[C.F_TYPE] == C.T_EXEC
 
-        isExecLocal(obj):
-            U.isExec(obj) && obj.container == C.EXEC_LOCAL,
+        , isExecLocal(obj):
+            U.isExec(obj) && obj.container == C.EXEC_LOCAL
 
         // General Helpers
-        boolToInt(bool): if bool then 1 else 0,
-        containsChr(c, str): !(std.length(std.splitLimit(str, c, 1)) == 1),
+        , boolToInt(bool): if bool then 1 else 0
+        , containsChr(c, str): !(std.length(std.splitLimit(str, c, 1)) == 1)
 
         // Retrieve a value from an object at an arbitrary depth.
-        getKeys(obj, keys, cur_index=0):
+        , getKeys(obj, keys, cur_index=0):
             local value = obj[keys[cur_index]];
             local new_index = cur_index + 1;
             if new_index == std.length(keys) then
                 value
             else
-                U.getKeys(value, keys, new_index),
+                U.getKeys(value, keys, new_index)
 
         // Default functions return empty containers on null
-        arrayDefault(arr): if arr == null then [] else arr,
-        objDefault(obj): if obj == null then {} else obj,
-        stringDefault(s): if s == null then "" else s,
+        , arrayDefault(arr): if arr == null then [] else arr
+        , objDefault(obj): if obj == null then {} else obj
+        , stringDefault(s): if s == null then "" else s
     }
 }
