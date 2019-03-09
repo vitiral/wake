@@ -108,6 +108,8 @@ elif cmdt == C_READ_PKGS:
         )
         dumpf(os.path.join(pkgPath, FILE_PKG), pkgDeclare)
 
+        print("wrote to", pkgPath)
+
     sys.exit(0)
 
 raise ValueError("unknown command: " + cmdt)

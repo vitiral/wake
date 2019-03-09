@@ -140,7 +140,7 @@ class Config(object):
         )
 
         print("retreiving pkg {} into {}".format(str(pkg.pkg_req), run_dir))
-        if result.returncode != 0 or result.stderr:
+        if result.returncode != 0:
             raise RuntimeError("Failed: " + result.stderr.decode())
 
         set_trace()
