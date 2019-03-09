@@ -270,7 +270,7 @@ class Exec(object):
             container = Exec.from_dict(container)
 
         return cls(
-            path_ref = PathRef.from_dict(dct['pathRef']),
+            path_ref = PathRefPkg.from_dict(dct['pathRef']),
             container = container,
             config = dct['config'],
             args = dct['args'],
@@ -278,15 +278,15 @@ class Exec(object):
         )
 
 
-class PathRef(object):
-    def __init__(self, ref, path):
-        self.ref = ref
+class PathRefPkg(object):
+    def __init__(self, pkg_id, path):
+        self.pkg_id = pkg_id
         self.path = path
 
     @classmethod
     def from_dict(cls, dct):
         return cls(
-            ref=dct['ref'],
+            pkg_id=dct['pkgId'],
             path=dct['path'],
         )
 

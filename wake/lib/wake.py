@@ -117,7 +117,6 @@ class Config(object):
 
     def exec_get_pkg(self, pkg):
         # TODO: these should be collected and called all at once.
-        print("retreiving pkg", pkg.using_pkg, pkg.from_)
 
         get_exec = pkg.exec_
 
@@ -128,21 +127,21 @@ class Config(object):
         }
 
         exec_path = pjoin(
-            self.store.get_pkg_path(get_exec.path_ref.ref),
+            self.store.get_pkg_path(get_exec.path_ref.pkg_id),
             get_exec.path_ref.path,
         )
 
         run_dir = self.store.get_retrieval_dir()
         result = subprocess.run(
             [exec_path],
-            stdin=json.dumps(cmd).encode(),
+            input=json.dumps(cmd).encode(),
             cwd=run_dir,
-            capture_output=True,
-            check=True,
+            stderr=subprocess.PIPE,
         )
 
+        print("retreiving pkg {} into {}".format(str(pkg.pkg_req), run_dir))
         if result.returncode != 0 or result.stderr:
-            raise RuntimeError("Failed: " + result.stderr)
+            raise RuntimeError("Failed: " + result.stderr.decode())
 
         set_trace()
 

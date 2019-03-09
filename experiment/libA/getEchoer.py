@@ -19,7 +19,6 @@ def jsonloadf(p):
         return json.load(f)
 
 
-
 DIR_WAKE = ".wake"
 C = jsonloadf(os.path.join(DIR_WAKE, "wakeConstants.json"))
 
@@ -53,8 +52,8 @@ echo "{version}"
 
 class Pkg(object):
     def __init__(self, namespace, name, version):
-        version = [int(v) for v in version.split('.')]
-        assert len(version) == 3
+        vlist = [int(v) for v in version.split('.')]
+        assert len(vlist) == 3
 
         self.namespace = namespace
         self.name = name
@@ -107,7 +106,7 @@ elif cmdt == C_READ_PKGS:
             name=pkg.name,
             version=pkg.version,
         )
-        dumpf(os.path.join(pkgPath, FILE_PKG), pkgSonnet)
+        dumpf(os.path.join(pkgPath, FILE_PKG), pkgDeclare)
 
     sys.exit(0)
 

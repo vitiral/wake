@@ -42,9 +42,13 @@ class Store(object):
             rmtree(self.retrievals)
 
     def get_retrieval_dir(self):
-        if os.path.exists(self.retrievals):
-            rmtree(self.retrievals)
-        os.makedirs(self.retrievals)
+        rdir = self.retrievals
+        if os.path.exists(rdir):
+            rmtree(rdir)
+        copy_fsentry(
+            wakeConstantsPath,
+            path.join(rdir, DIR_WAKE, FILE_CONSTANTS),
+        )
         return self.retrievals
 
     def add_pkg(self, pkg_config, simple_pkg, local=False):
