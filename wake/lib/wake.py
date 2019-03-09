@@ -66,7 +66,6 @@ class Config(object):
             os.fsync(fd)
 
         dumpf(self.run, runtxt)
-
         manifest = manifest_jsonnet(self.run)
         return PkgManifest.from_dict(manifest)
 
@@ -178,6 +177,12 @@ def store_local(config, local_abs, locked):
     Also stores own version in the lockfile.
     """
     local_config = PkgConfig(local_abs)
+    if not path.exists(local_config.pkg_fingerprint):
+        jsondumpf(
+            local_config.pkg_fingerprint,
+            Fingerprint('fake', 'fake').to_dict(),
+        )
+
     local_manifest = config.run_pkg(local_config)
     local_pkg = local_manifest.root
     local_key = local_pkg.get_pkg_key()

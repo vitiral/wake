@@ -16,6 +16,36 @@ from wakedev import *
 from wakehash import *
 
 
+class PkgConfig(object):
+    def __init__(self, base):
+        self.base = abspath(base)
+        self.pkg_root = pjoin(self.base, FILE_PKG)
+        self.wakedir = pjoin(self.base, ".wake")
+        self.pkg_fingerprint = pjoin(self.wakedir, FILE_FINGERPRINT)
+        self.path_local_deps = pjoin(self.wakedir, FILE_LOCAL_DEPENDENCIES)
+
+    def init_wakedir(self):
+        assert path.exists(self.base)
+        assert path.exists(self.pkg_root)
+        os.makedirs(self.wakedir, exist_ok=True)
+
+    def get_current_fingerprint(self):
+        if not path.exists(self.pkg_fingerprint):
+            return None
+        return jsonloadf(self.pkg_fingerprint)
+
+    def path_abs(self, relpath):
+        return pjoin(self.base, relpath)
+
+    def paths_abs(self, relpaths):
+        return map(self.path_abs, relpaths)
+
+    def __repr__(self):
+        return "PkgConfig({})".format(self.base)
+
+
+
+
 class PkgKey(object):
     def __init__(self, namespace, name):
         self.namespace = namespace
@@ -289,33 +319,3 @@ class PathRefPkg(object):
             pkg_id=dct['pkgId'],
             path=dct['path'],
         )
-
-
-class PkgConfig(object):
-    def __init__(self, base):
-        self.base = abspath(base)
-        self.pkg_root = pjoin(self.base, FILE_PKG)
-        self.wakedir = pjoin(self.base, ".wake")
-        self.pkg_fingerprint = pjoin(self.wakedir, FILE_FINGERPRINT)
-        self.path_local_deps = pjoin(self.wakedir, FILE_LOCAL_DEPENDENCIES)
-
-    def init_wakedir(self):
-        assert path.exists(self.base)
-        assert path.exists(self.pkg_root)
-        os.makedirs(self.wakedir, exist_ok=True)
-
-    def get_current_fingerprint(self):
-        if not path.exists(self.pkg_fingerprint):
-            return None
-        return jsonloadf(self.pkg_fingerprint)
-
-    def path_abs(self, relpath):
-        return pjoin(self.base, relpath)
-
-    def paths_abs(self, relpaths):
-        return map(self.path_abs, relpaths)
-
-    def __repr__(self):
-        return "PkgConfig({})".format(self.base)
-
-
