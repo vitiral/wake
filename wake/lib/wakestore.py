@@ -27,6 +27,7 @@ class Store(object):
         self.defined = pjoin(self.store_dir, "pkgsDefined")
         self.pkgs = pjoin(self.store_dir, "pkgs")
         self.pkgs_local = path.join(base, ".wake", "pkgsLocal")
+        self.retrievals = path.join(base, ".wake", "retrieve")
 
     def init_store(self):
         os.makedirs(self.pkgs_local, exist_ok=True)
@@ -37,6 +38,14 @@ class Store(object):
         rmtree(self.pkgs_local)
         rmtree(self.defined)
         rmtree(self.pkgs)
+        if os.path.exists(self.retrievals):
+            rmtree(self.retrievals)
+
+    def get_retrieval_dir(self):
+        if os.path.exists(self.retrievals):
+            rmtree(self.retrievals)
+        os.makedirs(self.retrievals)
+        return self.retrievals
 
     def add_pkg(self, pkg_config, simple_pkg, local=False):
         if local:

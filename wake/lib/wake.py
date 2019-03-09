@@ -113,7 +113,42 @@ class Config(object):
             #     raise ValueError("{} was not in the store".format(pkg))
             return out
         else:
-            print("UNIMPLEMENTED: retrieve pkg", pkg.using_pkg, pkg.from_)
+            self.exec_get_pkg(pkg)
+
+    def exec_get_pkg(self, pkg):
+        # TODO: these should be collected and called all at once.
+        print("retreiving pkg", pkg.using_pkg, pkg.from_)
+
+        get_exec = pkg.exec_
+
+        cmd = {
+            F_TYPE: C_READ_PKGS,
+            'definitionOnly': True,
+            'pkgVersions': [str(pkg.pkg_req)],
+        }
+
+        exec_path = pjoin(
+            self.store.get_pkg_path(get_exec.path_ref.ref),
+            get_exec.path_ref.path,
+        )
+
+        run_dir = self.store.get_retrieval_dir()
+        result = subprocess.run(
+            [exec_path],
+            stdin=json.dumps(cmd).encode(),
+            cwd=run_dir,
+            capture_output=True,
+            check=True,
+        )
+
+        if result.returncode != 0 or result.stderr:
+            raise RuntimeError("Failed: " + result.stderr)
+
+        set_trace()
+
+        # TODO: put pkgs in the store.
+
+        # self.store.add_pkg_path(
 
     def create_defined_pkgs(self, pkgs_defined):
         out = ["{"]

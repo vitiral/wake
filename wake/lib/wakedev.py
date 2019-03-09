@@ -56,6 +56,9 @@ S_DECLARED = wakeConstants["S_DECLARED"]
 S_DEFINED = wakeConstants["S_DEFINED"]
 S_COMPLETED = wakeConstants["S_COMPLETED"]
 
+C_READ_PKGS = wakeConstants["C_READ_PKGS"]
+C_READ_PKGS_REQ = wakeConstants["C_READ_PKGS_REQ"]
+
 ## COMMON PATHS
 
 FILE_PKG = wakeConstants["FILE_PKG"]  # #SPC-arch.pkgFile

@@ -210,7 +210,7 @@ class PkgSimple(object):
 
 
 class PkgUnresolved(object):
-    def __init__(self, pkg_req, from_, using_pkg, full):
+    def __init__(self, pkg_req, from_, using_pkg, full, exec_):
         if isinstance(from_, str) and not from_.startswith('./'):
             raise TypeError(
                 "{}: from must start with ./ for local pkgs: {}"
@@ -221,17 +221,23 @@ class PkgUnresolved(object):
         self.from_ = from_
         self.using_pkg = using_pkg
         self.full = full
+        self.exec_ = exec_
 
     @classmethod
     def from_dict(cls, dct):
         assert is_pkg(dct)
         assert is_unresolved(dct)
 
+        exec_ = dct['exec']
+        if exec_ is not None:
+            exec_ = Exec.from_dict(exec_)
+
         return cls(
             pkg_req=dct['pkgReq'],
             from_=dct['from'],
             using_pkg=dct['usingPkg'],
             full=dct,
+            exec_=exec_,
         )
 
     def to_dict(self):
@@ -247,6 +253,43 @@ class PkgUnresolved(object):
 
     def is_from_local(self):
         return self.using_pkg == None
+
+
+class Exec(object):
+    def __init__(self, path_ref, container, config, args, env):
+        self.path_ref = path_ref
+        self.container = container
+        self.config = config
+        self.args = args
+        self.env = env
+
+    @classmethod
+    def from_dict(cls, dct):
+        container = dct['container']
+        if isinstance(container, dict):
+            container = Exec.from_dict(container)
+
+        return cls(
+            path_ref = PathRef.from_dict(dct['pathRef']),
+            container = container,
+            config = dct['config'],
+            args = dct['args'],
+            env = dct['env'],
+        )
+
+
+class PathRef(object):
+    def __init__(self, ref, path):
+        self.ref = ref
+        self.path = path
+
+    @classmethod
+    def from_dict(cls, dct):
+        return cls(
+            ref=dct['ref'],
+            path=dct['path'],
+        )
+
 
 class PkgConfig(object):
     def __init__(self, base):
@@ -274,3 +317,5 @@ class PkgConfig(object):
 
     def __repr__(self):
         return "PkgConfig({})".format(self.base)
+
+

@@ -102,13 +102,13 @@ used to retrieve the pkg specified.
 The `exec` must adhere to the following API, which will be sent over stdin.
 
 
-## `T_READ_CANDIDATES`
+## `T_READ_PKGS_REQ`
 
 Read candiates for pkgs. The command is of the form:
 
 ```jsonnet
 {
-    F_TYPE: T_READ_CANDIDATES,
+    F_TYPE: C_READ_PKG_REQS,
     pkgReqs: ["sp@pkgA@>=1.0.2", "sp@pkgB@>=0.2.3,<=3.2.0"],
 }
 ```
@@ -141,7 +141,7 @@ Retrieve full pkgs from the retriever, putting any downloaded pkgs in
 
 ```
 {
-    F_TYPE: T_READ_PKGS,
+    F_TYPE: C_READ_PKGS,
 
     # bool. If true, can retrieve only the files necessary for the definition.
     definitionOnly: true,

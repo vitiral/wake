@@ -20,6 +20,9 @@
     "S_DEFINED": "defined",
     "S_COMPLETED": "completed",
 
+    "C_READ_PKGS": "readPkgs",
+    "C_READ_PKGS_REQ": "readPkgsReq",
+
     "DIR_WAKE": ".wake",
     "DIR_LOCAL_STORE": "localStore",
     "DIR_RETRIEVED": "retrieved",
