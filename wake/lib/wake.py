@@ -91,10 +91,7 @@ class Config(object):
                 computed,
             ))
 
-    def dump_pkg_fingerprint(self, pkg_config, local_deps=None):
-        local_deps = local_deps or {}
-        jsondumpf(pkg_config.path_local_deps, local_deps)
-
+    def dump_pkg_fingerprint(self, pkg_config):
         dumpf(pkg_config.pkg_fingerprint, '{"hash": "--fake hash--", "hashType": "fake"}')
         fingerprint = self.compute_pkg_fingerprint(pkg_config)
         jsondumpf(pkg_config.pkg_fingerprint, fingerprint.to_dict(), indent=4)
@@ -142,11 +139,19 @@ class Config(object):
         if result.returncode != 0:
             raise RuntimeError("Failed: " + result.stderr.decode())
 
-        set_trace()
+        retrieved = path.join(run_dir, DIR_WAKE, DIR_RETRIEVED)
+        for pdir in os.listdir(retrieved):
+            pkg_path = os.path.join(retrieved, pdir)
+            ret_config = PkgConfig(pkg_path)
 
-        # TODO: put pkgs in the store.
+            if not os.path.exists(ret_config.wakedir):
+                os.mkdir(ret_config.wakedir)
+            if not os.path.exists(ret_config.path_local_deps):
+                jsondumpf(ret_config.path_local_deps, {})
 
-        # self.store.add_pkg_path(
+            self.dump_pkg_fingerprint(ret_config)
+            simple_pkg = self.run_pkg(ret_config).root
+            self.store.add_pkg(ret_config, simple_pkg)
 
     def create_defined_pkgs(self, pkgs_defined):
         out = ["{"]
@@ -200,9 +205,8 @@ def store_local(config, local_abs, locked):
             ).pkg_id
 
     deps = OrderedDict(sorted(deps.items()))
-
-    # TODO: we must first write dependency lookups to local store and .wake/
-    config.dump_pkg_fingerprint(local_config, deps)
+    jsondumpf(local_config.path_local_deps, deps)
+    config.dump_pkg_fingerprint(local_config)
 
     local_pkg = config.run_pkg(local_config).root
     if local_key in locked:

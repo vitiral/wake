@@ -232,11 +232,14 @@ class PkgSimple(object):
     def get_fsentries(self):
         return itertools.chain(self.get_def_fsentries(), self.paths)
 
-    def get_pkg_req(self):
-        """Convert to just the pkg req key (no hash)."""
-
     def is_unresolved(self):
         return False
+
+    def get_local_deps(self):
+        if path.exists(self.pkg_local_deps):
+            return jsonloadf(self.pkg_local_deps)
+        else:
+            return None
 
 
 class PkgUnresolved(object):

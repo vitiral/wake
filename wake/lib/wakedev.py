@@ -69,6 +69,7 @@ FILE_PKG = wakeConstants["FILE_PKG"]  # #SPC-arch.pkgFile
 DIR_WAKE = wakeConstants["DIR_WAKE"]
 DIR_WAKE_REL = path.join(".", DIR_WAKE)
 DIR_LOCAL_STORE = wakeConstants["DIR_LOCAL_STORE"]
+DIR_RETRIEVED = wakeConstants["DIR_RETRIEVED"]
 
 FILE_RUN = wakeConstants["FILE_RUN"]
 FILE_PKG = wakeConstants["FILE_PKG"]
