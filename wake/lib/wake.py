@@ -53,18 +53,7 @@ class Config(object):
             pkg_root=pkg_config.pkg_root,
         )
 
-        with open(self.pkgs_defined, 'w') as fd:
-            fd.write("{\n")
-            for pkg_key, pkg_id in locked.items():
-                line = "  \"{}\": import \"{}/{}\",\n".format(
-                    pkg_key,
-                    self.store.get_pkg_path(pkg_id),
-                    FILE_PKG,
-                )
-                fd.write(line)
-            fd.write("}\n")
-            os.fsync(fd)
-
+        self.create_defined_pkgs(locked)
         dumpf(self.run, runtxt)
         manifest = manifest_jsonnet(self.run)
         return PkgManifest.from_dict(manifest)
@@ -152,14 +141,22 @@ class Config(object):
             self.dump_pkg_fingerprint(ret_config)
             simple_pkg = self.run_pkg(ret_config).root
             self.store.add_pkg(ret_config, simple_pkg)
+
+            # TODO: version resolution should happen before this is done.
             locked[simple_pkg.get_pkg_key()] = simple_pkg.pkg_id
 
-    def create_defined_pkgs(self, pkgs_defined):
-        out = ["{"]
-
-
-        out.append("}")
-        return "\n".join(out)
+    def create_defined_pkgs(self, locked):
+        with open(self.pkgs_defined, 'w') as fd:
+            fd.write("{\n")
+            for pkg_key, pkg_id in locked.items():
+                line = "  \"{}\": import \"{}/{}\",\n".format(
+                    pkg_key,
+                    self.store.get_pkg_path(pkg_id),
+                    FILE_PKG,
+                )
+                fd.write(line)
+            fd.write("}\n")
+            os.fsync(fd)
 
 
 ## COMMANDS AND MAIN
