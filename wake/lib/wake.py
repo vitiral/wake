@@ -97,7 +97,7 @@ class Config(object):
         jsondumpf(pkg_config.pkg_fingerprint, fingerprint.to_dict(), indent=4)
         return fingerprint
 
-    def handle_unresolved_pkg(self, pkg):
+    def handle_unresolved_pkg(self, pkg, locked):
         from_ = pkg.from_
         using_pkg = pkg.using_pkg
 
@@ -109,9 +109,9 @@ class Config(object):
             #     raise ValueError("{} was not in the store".format(pkg))
             return out
         else:
-            self.exec_get_pkg(pkg)
+            self.exec_get_pkg(pkg, locked)
 
-    def exec_get_pkg(self, pkg):
+    def exec_get_pkg(self, pkg, locked):
         # TODO: these should be collected and called all at once.
 
         get_exec = pkg.exec_
@@ -152,6 +152,7 @@ class Config(object):
             self.dump_pkg_fingerprint(ret_config)
             simple_pkg = self.run_pkg(ret_config).root
             self.store.add_pkg(ret_config, simple_pkg)
+            locked[simple_pkg.get_pkg_key()] = simple_pkg.pkg_id
 
     def create_defined_pkgs(self, pkgs_defined):
         out = ["{"]
@@ -171,7 +172,7 @@ def run_cycle(config, root_config, locked):
     for pkg in manifest.all:
         if isinstance(pkg, PkgUnresolved):
             num_unresolved += 1
-            config.handle_unresolved_pkg(pkg)
+            config.handle_unresolved_pkg(pkg, locked)
 
     return (num_unresolved, manifest)
 
