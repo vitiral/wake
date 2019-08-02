@@ -1,77 +1,41 @@
-# SPC-api
-<details>
-<summary><b>metadata</b></summary>
-<b>partof:</b><br>
-<li><a style="font-weight: bold; color: #FF4136" title="SPC-ARCH" href="#SPC-ARCH">SPC-arch</a></li>
-<b>parts:</b> <i>none</i></a><br>
-<b>file:</b> design/api.md<br>
-<b>impl:</b> <i>not implemented</i><br>
-<b>spc:</b>87.50&nbsp;&nbsp;<b>tst:</b>0.00<br>
-<hr>
-</details>
+```yaml @
+artifact:
+    code_paths:
+      - wake/
+```
 
-
-This details the API of `wake.jsonnet`. See links in the ".subarts" below to
-the implementation and further documentation.
-
-The basic API of wake is:
-- Declare a PKG.jsonnet which is must return a `function(wake)`, which itself returns
-  a call to `wake.declarePkg(...)`
-    - A pkg is _just data_ (files)
-- The pkg then goes through multiple states as its dependencies are resolved.
-  These states are _declared_ -> _defined_ -> [_ready_ ->] _completed_, where
-  _ready_ is only for modules.
-  - Closures on the pkg (like `exports`) are called when the pkg has achieved a
-    state marked with the name of the input, i.e. `pkgDefined` is a pkg in
-    state _defined_.
-- Modules are of type `function(wake, pkgReady, config)` and return a call to
-  `wake.defineModule`. Modules define what is built and how it is built.
-  - Modules are hashed as the pkg (just data) the `config` passed to them, and
-    finally the modules they depend on.
-
-## Wake API
-
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[18]" style="color: #0074D9"><b><i>.pkgId</i></b></span>: the uniq id (including exact version and hash) of a specific
-  pkg. Used for pkg lookup.
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[30]" style="color: #0074D9"><b><i>.pkgReq</i></b></span>: defines a semver requirement for a `getPkg` call to retreive.
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[72]" style="color: #0074D9"><b><i>.getPkg</i></b></span>: retrieve a pkg lazily.
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[91]" style="color: #0074D9"><b><i>.declarePkg</i></b></span>: declare a pkg.
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[170]" style="color: #0074D9"><b><i>.declareModule</i></b></span>: declare how to build something with a pkg.
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[206]" style="color: #0074D9"><b><i>.fsentry</i></b></span>: specify a file-system object within a pkg or module.
-- <span title="/home/rett/open/wake/wake/lib/wake.libsonnet[241]" style="color: #0074D9"><b><i>.exec</i></b></span>: a declared executable. Is typically a member of `module.exec`
-  or can be a member of `exports` for a pkg or module.
-
-
-# SPC-arch
-<details>
-<summary><b>metadata</b></summary>
-<b>partof:</b> <i>none</i></a><br>
-<b>parts:</b><br>
-<li><a style="font-weight: bold; color: #FF851B" title="SPC-API" href="#SPC-API">SPC-api</a></li>
-<b>file:</b> design/arch.md<br>
-<b>impl:</b> <i>not implemented</i><br>
-<b>spc:</b>27.70&nbsp;&nbsp;<b>tst:</b>0.00<br>
-<hr>
-</details>
+# Wake Architecture (SPC-arch) <a id="SPC-arch" />
+```yaml @
+subparts:
+  - state
+  - wakeStoreOverride
+  - wakeCredentialsOverride
+  - wakeGetPkgOverride
+  - store
+  - phaseLocal
+  - phasePkgComplete
+  - phaseModuleComplete
+  - pkgFile
+  - wakeDir
+```
 
 The implementation for the wake pkg manager and build system is split into two
 completely distinct pieces:
 
-- <a style="font-weight: bold; color: #FF851B" title="SPC-API" href="#SPC-API">SPC-api</a>: the "wake.libsonnet" library, which is a pure jsonnet library
+- [[SPC-api]]: the "wake.libsonnet" library, which is a pure jsonnet library
   that provides the user interface within `PKG.libsonnet` files and its
   dependencies.
-- <a style="font-style: italic; color: #B10DC9" title="SPC-EVAL not found" >SPC-eval</a>: the wake "evaluation engine", which is a cmdline frontend that
+- [[SPC-eval]]: the wake "evaluation engine", which is a cmdline frontend that
   injests files and executes the steps necessary to evaluate local hashes,
   retrieve pkg dependencies, and execute `exec` objects in order to complete
   modules.
 
 
-## <span title="Not Implemented" style="color: #FF4136"><b><i>.state</i></b></span>
+## [[.state]]
 These two pieces work together by the evaluation engine executing the jsonnet
 configuration within `cycles`, moving the state of wake objects through
 the following flow. States are always in _italics_ within this documentation.
-- _undefined_: the object is _declared_ as a dependency, but it has not yet
-  been _declared_.
+- _undefined_: the object is a dependency in a _declared_ pkg or module.
 - _declared_: the object's _declaration_ has been retrieved, but not all of its
   dependencies have been _defined_.
 - _defined_: the object has ben _declared_ and all of its dependencies have been
@@ -79,44 +43,67 @@ the following flow. States are always in _italics_ within this documentation.
 - _ready_: (modules only) all of a module's dependencies have been _completed_.
   The module is ready to be executed and _completed_.
 - _completed_:
-  - for `pkg`: the pkg is fully downloaded and in the **store**.
+  - for `pkg`: the pkg and all dependencies are fully downloaded and in the
+    **store**.
   - for `module`: `module.exec` has been executed (built) and the data is in
     the **store**.
 
 
 ## Overrides
 These are the overrides available to users to change wake's behavior in various
-phases (<a style="font-style: italic; color: #B10DC9" title="SPC-PHASE not found" >SPC-phase</a>). All of these objects are `exec` objects who's `args`
+phases ([[SPC-phase]]). All of these objects are `exec` objects who's `args`
 and `config` are both set to `null` (they will be overriden), and who's
 `container=wake.LOCAL`.
 
-### <span title="Not Implemented" style="color: #FF4136"><b><i>.wakeStoreOverride</i></b></span>: Override where to store artifacts
+### [[.wakeStoreOverride]]: Override where to store completed objects
 
-`root.pkgs.wakeStoreOverride` can be (optionally) set to an `exec` who's `config=null`.
+`root.pkgs.wakeStoreOverride` can be (optionally) set to an `exec` who's
+`container=wake.LOCAL_CONTAINER` and `args`, `env` and `config` are all `null`
+(must be fully self contained and cross-platform).
+
+This exec must support the following cmdline API:
+
+```
+wakestore [subcmd]
+
+Subcommands:
+
+   $ wakestore read
+
+      Reads a list of pkgIds or moduleIds from stdin and outputs
+      a list of pkgIds or moduleIds on stdout.
+
+      Input list must be separated by newlines and be of the form:
+
+        PKG namespace#name#version#hash
+        MOD namespace#name#version#hash#moduleHash
+
+      Output list is line based and of the form
+
+        PKG namespace#name#version#hash#/path/to/id
+        MOD namespace#name#version#hash#moduleHash#/path/to/id
+
+      If the pkg or module doesn't exist then the path will be empty.
+
+
+    $ wakestore tmp
+
+        Returns the path to a temporary directory on the local filesystem.
+
+
+    $ wakestore create <dir> [--pkgId <pkgId>] [--moduleId <moduleId>]
+
+        Create an entry for the pkg or module at the specified directory.
+        This indicates the end of pkg retrieval or a module build.
+```
 
 The **wakeStoreOverride** is passed to every **container** and must be
 supported by all containers. A good example would be a distributed filesystem
 which all types of containers (and the user's computer) use to mount the
 required fsentries for building modules.
 
-These are the following `config` objects the **wakeStoreOverride** must handle:
-- `{F_TYPE:T_STORE_READ, pkgId: <pkgId>, moduleId: <moduleId>}`: the **store** must
-  return the _path_ to the given `pkgId` or `moduleId` with all of its local fsentries
-  properly created/linked, or an empty string if no such object exists. This is
-  used both:
-  - To check if a pkg or module exists before retrieving or building it.
-  - To create the fsentries for building a module within a container. The
-    path must therefore have the characteristic that all files within it are
-    copy-on-write (since the module may mutate them).
-- `{F_TYPE:T_STORE_TMP}`: the **store** must return a local filesystem _path_ to
-  a directory where files can be retrieved, or an empty string if the system
-  default should be used. This is used as a place to put files, so that later
-  storing  them is more performant then re-sending them over the network.
-- `{F_TYPE:T_STORE_CREATE, dir: <pkg-dir>, pkgId: <pkgId>, moduleId:
-  <moduleId>}`: the store is passed a directory to an _completed_ pkg or module
-  and it must put it in the store.
 
-### <span title="Not Implemented" style="color: #FF4136"><b><i>.wakeCredentialsOverride</i></b></span>: Override how credentials are retrieved
+### [[.wakeCredentialsOverride]]: Override how credentials are retrieved
 This is currently poorly defined, but the basic idea is:
 
 - User defines hashed credentials is `$WAKEPATH/user.jsonnet`. This could
@@ -127,56 +114,90 @@ This is currently poorly defined, but the basic idea is:
 Something like that... more design is necessary.
 
 
-### <span title="Not Implemented" style="color: #FF4136"><b><i>.wakeGetPkgOverride</i></b></span>
+### [[.wakeGetPkgOverride]]
 
-If an `exec` is specified as the in a <a style="font-weight: bold; color: #FF851B" title="SPC-API.GETPKG" href="#SPC-API">SPC-api.getPkg</a> call, then it will be
-used to retrieve the pkg specified. The `exec` must adhere to the following
-API, where:
+If a self-contained `exec` is specified as the in a [[SPC-api.getPkg]] call, then it will be
+used to retrieve the pkg specified.
 
-- `dir` is a path to a (local) temporary directory to store the files. (Note
-  that this directory can be a link to a distributed fileystem.)
-- `definitionOnly` is a bool regarding whether to retrieve only the
-  `fsentriesDef` or the full `fsentries`.
-- `..getPkg` is the `getPkg` arguments flattened
+The `exec` must adhere to the following API, which will be sent over stdin.
 
-```
+
+## `T_READ_PKGS_REQ`
+
+Read candiates for pkgs. The command is of the form:
+
+```jsonnet
 {
-    F_TYPE:T_GET_PKG,
-    dir: <tmpDir>,
-    definitionOnly: bool,
-    ..getPkg
+    F_TYPE: C_READ_PKG_REQS,
+    pkgReqs: ["sp@pkgA@>=1.0.2", "sp@pkgB@>=0.2.3,<=3.2.0"],
 }
 ```
 
-It must then return `rc=0` and have the pkg retrieved within the `dir` passed to it.
+The retriever must return an object of possible candidates over stdout. The
+object must be of the form:
 
-If the pkg has a <span title="Not Implemented" style="color: #FF4136"><b><i>.localDependenciesFile</i></b></span> then it must also retrieve the
+```
+{
+    # Returned candidates for a request.
+    "sp@pkgA@>=1.0.2": [
+        {
+            version: "1.2.3",                # a specific version
+            pkgs: ["sp@name@>=2.3.2", ...],  # the dependencies of this version
+        },
+        ...
+    ],
+    "sp@pkgB@>=0.2.3,<=3.2.0": [
+        ...
+    ],
+    ...
+}
+```
+
+
+## `T_READ_PKGS`
+
+Retrieve full pkgs from the retriever, putting any downloaded pkgs in
+`.wake/DIR_RETRIEVED`
+
+```
+{
+    F_TYPE: C_READ_PKGS,
+
+    # bool. If true, can retrieve only the files necessary for the definition.
+    definitionOnly: true,
+
+    # The specific versions to retrieve.
+    pkgVersions: ["sp@pkgA@1.2.3", "sp@pkgB@2.3.2"],
+}
+```
+
+If the pkg has a [[.localDependenciesFile]] then it must also retrieve the
 required dependencies and put them in the directories specified in that file.
 
 
-## <span title="/home/rett/open/wake/wake/lib/wakestore.py[20]" style="color: #0074D9"><b><i>.store</i></b></span> Store
+## [[.store]] Store
 The **store** (always in bold) has a presentation API to both the libsonnet and
 eval engines:
 
-- <span title="Not Implemented" style="color: #FF4136"><b><i>.wakeStoreSonnet</i></b></span>: For `wake.libsonnet` API, the **store** appears as the
-  <a style="font-weight: bold; color: #FF851B" title="SPC-API.GETPKG" href="#SPC-API">SPC-api.getPkg</a> API, which lazily retrieves pkgs.
+- [[.wakeStoreSonnet]]: For `wake.libsonnet` API, the **store** appears as the
+  [[SPC-api.getPkg]] API, which lazily retrieves pkgs.
 - eval: for the evaluation engine, there are multiple stages of the **store**
   depending on the **phase**.
-  - In <a style="font-weight: bold; color: #FF4136" title="SPC-ARCH.PHASELOCAL" href="#SPC-ARCH">SPC-arch.phaseLocal</a> and <a style="font-weight: bold; color: #FF4136" title="SPC-ARCH.PHASEPKGCOMPLETE" href="#SPC-ARCH">SPC-arch.phasePkgComplete</a> the store is always
+  - In [[SPC-arch.phaseLocal]] and [[SPC-arch.phasePkgComplete]] the store is always
     the local filesystem who's behavior is defined by the wake CLI.
-  - In <a style="font-weight: bold; color: #FF4136" title="SPC-ARCH.PHASEMODULECOMPLETE" href="#SPC-ARCH">SPC-arch.phaseModuleComplete</a>: the **store** can be either the local
-    filesystem, or overriden with <a style="font-weight: bold; color: #FF4136" title="SPC-ARCH.WAKESTOREOVERRIDE" href="#SPC-ARCH">SPC-arch.wakeStoreOverride</a>.
+  - In [[SPC-arch.phaseModuleComplete]]: the **store** can be either the local
+    filesystem, or overriden with [[SPC-arch.wakeStoreOverride]].
 
 
 ## Phases
 There are only three phases to wake execution:
 
-- <span title="Not Implemented" style="color: #FF4136"><b><i>.phaseLocal</i></b></span>: where the local pkg's hashes are calculated and exported
-  into `.wake/fingerprint.json`, then put into <a style="font-style: italic; color: #B10DC9" title="SPC-ARCH.WAKESTORELOCAL not found" >SPC-arch.wakeStoreLocal</a>
-- <span title="Not Implemented" style="color: #FF4136"><b><i>.phasePkgComplete</i></b></span>: where pkgs are retrieved and put in the
-  <a style="font-style: italic; color: #B10DC9" title="SPC-ARCH.WAKESTORELOCAL not found" >SPC-arch.wakeStoreLocal</a>. This can run multiple cycles until all pkgs
+- [[.phaseLocal]]: where the local pkg's hashes are calculated and exported
+  into `.wake/fingerprint.json`, then put into [[SPC-arch.wakeStoreLocal]]
+- [[.phasePkgComplete]]: where pkgs are retrieved and put in the
+  [[SPC-arch.wakeStoreLocal]]. This can run multiple cycles until all pkgs
   are resolved and the proper dependency tree is determined.
-- <span title="Not Implemented" style="color: #FF4136"><b><i>.phaseModuleComplete</i></b></span>: all pkgs have been retrieved and configuration calculated
+- [[.phaseModuleComplete]]: all pkgs have been retrieved and configuration calculated
   in the pure jsonnet manifest. The `exec` objects are then executed within
   their `container` in the proper build order with the proper links to their
   dependent pkgs and modules.
@@ -190,8 +211,8 @@ whereas module inputs remain only pure data.
 
 ## Special Files and Directories
 
-- <span title="/home/rett/open/wake/wake/lib/wakedev.py[58]" style="color: #0074D9"><b><i>.pkgFile</i></b></span> `./PKG.libsonnet` file which contains the call to <a style="font-weight: bold; color: #FF851B" title="SPC-API.DECLAREPKG" href="#SPC-API">SPC-api.declarePkg</a>
-- <span title="/home/rett/open/wake/wake/lib/wakedev.py[60]" style="color: #0074D9"><b><i>.wakeDir</i></b></span> `./.wake/`: reserved directory for containing wake metadata. Should
+- [[.pkgFile]] `./PKG.libsonnet` file which contains the call to [[SPC-api.declarePkg]]
+- [[.wakeDir]] `./.wake/`: reserved directory for containing wake metadata. Should
   not be used by users. Can contain the following fsentries:
   - `pkgs.libsonnet` file containing the imports to already
     defined pkgs. This is regenerated each cycle in the **phasePkgComplete**
@@ -389,4 +410,49 @@ Special files:
 - `getPkg.json`: only exists when executing a `getPkg` call. Contains the json
   manifest of the `getJson` call.
 
+# SPC-api
+```
+partof:
+ - SPC-arch
+
+subparts:
+ - pkgId
+ - pkgReg
+ - getPkg
+ - declarePkg
+ - declareModule
+ - pathRef
+ - exec
+```
+
+This details the API of `wake.jsonnet`. See links in the ".subarts" below to
+the implementation and further documentation.
+
+The basic API of wake is:
+- Declare a PKG.jsonnet which is must return a `function(wake) -> wake.declarePkg(...)`, which itself returns
+  a call to `wake.declarePkg(...)`
+    - A pkg is _just data_ (files)
+- The pkg then goes through multiple states as its dependencies are resolved.
+  These states are _declared_ -> _defined_ -> [_ready_ ->] _completed_, where
+  _ready_ is only for modules.
+  - Closures on the pkg (like `exports`) are called when the pkg has achieved a
+    state marked with the name of the input, i.e. `pkgDefined` is a pkg in
+    state _defined_.
+- Modules are of type `function(wake, pkgReady, config) ->
+  wake.defineModule(...)` and return a call to `wake.defineModule`. Modules
+  define what is built and how it is built.
+  - Modules are hashed as the pkg (just data) the `config` passed to them, as
+    well as any modules they depend on.
+
+## Wake API
+
+- [[.pkgId]]: the uniq id (including exact version and hash) of a specific
+  pkg. Used for pkg lookup.
+- [[.pkgReq]]: defines a semver requirement for a `getPkg` call to retreive.
+- [[.getPkg]]: retrieve a pkg lazily.
+- [[.declarePkg]]: declare a pkg.
+- [[.declareModule]]: declare how to build something with a pkg.
+- [[.pathRef]]: Reference a path from within a pkg or module.
+- [[.exec]]: a declared executable. Is typically a member of `module.exec`
+  or can be a member of `exports` for a pkg or module.
 
