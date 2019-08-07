@@ -18,7 +18,7 @@
 # Copyright (c) 2015 cakepietoast
 # https://pypi.org/project/checksumdir/#files
 
-from wakedev import *
+from .utils import *
 
 class HashStuff(object):
     HASH_TYPES = {

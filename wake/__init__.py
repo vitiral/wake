@@ -13,7 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from wakedev import *
+from .utils import *
 from wakepkg import *
 from wakestore import *
 
