@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 from .utils import *
-from wakehash import *
+from .hash import *
 
 
 class PkgConfig(object):

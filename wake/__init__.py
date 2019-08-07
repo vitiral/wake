@@ -14,8 +14,8 @@
 #   limitations under the License.
 
 from .utils import *
-from wakepkg import *
-from wakestore import *
+from .pkg import *
+from .store import *
 
 
 class Config(object):

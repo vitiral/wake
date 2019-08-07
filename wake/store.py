@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 from .utils import *
-from wakepkg import *
+from .pkg import *
 
 
 class Store(object):
