@@ -28,5 +28,3 @@ if __name__ == '__main__':
             pdb.post_mortem(tb)
         else:
             raise
-
-

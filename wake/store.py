@@ -64,7 +64,8 @@ class Store(object):
 
         os.mkdir(pcache)
         for fsentry_rel in simple_pkg.get_fsentries():
-            copy_fsentry(pkg_config.path_abs(fsentry_rel), pjoin(pcache, fsentry_rel))
+            copy_fsentry(pkg_config.path_abs(fsentry_rel),
+                         pjoin(pcache, fsentry_rel))
 
         copy_fsentry(pkg_config.pkg_fingerprint, pcache)
         meta = StoreMeta(state=S_DECLARED)
@@ -94,9 +95,7 @@ class StoreMeta(object):
 
     @classmethod
     def from_dict(cls, dct):
-        return cls(
-            state = dct['state'],
-        )
+        return cls(state=dct['state'], )
 
     def to_dict(self):
         return {

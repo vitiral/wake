@@ -23,6 +23,7 @@
 
 from .utils import *
 
+
 class HashStuff(object):
     HASH_TYPES = {
         'md5': hashlib.md5,
@@ -46,7 +47,8 @@ class HashStuff(object):
     def from_config(cls, config):
         fingerprint = config.get_current_fingerprint()
         if fingerprint is None:
-            fail("{} fingerprint file must exist".format(config.pkg_fingerprint))
+            fail("{} fingerprint file must exist".format(
+                config.pkg_fingerprint))
         return cls(config.base, hash_type=fingerprint[F_HASHTYPE])
 
     def update_paths(self, paths):
@@ -66,14 +68,15 @@ class HashStuff(object):
         if not os.path.isdir(dirpath):
             raise TypeError('{} is not a directory.'.format(dirpath))
 
-        for root, dirs, files in os.walk(dirpath, topdown=True, followlinks=True):
+        for root, dirs, files in os.walk(dirpath,
+                                         topdown=True,
+                                         followlinks=True):
             for f in files:
                 fpath = pjoin(root, f)
                 if fpath in visited:
                     raise RuntimeError(
-                        "Error: infinite directory recursion detected at {}"
-                        .format(fpath)
-                    )
+                        "Error: infinite directory recursion detected at {}".
+                        format(fpath))
                 visited.add(fpath)
                 self.update_file(fpath)
 
@@ -99,4 +102,3 @@ class HashStuff(object):
             hasher.update(fpath.encode())
             hasher.update(hashmap[fpath].encode())
         return hasher.hexdigest()
-

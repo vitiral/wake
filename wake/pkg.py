@@ -46,8 +46,6 @@ class PkgConfig(object):
         return "PkgConfig({})".format(self.base)
 
 
-
-
 class PkgKey(object):
     def __init__(self, namespace, name):
         self.namespace = namespace
@@ -97,21 +95,19 @@ class PkgReq(object):
         return "PkgReq({})".format(self)
 
 
-
 class PkgManifest(object):
     """The result of "running" a pkg."""
     def __init__(self, root, all_pkgs):
         self.root = root
         self.all = all_pkgs
 
-
     @classmethod
     def from_dict(cls, dct):
         return cls(
             root=PkgSimple.from_dict(dct['root']),
             all_pkgs=[
-                PkgUnresolved.from_dict(p) if is_unresolved(p)
-                else PkgSimple.from_dict(p)
+                PkgUnresolved.from_dict(p)
+                if is_unresolved(p) else PkgSimple.from_dict(p)
                 for p in dct['all']
             ],
         )
@@ -122,6 +118,7 @@ class PkgManifest(object):
             "all": [p.to_dict() for p in self.all],
         }
 
+
 class Fingerprint(object):
     def __init__(self, hash_, hash_type):
         self.hash = hash_
@@ -129,10 +126,7 @@ class Fingerprint(object):
 
     @classmethod
     def from_dict(cls, dct):
-        return cls(
-            hash_=dct['hash'],
-            hash_type=dct['hash_type']
-        )
+        return cls(hash_=dct['hash'], hash_type=dct['hash_type'])
 
     def to_dict(self):
         return {
@@ -143,11 +137,8 @@ class Fingerprint(object):
 
 class PkgSimple(object):
     """Pull out only the data we care about."""
-    def __init__(self,
-            state, pkg_id, namespace, name, version, description,
-            fingerprint, pkgs,
-            paths, paths_def,
-            exports):
+    def __init__(self, state, pkg_id, namespace, name, version, description,
+                 fingerprint, pkgs, paths, paths_def, exports):
         hash_ = fingerprint['hash']
         expected_pkg_id = [namespace, name, version, hash_]
         assert expected_pkg_id == pkg_id.split(WAKE_SEP), (
@@ -163,11 +154,13 @@ class PkgSimple(object):
                 invalid_paths.append("{}: {}".format(p, e))
 
         if invalid_paths:
-            raise ValueError("{} has Invalid paths:\n{}".format(pkg_id, "\n".join(invalid_paths)))
+            raise ValueError("{} has Invalid paths:\n{}".format(
+                pkg_id, "\n".join(invalid_paths)))
 
         self.state = state
         self.pkg_root = path.join("./", FILE_PKG)
-        self.pkg_local_deps = path.join("./", DIR_WAKE, FILE_LOCAL_DEPENDENCIES)
+        self.pkg_local_deps = path.join("./", DIR_WAKE,
+                                        FILE_LOCAL_DEPENDENCIES)
         self.pkg_fingerprint = path.join("./", DIR_WAKE, FILE_FINGERPRINT)
         # TODO: pkg_id_str and pkg_id
         self.pkg_id = pkg_id
@@ -186,11 +179,8 @@ class PkgSimple(object):
         return PkgKey(self.namespace, self.name)
 
     def __repr__(self):
-        return "{}(id={}, state={})".format(
-            self.__class__.__name__,
-            self.pkg_id,
-            self.state
-        )
+        return "{}(id={}, state={})".format(self.__class__.__name__,
+                                            self.pkg_id, self.state)
 
     @classmethod
     def from_dict(cls, dct):
@@ -248,8 +238,8 @@ class PkgUnresolved(object):
     def __init__(self, pkg_req, from_, using_pkg, full, exec_):
         if isinstance(from_, str) and not from_.startswith('./'):
             raise TypeError(
-                "{}: from must start with ./ for local pkgs: {}"
-                .format(pkg_req, from_))
+                "{}: from must start with ./ for local pkgs: {}".format(
+                    pkg_req, from_))
         if isinstance(pkg_req, str):
             pkg_req = PkgReq.from_str(pkg_req)
         self.pkg_req = pkg_req
@@ -305,11 +295,11 @@ class Exec(object):
             container = Exec.from_dict(container)
 
         return cls(
-            path_ref = PathRefPkg.from_dict(dct['pathRef']),
-            container = container,
-            config = dct['config'],
-            args = dct['args'],
-            env = dct['env'],
+            path_ref=PathRefPkg.from_dict(dct['pathRef']),
+            container=container,
+            config=dct['config'],
+            args=dct['args'],
+            env=dct['env'],
         )
 
 

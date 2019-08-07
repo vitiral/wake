@@ -23,7 +23,6 @@ from . import store as mstore
 from . import hash as mhash
 
 
-
 class Config(object):
     def __init__(self):
         self.user_path = abspath(os.getenv("WAKEPATH", "~/.wake"))
@@ -74,20 +73,24 @@ class Config(object):
         hashstuff.update_file(pkg_config.pkg_root)
         hashstuff.update_paths(pkg_config.paths_abs(root.paths))
         hashstuff.update_paths(pkg_config.paths_abs(root.paths_def))
-        return mpkg.Fingerprint(hash_=hashstuff.reduce(), hash_type=hashstuff.hash_type)
+        return mpkg.Fingerprint(hash_=hashstuff.reduce(),
+                                hash_type=hashstuff.hash_type)
 
     def assert_fingerprint_matches(self, pkg_config):
         fingerprint = pkg_config.get_current_fingerprint()
         computed = self.compute_pkg_fingerprint(pkg_config)
 
         if fingerprint != computed:
-            raise ValueError("fingerprints do no match:\nfingerprint.json={}\ncomputed={}".format(
-                fingerprint,
-                computed,
-            ))
+            raise ValueError(
+                "fingerprints do no match:\nfingerprint.json={}\ncomputed={}".
+                format(
+                    fingerprint,
+                    computed,
+                ))
 
     def dump_pkg_fingerprint(self, pkg_config):
-        dumpf(pkg_config.pkg_fingerprint, '{"hash": "--fake hash--", "hashType": "fake"}')
+        dumpf(pkg_config.pkg_fingerprint,
+              '{"hash": "--fake hash--", "hashType": "fake"}')
         fingerprint = self.compute_pkg_fingerprint(pkg_config)
         jsondumpf(pkg_config.pkg_fingerprint, fingerprint.to_dict(), indent=4)
         return fingerprint
@@ -167,6 +170,7 @@ class Config(object):
 
 ## COMMANDS AND MAIN
 
+
 def run_cycle(config, root_config, locked):
     """Run a cycle with the config and root_config at the current setting."""
     manifest = config.run_pkg(root_config, locked)
@@ -196,7 +200,8 @@ def store_local(config, local_abs, locked):
     local_pkg = local_manifest.root
     local_key = local_pkg.get_pkg_key()
     if local_key in locked:
-        raise ValueError("Attempted to add {} to local overrides twice.".format(local_key))
+        raise ValueError(
+            "Attempted to add {} to local overrides twice.".format(local_key))
 
     # recursively store all local dependencies first
     deps = {}
@@ -214,7 +219,8 @@ def store_local(config, local_abs, locked):
 
     local_pkg = config.run_pkg(local_config).root
     if local_key in locked:
-        raise ValueError("Attempted to add {} to local overrides twice.".format(local_key))
+        raise ValueError(
+            "Attempted to add {} to local overrides twice.".format(local_key))
     locked[local_key] = local_pkg.pkg_id
     config.store.add_pkg(
         local_config,
@@ -252,7 +258,6 @@ def build(args):
     locked = {}
     store_local(config, config.base, locked)
 
-
     print("## BUILD CYCLES")
 
     cycle = 0
@@ -275,17 +280,15 @@ def build(args):
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(
-        description='Wake: the pkg manager and build system of the web',
-    )
+        description='Wake: the pkg manager and build system of the web', )
 
     subparsers = parser.add_subparsers(help='[sub-command] help')
     parser_build = subparsers.add_parser(
-        'build',
-        help='build the pkg in the current directory'
-    )
+        'build', help='build the pkg in the current directory')
     parser_build.set_defaults(func=build)
 
     return parser.parse_args(argv)
+
 
 def main(argv):
     args = parse_args(argv[1:])

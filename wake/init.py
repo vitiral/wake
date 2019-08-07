@@ -37,6 +37,7 @@ function(wake)
     )
 '''
 
+
 def new_pkg(args):
     path = args.path
     name = args.name

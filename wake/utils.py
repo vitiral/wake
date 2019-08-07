@@ -14,12 +14,12 @@
 # Unless you explicitly state otherwise, any contribution intentionally submitted
 # for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 # be dual licensed as above, without any additional terms or conditions.
-
 """
 Debug mode does things like delete folders before starting, etc
 """
 
-import sys, os
+import sys
+import os
 import argparse
 import hashlib
 import json
@@ -36,21 +36,26 @@ MODE = DEBUG
 
 path = os.path
 
+
 def pjoin(base, p):
     if p.startswith('./'):
         p = p[2:]
     return path.join(base, p)
+
+
 def abspath(p):
     return path.abspath(path.expanduser(p))
+
+
 def jsonloadf(path):
     with open(path) as fp:
         return json.load(fp)
+
+
 def jsondumpf(path, data, indent=4):
     with open(path, 'w') as fp:
-        return json.dump(
-            data, fp,
-            indent=indent,
-            sort_keys=True)
+        return json.dump(data, fp, indent=indent, sort_keys=True)
+
 
 PATH_HERE = abspath(__file__)
 HERE_DIR = path.dirname(abspath(__file__))
@@ -135,8 +140,8 @@ def manifest_jsonnet(path):
         universal_newlines=True,
     )
     if completed.returncode != 0:
-        fail("Manifesting jsonnet at {}\n## STDOUT:\n{}\n\n## STDERR:\n{}\n".format(
-            path, completed.stdout, completed.stderr))
+        fail("Manifesting jsonnet at {}\n## STDOUT:\n{}\n\n## STDERR:\n{}\n".
+             format(path, completed.stdout, completed.stderr))
     return json.loads(completed.stdout)
 
 
@@ -154,6 +159,7 @@ def dumpf(path, s):
     with open(path, 'w') as f:
         f.write(s)
 
+
 def copy_fsentry(src, dst):
     """Perform a deep copy on the filesystem entry (file, dir, symlink).
 
@@ -168,9 +174,11 @@ def copy_fsentry(src, dst):
     else:
         shutil.copytree(src, dst)
 
+
 def assert_valid_paths(paths):
     for p in paths:
         assert_valid_path(p)
+
 
 def assert_valid_path(p):
     if not p.startswith("./"):
@@ -178,9 +186,11 @@ def assert_valid_path(p):
     if sum(filter(lambda c: c == '..', p.split('/'))):
         raise ValueError("paths must not have `..` components: " + p)
 
+
 def assert_not_wake(p):
     if p.startswith(DIR_WAKE_REL):
-        raise ValueError("paths must not start with {}: {}".format(DIR_WAKE_REL, p))
+        raise ValueError("paths must not start with {}: {}".format(
+            DIR_WAKE_REL, p))
 
 
 def is_pkg(dct):
@@ -202,6 +212,3 @@ def rmtree(d):
 
 def pkg_key(pkg_id):
     """Convert a pkg_id to the more general pkg_key."""
-
-
-
