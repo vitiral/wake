@@ -23,7 +23,8 @@ fix:
 	py3/bin/yapf --in-place -r wake/ tests
 
 lint:
-	py3/bin/pylint wake/
+	# TODO: remove -E
+	py3/bin/pylint wake/ -E
 
 test2:
 	# Testing python2

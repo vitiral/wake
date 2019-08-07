@@ -1,19 +1,21 @@
-#   Copyright 2019 Rett Berg (googberg@gmail.com)
+# ⏾🌊🛠 wake software's true potential
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
+# Copyright (C) 2019 Rett Berg <github.com/vitiral>
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+# The source code is Licensed under either of
 #
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+# * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+#   http://www.apache.org/licenses/LICENSE-2.0)
+# * MIT license ([LICENSE-MIT](LICENSE-MIT) or
+#   http://opensource.org/licenses/MIT)
+#
+# at your option.
+#
+# Unless you explicitly state otherwise, any contribution intentionally submitted
+# for inclusion in the work by you, as defined in the Apache-2.0 license, shall
+# be dual licensed as above, without any additional terms or conditions.
 
 from .utils import *
-from .hash import *
 
 
 class PkgConfig(object):
@@ -158,7 +160,7 @@ class PkgSimple(object):
                 assert_valid_path(p)
                 assert_not_wake(p)
             except ValueError as e:
-                invalid_paths.append("{}: {}".format(p, e.message))
+                invalid_paths.append("{}: {}".format(p, e))
 
         if invalid_paths:
             raise ValueError("{} has Invalid paths:\n{}".format(pkg_id, "\n".join(invalid_paths)))

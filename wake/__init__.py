@@ -1,21 +1,27 @@
-#!/usr/bin/python3
-#   Copyright 2019 Rett Berg (googberg@gmail.com)
+# ⏾🌊🛠 wake software's true potential
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
+# Copyright (C) 2019 Rett Berg <github.com/vitiral>
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+# The source code is Licensed under either of
 #
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+# * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+#   http://www.apache.org/licenses/LICENSE-2.0)
+# * MIT license ([LICENSE-MIT](LICENSE-MIT) or
+#   http://opensource.org/licenses/MIT)
+#
+# at your option.
+#
+# Unless you explicitly state otherwise, any contribution intentionally submitted
+# for inclusion in the work by you, as defined in the Apache-2.0 license, shall
+# be dual licensed as above, without any additional terms or conditions.
+
+import os
 
 from .utils import *
-from .pkg import *
-from .store import *
+from . import pkg as mpkg
+from . import store as mstore
+from . import hash as mhash
+
 
 
 class Config(object):
@@ -23,7 +29,7 @@ class Config(object):
         self.user_path = abspath(os.getenv("WAKEPATH", "~/.wake"))
         self.base = os.getcwd()
 
-        root_config = PkgConfig(self.base)
+        root_config = mpkg.PkgConfig(self.base)
         self.pkgs_locked = pjoin(root_config.wakedir, "pkgsLocked.json")
         self.pkgs_defined = pjoin(root_config.wakedir, "pkgsDefined.jsonnet")
         self.run = pjoin(root_config.wakedir, "run.jsonnet")
@@ -33,7 +39,7 @@ class Config(object):
             fail("must instantiate user credentials: " + user_file)
         self.user = manifest_jsonnet(user_file)
 
-        self.store = Store(
+        self.store = mstore.Store(
             self.base,
             pjoin(self.user_path, self.user.get('store', 'store')),
         )
@@ -56,19 +62,19 @@ class Config(object):
         self.create_defined_pkgs(locked)
         dumpf(self.run, runtxt)
         manifest = manifest_jsonnet(self.run)
-        return PkgManifest.from_dict(manifest)
+        return mpkg.PkgManifest.from_dict(manifest)
 
     def compute_pkg_fingerprint(self, pkg_config):
         root = self.run_pkg(pkg_config).root
 
-        hashstuff = HashStuff(pkg_config.base)
+        hashstuff = mhash.HashStuff(pkg_config.base)
         if path.exists(pkg_config.path_local_deps):
             hashstuff.update_file(pkg_config.path_local_deps)
 
         hashstuff.update_file(pkg_config.pkg_root)
         hashstuff.update_paths(pkg_config.paths_abs(root.paths))
         hashstuff.update_paths(pkg_config.paths_abs(root.paths_def))
-        return Fingerprint(hash_=hashstuff.reduce(), hash_type=hashstuff.hash_type)
+        return mpkg.Fingerprint(hash_=hashstuff.reduce(), hash_type=hashstuff.hash_type)
 
     def assert_fingerprint_matches(self, pkg_config):
         fingerprint = pkg_config.get_current_fingerprint()
@@ -131,7 +137,7 @@ class Config(object):
         retrieved = path.join(run_dir, DIR_WAKE, DIR_RETRIEVED)
         for pdir in os.listdir(retrieved):
             pkg_path = os.path.join(retrieved, pdir)
-            ret_config = PkgConfig(pkg_path)
+            ret_config = mpkg.PkgConfig(pkg_path)
 
             if not os.path.exists(ret_config.wakedir):
                 os.mkdir(ret_config.wakedir)
@@ -167,7 +173,7 @@ def run_cycle(config, root_config, locked):
 
     num_unresolved = 0
     for pkg in manifest.all:
-        if isinstance(pkg, PkgUnresolved):
+        if isinstance(pkg, mpkg.PkgUnresolved):
             num_unresolved += 1
             config.handle_unresolved_pkg(pkg, locked)
 
@@ -179,11 +185,11 @@ def store_local(config, local_abs, locked):
 
     Also stores own version in the lockfile.
     """
-    local_config = PkgConfig(local_abs)
+    local_config = mpkg.PkgConfig(local_abs)
     if not path.exists(local_config.pkg_fingerprint):
         jsondumpf(
             local_config.pkg_fingerprint,
-            Fingerprint('fake', 'fake').to_dict(),
+            mpkg.Fingerprint('fake', 'fake').to_dict(),
         )
 
     local_manifest = config.run_pkg(local_config)
@@ -223,7 +229,7 @@ def store_local(config, local_abs, locked):
 def build(args):
     config = Config()
     print("## building local pkg {}".format(config.base))
-    root_config = PkgConfig(config.base)
+    root_config = mpkg.PkgConfig(config.base)
 
     print("-> initializing the global cache")
     if MODE == DEBUG:
