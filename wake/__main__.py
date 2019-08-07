@@ -21,7 +21,7 @@ if __name__ == '__main__':
     try:
         wake.main(sys.argv)
     except:
-        if wake.MODE == wake.DEBUG:
+        if wake.is_debug():
             import traceback, pdb
             extype, value, tb = sys.exc_info()
             traceback.print_exc()

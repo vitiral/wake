@@ -1,0 +1,2 @@
+DEBUG = "debug"
+MODE = DEBUG

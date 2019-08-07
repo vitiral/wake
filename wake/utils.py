@@ -17,6 +17,7 @@
 """
 Debug mode does things like delete folders before starting, etc
 """
+from . import gvars
 
 import sys
 import os
@@ -30,9 +31,6 @@ from collections import OrderedDict
 
 from pprint import pprint as pp
 from pdb import set_trace
-
-DEBUG = "debug"
-MODE = DEBUG
 
 path = os.path
 
@@ -147,7 +145,7 @@ def manifest_jsonnet(path):
 
 def fail(msg):
     msg = "FAIL: {}\n".format(msg)
-    if MODE == DEBUG:
+    if is_debug():
         raise RuntimeError(msg)
     else:
         sys.stderr.write(msg)
@@ -212,3 +210,7 @@ def rmtree(d):
 
 def pkg_key(pkg_id):
     """Convert a pkg_id to the more general pkg_key."""
+
+
+def is_debug():
+    return gvars.MODE == gvars.DEBUG

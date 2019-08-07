@@ -238,7 +238,7 @@ def build(args):
     root_config = mpkg.PkgConfig(config.base)
 
     print("-> initializing the global cache")
-    if MODE == DEBUG:
+    if is_debug():
         config.remove_caches()
     root_config.init_wakedir()
     config.init()
