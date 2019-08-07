@@ -286,17 +286,3 @@ def main(argv):
 
     print(args)
     args.func(args)
-
-
-if __name__ == '__main__':
-    try:
-        main(sys.argv)
-    except:
-        if MODE == DEBUG:
-            import traceback, pdb
-            extype, value, tb = sys.exc_info()
-            traceback.print_exc()
-            pdb.post_mortem(tb)
-        else:
-            raise
-
