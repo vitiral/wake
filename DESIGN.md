@@ -25,15 +25,15 @@ completely distinct pieces:
 - [[SPC-api]]: the "wake.libsonnet" library, which is a pure jsonnet library
   that provides the user interface within `PKG.libsonnet` files and its
   dependencies.
-- [[SPC-eval]]: the wake "evaluation engine", which is a cmdline frontend that
+- [[SPC-eval]]: the wake "evaluation engine", which is a application that
   injests files and executes the steps necessary to evaluate local hashes,
   retrieve pkg dependencies, and execute `exec` objects in order to complete
   modules.
 
 
 ## [[.state]]
-These two pieces work together by the evaluation engine executing the jsonnet
-configuration within `cycles`, moving the state of wake objects through
+These two pieces work together by the evaluation engine executing the (pure)
+jsonnet configuration within `cycles`, moving the state of wake objects through
 the following flow. States are always in _italics_ within this documentation.
 - _undefined_: the object is a dependency in a _declared_ pkg or module.
 - _declared_: the object's _declaration_ has been retrieved, but not all of its
@@ -54,6 +54,9 @@ These are the overrides available to users to change wake's behavior in various
 phases ([[SPC-phase]]). All of these objects are `exec` objects who's `args`
 and `config` are both set to `null` (they will be overriden), and who's
 `container=wake.LOCAL`.
+
+Overrides are _part of the language_. They should be seen as dynamic plugins,
+where everything (except the store) can be overriden _per module_.
 
 ### [[.wakeStoreOverride]]: Override where to store completed objects
 
@@ -104,6 +107,10 @@ required fsentries for building modules.
 
 
 ### [[.wakeCredentialsOverride]]: Override how credentials are retrieved
+This is how a user/group/company can create and share their own trusted
+dpendency credentials, using their group/company specific secret sharing
+mechanism.
+
 This is currently poorly defined, but the basic idea is:
 
 - User defines hashed credentials is `$WAKEPATH/user.jsonnet`. This could

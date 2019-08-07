@@ -1,4 +1,10 @@
-/target
+py2/
+py3/
+pycheck/
+dist/
+jshlib.egg-info/
+*.pyc
+
 **/*.rs.bk
 .wake/
 PKG.meta
