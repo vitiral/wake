@@ -20,7 +20,7 @@ ways. They are all strings, with components separated by `@`
 
 **pkg**: represents a package (data) in various states.
 
-**pkgKey**: a pkg at a specific version with a hash
+**pkgName**: a pkg at a specific version with a hash
 
 
 ```
@@ -310,8 +310,8 @@ pkgsAvailable = {
 }
 
 def choose_latest(req):
-    pkgKey = req.pkgKey()  # i.e. pkgB(>2.0) -> pkgB
-    for available in pkgsAvailable[pkgKey].reverse():
+    pkgName = req.pkgName()  # i.e. pkgB(>2.0) -> pkgB
+    for available in pkgsAvailable[pkgName].reverse():
         if req.matches(available):
             return available
     return None
@@ -322,7 +322,7 @@ all together.
 
 ```python
 def construct_req_muts():
-    req_muts = {}  # Map[pkgKey, set[req]]
+    req_muts = {}  # Map[pkgName, set[req]]
 
     for pkgId, reqs in pkgsReqs:
         for req in reqs:

@@ -57,7 +57,7 @@ C + { local wake = self
         assert !_P.hasSep(versionStr): "versionReq must not contain '#'",
 
         result: std.join(C.WAKE_SEP, [
-            wake.pkgKey(namespace, name),
+            wake.pkgName(namespace, name),
             versionStr,
         ]),
     }.result
@@ -65,7 +65,7 @@ C + { local wake = self
 
     // A more generalized version of the pkg. Used when looking up pkgs from
     // locked packages.
-    , pkgKey(namespace, name):
+    , pkgName(namespace, name):
         local namespaceStr = U.stringDefault(namespace);
         local namespaceLen = std.length(namespaceStr);
 
@@ -95,10 +95,10 @@ C + { local wake = self
         // String specifying the sub-pkg who's exports to use.
         usingPkg=null,
     ):
-        local pkgKey = _P.getPkgKey(pkgReq);
+        local pkgName = _P.getPkgKey(pkgReq);
         # TODO: check in pkgsComplete first
-        if pkgKey in _P.pkgsDefined then
-            local pkgFn = _P.pkgsDefined[pkgKey];
+        if pkgName in _P.pkgsDefined then
+            local pkgFn = _P.pkgsDefined[pkgName];
             pkgFn(wake)
         else
             _P.unresolvedPkg(pkgReq, from, usingPkg)
@@ -394,10 +394,10 @@ C + { local wake = self
         }.returnPkg
 
         , handleGetPkgFromExec(parentPkg, getPkg):
-            local pkgKey = getPkg.usingPkg;
-            assert pkgKey in parentPkg.pkgs :
-                parentPkg.pkgId + " does not contain " + pkgKey;
-            local execPkg = parentPkg.pkgs[pkgKey];
+            local pkgName = getPkg.usingPkg;
+            assert pkgName in parentPkg.pkgs :
+                parentPkg.pkgId + " does not contain " + pkgName;
+            local execPkg = parentPkg.pkgs[pkgName];
 
             if U.isAtLeastDefined(execPkg) then
                 getPkg + {
@@ -458,7 +458,7 @@ C + { local wake = self
 
         , getPkgKey(str):
             local items = std.splitLimit(str, C.WAKE_SEP, 3);
-            wake.pkgKey(items[0], items[1])
+            wake.pkgName(items[0], items[1])
     }
 
     , util: {
