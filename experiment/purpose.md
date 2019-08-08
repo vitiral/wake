@@ -46,12 +46,12 @@ Returns: `value + {type: "config"}`
 ## `hash(encoding, value)` ([[.hash]])
 A hash value of an encoding within `HASH_ENC_VARIANTS`.
 
-## `moduleId(pkg, hash, deterministic)` ([[.moduleId]])
+## `modVer(pkg, hash, deterministic)` ([[.modVer]])
 
-The moduleId is the internal representation of a module. It is
+The modVer is the internal representation of a module. It is
 what the build system "sees" a module as.
 
-`deterministic` specifies whether the moduleId can be used by other modules,
+`deterministic` specifies whether the modVer can be used by other modules,
 or whether it can only be used by `sideEffect` objects.
 
 See [[REQ-api.module]] for more info.
@@ -74,12 +74,12 @@ The hash will be calculated and included in the object.
 
 Returns: `file`
 
-## `oref(moduleId, output)`([[.oref]])
+## `oref(modVer, output)`([[.oref]])
 
 A reference to an output from another module.
 
 Args:
-- `moduleId`: the module to reference.
+- `modVer`: the module to reference.
 - `output`: the output key to reference from the module.
 
 Returns: `oref` object.
@@ -89,7 +89,7 @@ Returns: `oref` object.
 A reference to a path in a pkg or module.
 
 Args:
-- `id`: the pkgVer or moduleId to reference.
+- `id`: the pkgVer or modVer to reference.
 - `path`: the path to the file to reference.
 
 Returns: `pref` object.
@@ -179,7 +179,7 @@ Returns: `pkg`
 
 ## `module(...)` ([[.module]])
 
-Declare a module, which results in a `moduleId`.
+Declare a module, which results in a `modVer`.
 
 Arguments:
 - `name`: the module name.
@@ -195,7 +195,7 @@ Arguments:
   type `file` (it must have no dependencies and generate no artifacts). It can
   then be executed by a `execModule`.
 
-Returns: `moduleId`
+Returns: `modVer`
 
 ## `moduleImport(...)` ([[.moduleImport]])
 
@@ -219,7 +219,7 @@ Arguments:
 - `path`: The local path in the pkg to the module.
 - `config`: `config` object that can be used to configure the module.
 
-Returns: `moduleId`
+Returns: `modVer`
 
 ## `execModule(...)` ([[.execModule]])
 
@@ -242,7 +242,7 @@ which is where the files can be stored.
 Arguments:
 - `name`: the name of the resulting module. Must match the module that is
   downloaded.
-- `moduleId`: the _local_ moduleId to use for execution.
+- `modVer`: the _local_ modVer to use for execution.
 - `exec`: the execution and config to use from within the local module.
 
 Returns: `pkg`
@@ -254,15 +254,15 @@ This can be included as an output in modules, but cannot be referenced
 by other modules (as it is not deterministic). It can then be
 used to spin up further (dependent) services or run tests.
 
-It returns a `moduleId`, which behaves like a normal module the specified
+It returns a `modVer`, which behaves like a normal module the specified
 `outputs`.
 
 Arguments:
-- `moduleId`: the moduleId to execute.
+- `modVer`: the modVer to execute.
 - `exec`: the execution and config to use from within that module.
 - `outputs`: see [[REQ-api.module]].
 
-Returns: `moduleId`.
+Returns: `modVer`.
 
 ## SPC-arch
 The high level architecture of wake is split into execution phases.
@@ -281,7 +281,7 @@ plugins are available.
 
 ### `init-build` Phase
 Any initialized _local_ `module` is hashed and put in
-`${WAKEIDS/modules/{moduleId}` (the entire build phase).
+`${WAKEIDS/modules/{modVer}` (the entire build phase).
 
 ### `resolve-dependencies` Phase
 

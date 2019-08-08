@@ -55,9 +55,9 @@ class Store(object):
 
     def add_pkg(self, pkg_config, simple_pkg, local=False):
         if local:
-            pcache = pjoin(self.pkgs_local, simple_pkg.pkg_id)
+            pcache = pjoin(self.pkgs_local, simple_pkg.pkg_ver)
         else:
-            pcache = pjoin(self.pkgs, simple_pkg.pkg_id)
+            pcache = pjoin(self.pkgs, simple_pkg.pkg_ver)
 
         if load_pkg_meta(pcache):
             return
@@ -71,8 +71,8 @@ class Store(object):
         meta = StoreMeta(state=S_DECLARED)
         jsondumpf(pkg_meta_path(pcache), meta.to_dict())
 
-    def get_pkg_path(self, pkg_id, def_okay=False):
-        pkg_str = str(pkg_id)
+    def get_pkg_path(self, pkg_ver, def_okay=False):
+        pkg_str = str(pkg_ver)
         pkgPath = pjoin(self.pkgs_local, pkg_str)
         if load_pkg_meta(pkgPath):
             return pkgPath

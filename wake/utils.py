@@ -208,8 +208,8 @@ def rmtree(d):
         shutil.rmtree(d)
 
 
-def pkg_key(pkg_id):
-    """Convert a pkg_id to the more general pkg_key."""
+def pkg_key(pkg_ver):
+    """Convert a pkg_ver to the more general pkg_key."""
 
 
 def is_debug():

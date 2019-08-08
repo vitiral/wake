@@ -137,13 +137,13 @@ class Fingerprint(object):
 
 class PkgSimple(object):
     """Pull out only the data we care about."""
-    def __init__(self, state, pkg_id, namespace, name, version, description,
+    def __init__(self, state, pkg_ver, namespace, name, version, description,
                  fingerprint, pkgs, paths, paths_def, exports):
         hash_ = fingerprint['hash']
-        expected_pkg_id = [namespace, name, version, hash_]
-        assert expected_pkg_id == pkg_id.split(WAKE_SEP), (
+        expected_pkg_ver = [namespace, name, version, hash_]
+        assert expected_pkg_ver == pkg_ver.split(WAKE_SEP), (
             "pkgVer != 'namespace#name#version#hash':\n{}\n{}".format(
-                pkg_id, expected_pkg_id))
+                pkg_ver, expected_pkg_ver))
 
         invalid_paths = []
         for p in itertools.chain(paths, paths_def):
@@ -155,15 +155,15 @@ class PkgSimple(object):
 
         if invalid_paths:
             raise ValueError("{} has Invalid paths:\n{}".format(
-                pkg_id, "\n".join(invalid_paths)))
+                pkg_ver, "\n".join(invalid_paths)))
 
         self.state = state
         self.pkg_root = path.join("./", FILE_PKG)
         self.pkg_local_deps = path.join("./", DIR_WAKE,
                                         FILE_LOCAL_DEPENDENCIES)
         self.pkg_fingerprint = path.join("./", DIR_WAKE, FILE_FINGERPRINT)
-        # TODO: pkg_id_str and pkg_id
-        self.pkg_id = pkg_id
+        # TODO: pkg_ver_str and pkg_ver
+        self.pkg_ver = pkg_ver
         self.namespace = namespace
         self.name = name
         self.version = version
@@ -180,7 +180,7 @@ class PkgSimple(object):
 
     def __repr__(self):
         return "{}(id={}, state={})".format(self.__class__.__name__,
-                                            self.pkg_id, self.state)
+                                            self.pkg_ver, self.state)
 
     @classmethod
     def from_dict(cls, dct):
@@ -189,7 +189,7 @@ class PkgSimple(object):
 
         return cls(
             state=dct[F_STATE],
-            pkg_id=dct['pkgVer'],
+            pkg_ver=dct['pkgVer'],
             namespace=dct['namespace'],
             name=dct['name'],
             version=dct['version'],
@@ -205,7 +205,7 @@ class PkgSimple(object):
         # TODO: probably want all, only a few is good for repr for now
         return {
             F_STATE: self.state,
-            'pkgVer': self.pkg_id,
+            'pkgVer': self.pkg_ver,
             'paths': self.paths,
             'pathsDef': self.paths_def,
             'exports': self.exports,
@@ -304,13 +304,13 @@ class Exec(object):
 
 
 class PathRefPkg(object):
-    def __init__(self, pkg_id, path):
-        self.pkg_id = pkg_id
+    def __init__(self, pkg_ver, path):
+        self.pkg_ver = pkg_ver
         self.path = path
 
     @classmethod
     def from_dict(cls, dct):
         return cls(
-            pkg_id=dct['pkgVer'],
+            pkg_ver=dct['pkgVer'],
             path=dct['path'],
         )

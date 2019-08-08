@@ -248,7 +248,7 @@ C + { local wake = self
 
         [C.F_TYPE]: vals.type,
         [C.F_STATE]: C.S_DEFINED,
-        [if U.isPkg(ref) then 'pkgVer' else "moduleId"]: vals.id,
+        [if U.isPkg(ref) then 'pkgVer' else "modVer"]: vals.id,
         path: path,
     }
 

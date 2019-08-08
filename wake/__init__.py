@@ -121,7 +121,7 @@ class Config(object):
         }
 
         exec_path = pjoin(
-            self.store.get_pkg_path(get_exec.path_ref.pkg_id),
+            self.store.get_pkg_path(get_exec.path_ref.pkg_ver),
             get_exec.path_ref.path,
         )
 
@@ -152,15 +152,15 @@ class Config(object):
             self.store.add_pkg(ret_config, simple_pkg)
 
             # TODO: version resolution should happen before this is done.
-            locked[simple_pkg.get_pkg_key()] = simple_pkg.pkg_id
+            locked[simple_pkg.get_pkg_key()] = simple_pkg.pkg_ver
 
     def create_defined_pkgs(self, locked):
         with open(self.pkgs_defined, 'w') as fd:
             fd.write("{\n")
-            for pkg_key, pkg_id in locked.items():
+            for pkg_key, pkg_ver in locked.items():
                 line = "  \"{}\": import \"{}/{}\",\n".format(
                     pkg_key,
-                    self.store.get_pkg_path(pkg_id),
+                    self.store.get_pkg_path(pkg_ver),
                     FILE_PKG,
                 )
                 fd.write(line)
@@ -211,7 +211,7 @@ def store_local(config, local_abs, locked):
                 config,
                 pjoin(local_abs, dep.from_),
                 locked,
-            ).pkg_id
+            ).pkg_ver
 
     deps = OrderedDict(sorted(deps.items()))
     jsondumpf(local_config.path_local_deps, deps)
@@ -221,7 +221,7 @@ def store_local(config, local_abs, locked):
     if local_key in locked:
         raise ValueError(
             "Attempted to add {} to local overrides twice.".format(local_key))
-    locked[local_key] = local_pkg.pkg_id
+    locked[local_key] = local_pkg.pkg_ver
     config.store.add_pkg(
         local_config,
         # Note: we don't pass deps here because we only care about hashes

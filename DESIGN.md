@@ -8,7 +8,8 @@ artifact:
 
 **Package Identifiers**: the following are keys for looking up or specifying packages in various
 ways. They are all strings, with components separated by `@`. The reason they are strings is
-so they can be used as JSON keys as well as as file names.
+so they can be used as JSON keys as well as as file names. The following symbols are not allowed
+within the components: `@\/`
 
 - **pkgName** (`"{namespace}@{name}"`): Gives a human readable identifer on
   where to find the package. This is rarely used directly within the system
@@ -18,18 +19,28 @@ so they can be used as JSON keys as well as as file names.
   compatible string.
 - **pkgVer** (`"{pkgName}@{version}@{hash}"`): a single version of a package, including
   it's full name and hash.
+- **pkgPath** (`"{storePkgPath}/{pkgVer}"`): a usable path to the package accessible on
+  the "local" filesystem of the process.
 
 **Module Identifiers**: unlike packages, modules can only be specified by their
 exact version _and hash_. Note that the hash can change as the module's dependencies
 can change even for a single version.
 
-- **modVer**: (`"{pkgVer}@{mod}@{modhash}"`): an exact module identifier, detailing the
-  package it came from and the name of the module (`mod`) within the package.
+- **modHash**: (`"{modname}@{modhash}"`): an exact module identifier from
+  within a package.
+- **modVer**: (`"{pkgVer}@{modHash}"`): an exact module identifier, detailing
+  the package it came from and the name of the module (`mod`) within the
+  package.
+- **modPath** (`"{storeModPath}/{pkgVer}/{modHash}"`): a usable path to the
+  module accessible on the "local" filesystem of the process.
+
+**Special Files and Paths**: the following are specially known paths.
 
 
-
-**pkg**: represents a package (data) in various states.  *pkgName*pkgName**: a pkg at a specific version with a hash
-
+**NotFound**: used by the wakestore to return objects that were not found
+- type: `NOT_FOUND`
+- pkgVer: (if a package wasn't found) the package that wasn't found
+- modVer: (if a module wasn't found) the module that wasn't found
 
 ```
     "T_OBJECT": "object",
@@ -92,7 +103,6 @@ completely distinct pieces:
   modules.
 
 
-
 ## [[.state]]
 These two pieces work together by the evaluation engine executing the (pure)
 jsonnet configuration within `cycles`, moving the state of wake objects through
@@ -130,19 +140,18 @@ All overrides must implement the [JSH] interface for communication.
 
 This exec must support the following [JSH] API
 
-- **read** method: query the store for a list of pkgs or modules based on their
-  ids.
+- **readPkgs** method: query the store for a list of pkgs or modules.
   - params: None
-  - inputs: pkgVer or moduleId objects
-  - outputs: pkg objects, module objects, or NotFound objects.
-- **tmp** method: get a readable empty directory to store data
+  - inputs: pkgVer strings
+  - outputs: pkgVer or NotFound objects.
+- **readTmp** method: get a readable empty directory to store data
   - outputs: string path to a temporary directory on the local filesystem.
 - **create** method: Create an entry for the pkg or module at the specified
   directory. This indicates the end of pkg retrieval or a module build.
   - params:
     - dir (string): directory of module/pkg
-    - moduleId: the module id if it is a module
-    - pkgVer: the pkg id if it is a pkg
+    - modVer: (only if it is a module) the exact module version
+    - pkgVer: (only if it is a package) the exact package version
 
 The **wakeStoreOverride** is passed to every **container** and must be
 supported by all containers. A good example would be a distributed filesystem
@@ -405,7 +414,7 @@ The `.wake/` folder contains
   builtin a container (respectively). This has all of the same fields and data
   that was returned in `PKG.jsonnet` except:
   - all `getPkg` calls are now full `pkgVer`.
-  - all `getModule` calls are now `moduleId`
+  - all `getModule` calls are now `modVer`
   - all `file` objects are now paths to valid files or symlinks
   - the `exec` object will have all it's attributes expanded and files
     realized.
@@ -416,7 +425,7 @@ The `.wake/` folder contains
   Exists only in the container (when paths exist).
   This file exists when a module is inside its execution container and the paths
   resolve to their corresponding pkg.
-- `modulePaths.json`: a json file containing an object with key=moduleId, value=path.
+- `modulePaths.json`: a json file containing an object with key=modVer, value=path.
   Exists only in the build container (when paths exist).
 - `container.json`: metadata around the container the pkg is executing within,
   such as platform information. Exists only in the exec container.
