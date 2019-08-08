@@ -18,11 +18,11 @@ C + { local wake = self
     , local U = wake.util
     , local _P = wake._private
 
-    // (#SPC-api.pkgId): The exact id of a pkg.
+    // (#SPC-api.pkgVer): The exact id of a pkg.
     //
     // This is similar to pkgReq except it is the _exact_ pkg, with the hash
     // included in the Id.
-    , pkgId(namespace, name, version, hash):
+    , pkgVer(namespace, name, version, hash):
         assert std.isString(hash) : "hash must be string";
         // Note: the version must be an exact semver, but is checked later.
         std.join(C.WAKE_SEP, [
@@ -179,7 +179,7 @@ C + { local wake = self
         name: name,
         version: version,
         description: description,
-        pkgId: wake.pkgId(namespace, name, version, fingerprint.hash),
+        pkgVer: wake.pkgVer(namespace, name, version, fingerprint.hash),
         paths: U.arrayDefault(paths),
         pathsDef: U.arrayDefault(pathsDef),
         pkgs: U.objDefault(pkgs),
@@ -241,14 +241,14 @@ C + { local wake = self
         assert U.isAtLeastDefined(ref) : "ref must be at least defined",
 
         local vals = if U.isPkg(ref) then
-            {type: C.T_PATH_REF_PKG, id: ref['pkgId']}
+            {type: C.T_PATH_REF_PKG, id: ref['pkgVer']}
         else
             assert false : "ref must be a pkg or a module.";
             null,
 
         [C.F_TYPE]: vals.type,
         [C.F_STATE]: C.S_DEFINED,
-        [if U.isPkg(ref) then 'pkgId' else "moduleId"]: vals.id,
+        [if U.isPkg(ref) then 'pkgVer' else "moduleId"]: vals.id,
         path: path,
     }
 
@@ -266,7 +266,7 @@ C + { local wake = self
     // containing the following files:
     //
     // - `store`: an executable which follows @SPC-arch.wakeStoreOverride, allowing
-    //   the executable to retrieve links to paths of pkgIds.
+    //   the executable to retrieve links to paths of pkgVers.
     // - `exec.json`: the `exec` object directly manifested. Contains the configuration,
     //   etc.
     // - `wakeConstants.json`: the standard wakeConstants.json file, can be used to
@@ -323,7 +323,7 @@ C + { local wake = self
         local P = self
 
         , F_IDS: {
-            'pkgId': null,
+            'pkgVer': null,
             'pkgReq': null,
         }
 
@@ -350,7 +350,7 @@ C + { local wake = self
         // Used to lazily define the exports of the pkg and sub-pkgs.
         , recurseDefinePkg(wake, pkg): {
             local this = self,
-            local _ = std.trace("recurseDefinePkg in " + pkg.pkgId, null),
+            local _ = std.trace("recurseDefinePkg in " + pkg.pkgVer, null),
             local recurseMaybe = function(depPkg)
                 if U.isUnresolved(depPkg) then
                     depPkg
@@ -386,7 +386,7 @@ C + { local wake = self
                         local out = pkg.exports(wake, this.returnPkg);
                         assert std.isObject(out)
                             : "%s exports did not return an object"
-                            % [this.returnPkg.pkgId];
+                            % [this.returnPkg.pkgVer];
                         out
                     else
                         null
@@ -396,7 +396,7 @@ C + { local wake = self
         , handleGetPkgFromExec(parentPkg, getPkg):
             local pkgName = getPkg.usingPkg;
             assert pkgName in parentPkg.pkgs :
-                parentPkg.pkgId + " does not contain " + pkgName;
+                parentPkg.pkgVer + " does not contain " + pkgName;
             local execPkg = parentPkg.pkgs[pkgName];
 
             if U.isAtLeastDefined(execPkg) then
@@ -431,7 +431,7 @@ C + { local wake = self
         , simplify(pkg): {
             [C.F_TYPE]: pkg[C.F_TYPE],
             [C.F_STATE]: pkg[C.F_STATE],
-            pkgId: pkg.pkgId,
+            pkgVer: pkg.pkgVer,
             namespace: pkg.namespace,
             name: pkg.name,
             version: pkg.version,
@@ -442,7 +442,7 @@ C + { local wake = self
                 if U.isUnresolved(dep) then
                     dep
                 else
-                    dep.pkgId,
+                    dep.pkgVer,
 
             pathsDef: pkg.pathsDef,
             paths: pkg.paths,

@@ -7,7 +7,8 @@ artifact:
 # Types (SPC-type) <a id="SPC-type" />
 
 **Package Identifiers**: the following are keys for looking up or specifying packages in various
-ways. They are all strings, with components separated by `@`
+ways. They are all strings, with components separated by `@`. The reason they are strings is
+so they can be used as JSON keys as well as as file names.
 
 - **pkgName** (`"{namespace}@{name}"`): Gives a human readable identifer on
   where to find the package. This is rarely used directly within the system
@@ -18,9 +19,16 @@ ways. They are all strings, with components separated by `@`
 - **pkgVer** (`"{pkgName}@{version}@{hash}"`): a single version of a package, including
   it's full name and hash.
 
-**pkg**: represents a package (data) in various states.
+**Module Identifiers**: unlike packages, modules can only be specified by their
+exact version _and hash_. Note that the hash can change as the module's dependencies
+can change even for a single version.
 
-**pkgName**: a pkg at a specific version with a hash
+- **modVer**: (`"{pkgVer}@{mod}@{modhash}"`): an exact module identifier, detailing the
+  package it came from and the name of the module (`mod`) within the package.
+
+
+
+**pkg**: represents a package (data) in various states.  *pkgName*pkgName**: a pkg at a specific version with a hash
 
 
 ```
@@ -125,7 +133,7 @@ This exec must support the following [JSH] API
 - **read** method: query the store for a list of pkgs or modules based on their
   ids.
   - params: None
-  - inputs: pkgId or moduleId objects
+  - inputs: pkgVer or moduleId objects
   - outputs: pkg objects, module objects, or NotFound objects.
 - **tmp** method: get a readable empty directory to store data
   - outputs: string path to a temporary directory on the local filesystem.
@@ -134,7 +142,7 @@ This exec must support the following [JSH] API
   - params:
     - dir (string): directory of module/pkg
     - moduleId: the module id if it is a module
-    - pkgId: the pkg id if it is a pkg
+    - pkgVer: the pkg id if it is a pkg
 
 The **wakeStoreOverride** is passed to every **container** and must be
 supported by all containers. A good example would be a distributed filesystem
@@ -255,7 +263,7 @@ been explicitly manifested as json.
     signature of the fingerprint hash.
   - `localStore/` directory containing only _local_ pkg definitions. Used for
     pkg overrides.
-  - `localDependencies.json` file containing a map of `path: pkgId`. This is
+  - `localDependencies.json` file containing a map of `path: pkgVer`. This is
     automatically generated when building local dependencies and is used to
     retrieve "locked" dependencies of external depdendencies.
 
@@ -324,7 +332,7 @@ all together.
 def construct_req_muts():
     req_muts = {}  # Map[pkgName, set[req]]
 
-    for pkgId, reqs in pkgsReqs:
+    for pkgVer, reqs in pkgsReqs:
         for req in reqs:
             reqKey = req.key()
             req_mut = req_muts.get(reqKey)
@@ -396,15 +404,15 @@ The `.wake/` folder contains
   pkg and module, exists only when the pkg is `pkg-complete` or ready to be
   builtin a container (respectively). This has all of the same fields and data
   that was returned in `PKG.jsonnet` except:
-  - all `getPkg` calls are now full `pkgId`.
+  - all `getPkg` calls are now full `pkgVer`.
   - all `getModule` calls are now `moduleId`
   - all `file` objects are now paths to valid files or symlinks
   - the `exec` object will have all it's attributes expanded and files
     realized.
 - `pkg-ready.json` and `module-ready.json`: the instantiated config manifest
   for a module/pkg. The same as `config.json` except the `file` objects are still `file` objects
-  (but with pkgIds), since the paths have not been created in the build container.
-- `pkgPaths.json`: a json file containing an object with key=pkgId, value=path.
+  (but with pkgVers), since the paths have not been created in the build container.
+- `pkgPaths.json`: a json file containing an object with key=pkgVer, value=path.
   Exists only in the container (when paths exist).
   This file exists when a module is inside its execution container and the paths
   resolve to their corresponding pkg.
@@ -444,7 +452,7 @@ partof:
  - SPC-arch
 
 subparts:
- - pkgId
+ - pkgVer
  - pkgReg
  - getPkg
  - declarePkg
@@ -474,7 +482,7 @@ The basic API of wake is:
 
 ## Wake API
 
-- [[.pkgId]]: the uniq id (including exact version and hash) of a specific
+- [[.pkgVer]]: the uniq id (including exact version and hash) of a specific
   pkg. Used for pkg lookup.
 - [[.pkgReq]]: defines a semver requirement for a `getPkg` call to retreive.
 - [[.getPkg]]: retrieve a pkg lazily.

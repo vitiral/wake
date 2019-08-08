@@ -89,7 +89,7 @@ Returns: `oref` object.
 A reference to a path in a pkg or module.
 
 Args:
-- `id`: the pkgId or moduleId to reference.
+- `id`: the pkgVer or moduleId to reference.
 - `path`: the path to the file to reference.
 
 Returns: `pref` object.
@@ -215,7 +215,7 @@ function(env, config=null) {
 
 Arguments:
 - `env`: the `env` object to use for building the module.
-- `pkgId`: the package to import the module from.
+- `pkgVer`: the package to import the module from.
 - `path`: The local path in the pkg to the module.
 - `config`: `config` object that can be used to configure the module.
 
@@ -234,7 +234,7 @@ for caching and finding packages.
 
 It is essential that implementors of `execModule` are _entirely deterministic_
 based on these inputs, and demonstrate _no side effects_. Notably, the build
-system will use the hashed values on the inputs to create the `pkgId` used to
+system will use the hashed values on the inputs to create the `pkgVer` used to
 store the package, which will be passed as part of the `config` as `execPkgId`.
 The directory will be set as the `currentDir` when executing in the sandbox,
 which is where the files can be stored.
@@ -272,12 +272,12 @@ In `init`, wake loads `${WAKEENV}/env.jsonnet` to initialize `env`.
 - Only `env.std` functions exists for loaded packages or modules and no
 plugins are available.
 - Several functions in `env.std` will return errors, including;
-- `pkgId`: package lookup is not allowed.
+- `pkgVer`: package lookup is not allowed.
 - `module(... is_local=false)`: can only instantiate local modules.
 - `execModule`: no side effects are allowed in this phase.
 - Any function which depends on the above. In general, packages in this phase
   must be self-contained sets of files.
-- Any found `pkg` is put in `${WAKEIDS}/pkgs/{pkgId}`
+- Any found `pkg` is put in `${WAKEIDS}/pkgs/{pkgVer}`
 
 ### `init-build` Phase
 Any initialized _local_ `module` is hashed and put in

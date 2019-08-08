@@ -142,7 +142,7 @@ class PkgSimple(object):
         hash_ = fingerprint['hash']
         expected_pkg_id = [namespace, name, version, hash_]
         assert expected_pkg_id == pkg_id.split(WAKE_SEP), (
-            "pkgId != 'namespace#name#version#hash':\n{}\n{}".format(
+            "pkgVer != 'namespace#name#version#hash':\n{}\n{}".format(
                 pkg_id, expected_pkg_id))
 
         invalid_paths = []
@@ -189,7 +189,7 @@ class PkgSimple(object):
 
         return cls(
             state=dct[F_STATE],
-            pkg_id=dct['pkgId'],
+            pkg_id=dct['pkgVer'],
             namespace=dct['namespace'],
             name=dct['name'],
             version=dct['version'],
@@ -205,7 +205,7 @@ class PkgSimple(object):
         # TODO: probably want all, only a few is good for repr for now
         return {
             F_STATE: self.state,
-            'pkgId': self.pkg_id,
+            'pkgVer': self.pkg_id,
             'paths': self.paths,
             'pathsDef': self.paths_def,
             'exports': self.exports,
@@ -311,6 +311,6 @@ class PathRefPkg(object):
     @classmethod
     def from_dict(cls, dct):
         return cls(
-            pkg_id=dct['pkgId'],
+            pkg_id=dct['pkgVer'],
             path=dct['path'],
         )
