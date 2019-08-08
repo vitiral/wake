@@ -4,6 +4,59 @@ artifact:
       - wake/
 ```
 
+# Types (SPC-type) <a id="SPC-type" />
+
+**Package Identifiers**: the following are keys for looking up or specifying packages in various
+ways. They are all strings, with components separated by `@`
+
+- **pkgName** (`"{namespace}@{name}"`): Gives a human readable identifer on
+  where to find the package. This is rarely used directly within the system
+  except as part of other `pkg*` identifiers.
+- **pkgReq** (`"{pkgName}@{requirements}"`): specifies what versions of a
+  package are required as a dependency. `requirements` must be a [semver]
+  compatible string.
+- **pkgVer** (`"{pkgName}@{version}@{hash}"`): a single version of a package, including
+  it's full name and hash.
+
+**pkg**: represents a package (data) in various states.
+
+**pkgKey**: a pkg at a specific version with a hash
+
+
+```
+    "T_OBJECT": "object",
+    "T_PKG": "pkg",
+    "T_GET_EXPORT": "getExport",
+    "T_MODULE": "module",
+    "T_PATH_REF_PKG": "pathRefPkg",
+    "T_PATH_REF_MODULE": "pathRefModule",
+    "T_EXEC": "exec",
+
+    "S_UNRESOLVED": "unresolved",
+    "S_DECLARED": "declared",
+    "S_DEFINED": "defined",
+    "S_COMPLETED": "completed",
+
+    "M_READ_PKGS": "readPkgs",
+    "M_READ_PKGS_REQ": "readPkgsReq",
+
+    "DIR_WAKE": ".wake",
+    "DIR_LOCAL_STORE": "localStore",
+    "DIR_RETRIEVED": "retrieved",
+
+    "FILE_PKG": "PKG.libsonnet",
+    "FILE_RUN": "run.jsonnet",
+    "FILE_PKGS": "pkgs.libsonnet",
+    "FILE_EXEC": "exec.json",
+
+    "FILE_FINGERPRINT": "fingerprint.json",
+    "FILE_LOCAL_DEPENDENCIES": "localDependencies.json",
+
+    "EXEC_LOCAL": "execLocal"
+```
+
+
+
 # Wake Architecture (SPC-arch) <a id="SPC-arch" />
 ```yaml @
 subparts:
@@ -29,6 +82,7 @@ completely distinct pieces:
   injests files and executes the steps necessary to evaluate local hashes,
   retrieve pkg dependencies, and execute `exec` objects in order to complete
   modules.
+
 
 
 ## [[.state]]
@@ -58,47 +112,29 @@ and `config` are both set to `null` (they will be overriden), and who's
 Overrides are _part of the language_. They should be seen as dynamic plugins,
 where everything (except the store) can be overriden _per module_.
 
+All overrides must implement the [JSH] interface for communication.
+
 ### [[.wakeStoreOverride]]: Override where to store completed objects
 
 `root.pkgs.wakeStoreOverride` can be (optionally) set to an `exec` who's
 `container=wake.LOCAL_CONTAINER` and `args`, `env` and `config` are all `null`
 (must be fully self contained and cross-platform).
 
-This exec must support the following cmdline API:
+This exec must support the following [JSH] API
 
-```
-wakestore [subcmd]
-
-Subcommands:
-
-   $ wakestore read
-
-      Reads a list of pkgIds or moduleIds from stdin and outputs
-      a list of pkgIds or moduleIds on stdout.
-
-      Input list must be separated by newlines and be of the form:
-
-        PKG namespace#name#version#hash
-        MOD namespace#name#version#hash#moduleHash
-
-      Output list is line based and of the form
-
-        PKG namespace#name#version#hash#/path/to/id
-        MOD namespace#name#version#hash#moduleHash#/path/to/id
-
-      If the pkg or module doesn't exist then the path will be empty.
-
-
-    $ wakestore tmp
-
-        Returns the path to a temporary directory on the local filesystem.
-
-
-    $ wakestore create <dir> [--pkgId <pkgId>] [--moduleId <moduleId>]
-
-        Create an entry for the pkg or module at the specified directory.
-        This indicates the end of pkg retrieval or a module build.
-```
+- **read** method: query the store for a list of pkgs or modules based on their
+  ids.
+  - params: None
+  - inputs: pkgId or moduleId objects
+  - outputs: pkg objects, module objects, or NotFound objects.
+- **tmp** method: get a readable empty directory to store data
+  - outputs: string path to a temporary directory on the local filesystem.
+- **create** method: Create an entry for the pkg or module at the specified
+  directory. This indicates the end of pkg retrieval or a module build.
+  - params:
+    - dir (string): directory of module/pkg
+    - moduleId: the module id if it is a module
+    - pkgId: the pkg id if it is a pkg
 
 The **wakeStoreOverride** is passed to every **container** and must be
 supported by all containers. A good example would be a distributed filesystem
@@ -126,72 +162,56 @@ Something like that... more design is necessary.
 If a self-contained `exec` is specified as the in a [[SPC-api.getPkg]] call, then it will be
 used to retrieve the pkg specified.
 
-The `exec` must adhere to the following API, which will be sent over stdin.
+The `exec` must adhere to the [JSH] API and support the following methods:
 
+#### readPkgsReq method
 
-## `T_READ_PKGS_REQ`
-
-Read candiates for pkgs. The command is of the form:
-
-```jsonnet
-{
-    F_TYPE: C_READ_PKG_REQS,
-    pkgReqs: ["sp@pkgA@>=1.0.2", "sp@pkgB@>=0.2.3,<=3.2.0"],
-}
-```
-
-The retriever must return an object of possible candidates over stdout. The
-object must be of the form:
+- param pkgReqs list[pkgReq]: a list of pkg requirement strings (i.e.
+  "sp@pkgA@>=1.0.2") returns: single object of the form `pkgReq: pkgInfo`. The
+  object must include the specific version for the pkg, as well as _specific
+  versions_ for all of it's dependency pkgReqs.  dependencies. It can also
+  return an error (TODO: define object) detailing that resolution is not
+  possible and why.
 
 ```
 {
-    # Returned candidates for a request.
-    "sp@pkgA@>=1.0.2": [
-        {
-            version: "1.2.3",                # a specific version
-            pkgs: ["sp@name@>=2.3.2", ...],  # the dependencies of this version
-        },
-        ...
-    ],
-    "sp@pkgB@>=0.2.3,<=3.2.0": [
-        ...
+    "sp@pkgA@>=1.0.2": {
+        version: "1.2.3",                # a specific version
+        pkgs: ["sp@pkgB@>=2.3.2", ...],  # the pkgReq dependencies of this version
+    },
+    "sp@pkgB@>=2.3.2": {
+        version: "3.2.0",
+        pkgs: ["sp@pkgE@>=0.2.3", ...],
     ],
     ...
 }
 ```
 
 
-## `T_READ_PKGS`
+#### readPkg method
 
 Retrieve full pkgs from the retriever, putting any downloaded pkgs in
 `.wake/DIR_RETRIEVED`
 
-```
-{
-    F_TYPE: C_READ_PKGS,
+- param definitionOnly (bool): If true, *may* only retrieve the files necessary
+  for the definition.
+- param pkgVersions (list[pkgVersionStr]): The specific versions to retrieve,
+  i.e. `["sp@pkgA@1.2.3", "sp@pkgB@2.3.2"]`
 
-    # bool. If true, can retrieve only the files necessary for the definition.
-    definitionOnly: true,
 
-    # The specific versions to retrieve.
-    pkgVersions: ["sp@pkgA@1.2.3", "sp@pkgB@2.3.2"],
-}
-```
-
-If the pkg has a [[.localDependenciesFile]] then it must also retrieve the
+Note: If the pkg has a [[.localDependenciesFile]] then it must also retrieve the
 required dependencies and put them in the directories specified in that file.
 
 
 ## [[.store]] Store
-The **store** (always in bold) has a presentation API to both the libsonnet and
-eval engines:
+The **store** has a presentation API to both the libsonnet and eval engines:
 
 - [[.wakeStoreSonnet]]: For `wake.libsonnet` API, the **store** appears as the
   [[SPC-api.getPkg]] API, which lazily retrieves pkgs.
 - eval: for the evaluation engine, there are multiple stages of the **store**
   depending on the **phase**.
-  - In [[SPC-arch.phaseLocal]] and [[SPC-arch.phasePkgComplete]] the store is always
-    the local filesystem who's behavior is defined by the wake CLI.
+  - In [[SPC-arch.phaseLocal]] and [[SPC-arch.phasePkgComplete]] the store is
+    always the local filesystem who's behavior is defined by the wake CLI.
   - In [[SPC-arch.phaseModuleComplete]]: the **store** can be either the local
     filesystem, or overriden with [[SPC-arch.wakeStoreOverride]].
 
@@ -212,31 +232,32 @@ There are only three phases to wake execution:
 Note that by the end of **phasePkgCompete** all pkgs _and_ modules have been
 fully _defined_, and no more jsonnet needs to be evaluated.
 
-When modules are being built, they are given only the manifested **json**, not
-jsonnet objects. So jsonnet functions remain only as configuration utilities,
-whereas module inputs remain only pure data.
+Note: When modules are being built, they are given only the manifested
+**json**, not jsonnet objects. So jsonnet functions remain only as
+configuration utilities, whereas module inputs remain only pure data.
+In other words, they only have access to their local config except what has
+been explicitly manifested as json.
 
 ## Special Files and Directories
 
 - [[.pkgFile]] `./PKG.libsonnet` file which contains the call to [[SPC-api.declarePkg]]
 - [[.wakeDir]] `./.wake/`: reserved directory for containing wake metadata. Should
   not be used by users. Can contain the following fsentries:
-  - `pkgs.libsonnet` file containing the imports to already
-    defined pkgs. This is regenerated each cycle in the **phasePkgComplete**
-    with the currently known pkgs.
-  - `run.jsonnet` which is used for executing each cycle. Essentially
-    each cycle is a call to `jsonnet .wake/run.jsonnet`, with the `pkgsLibFile`
+  - `pkgs.libsonnet` file containing the imports to already defined pkgs. This
+    is regenerated each cycle in the **phasePkgComplete** with the currently
+    known pkgs.
+  - `run.jsonnet` which is used for executing each cycle. Essentially each
+    cycle is a call to `jsonnet .wake/run.jsonnet`, with the `pkgsLibFile`
     updated each time.
-  - `fingerprint.json` file which is auto-generated by
-    the build system for local pkgs, and required to match the cryptographic
-    hash for retrieved pkgs or modules. This can also contain other
-    non-hashable data like the signature of the fingerprint hash.
-  - `localStore/` directory containing only _local_ pkg
-    definitions. Used for pkg overrides.
-  - `localDependencies.json` file containing a map of
-    `path: pkgId`. This is automatically generated when building local
-    dependencies and is used to retrieve "locked" dependencies of external
-    depdendencies.
+  - `fingerprint.json` file which is auto-generated by the build system for
+    local pkgs, and required to match the cryptographic hash for retrieved pkgs
+    or modules. This can also contain other non-hashable data like the
+    signature of the fingerprint hash.
+  - `localStore/` directory containing only _local_ pkg definitions. Used for
+    pkg overrides.
+  - `localDependencies.json` file containing a map of `path: pkgId`. This is
+    automatically generated when building local dependencies and is used to
+    retrieve "locked" dependencies of external depdendencies.
 
 
 ## Appendixes
@@ -463,3 +484,5 @@ The basic API of wake is:
 - [[.exec]]: a declared executable. Is typically a member of `module.exec`
   or can be a member of `exports` for a pkg or module.
 
+[JSH]: http://github.com/vitiral/jsh
+[semver]: https://semver.org
