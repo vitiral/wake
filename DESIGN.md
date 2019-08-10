@@ -34,13 +34,25 @@ can change even for a single version.
 - **modPath** (`"{storeModPath}/{pkgVer}/{modHash}"`): a usable path to the
   module accessible on the "local" filesystem of the process.
 
-**Special Files and Paths**: the following are specially known paths.
-
-
 **NotFound**: used by the wakestore to return objects that were not found
 - type: `NOT_FOUND`
 - pkgVer: (if a package wasn't found) the package that wasn't found
 - modVer: (if a module wasn't found) the module that wasn't found
+
+**pkgInfo**: specifies a package's requested or resolved dependency tree. When
+returned from the package manager all values will be defined as a single
+`pkgVer`.
+- pkgName: the name of the package
+- pkgVer: (optional) the exact package version
+- deps: _defined_ `wake.deps` object (globals and local deps are manifested).
+  The values can either be **pkgReq** or **pkgInfo** objects.
+
+**signature**: supports multiple types of cryptographic signature for signing
+packages (TODO).
+
+**pkgRemote**: a map of `pkgVer: remoteLocation`, where `remoteLocation` is an
+unspecified blob of data. This is used soley within the package manager for
+specifying how packages are retrieved.
 
 ```
     "T_OBJECT": "object",
@@ -77,36 +89,36 @@ can change even for a single version.
 
 
 # Wake Architecture (SPC-arch) <a id="SPC-arch" />
-```yaml @
-subparts:
-  - state
-  - wakeStoreOverride
-  - wakeCredentialsOverride
-  - wakeGetPkgOverride
-  - store
-  - phaseLocal
-  - phasePkgComplete
-  - phaseModuleComplete
-  - pkgFile
-  - wakeDir
-```
 
-The implementation for the wake pkg manager and build system is split into two
-completely distinct pieces:
+Wake has multiple pieces:
 
-- [[SPC-api]]: the "wake.libsonnet" library, which is a pure jsonnet library
-  that provides the user interface within `PKG.libsonnet` files and its
-  dependencies.
-- [[SPC-eval]]: the wake "evaluation engine", which is a application that
-  injests files and executes the steps necessary to evaluate local hashes,
-  retrieve pkg dependencies, and execute `exec` objects in order to complete
-  modules.
+- The **wake.libsonnet** jsonnet library, which is how users write wake packages
+- The **wake cmdline** utility, which has multiple _phases_ of execution:
+  - _packageLocal_: all local pkgs are found and given to the **store**
+  - _packageRetrieve_: **wake cmdline** talks to the **packageManager** to
+    determine and download all needed dependencies, which are given to the
+    **store**.
+  - _moduleBuild_: the **store** creates a sandbox where each `package.exec` (with data)
+    can be executed within its `container`. This creates a `module`, which can
+    be a dependency of a later `package.exec`
+  - _moduleExec_: modules can then be executed in a stateful fashion to (for
+    example):
+    - run tests
+    - start services
+    - act as traditional software
+
+- The **packageManager** which is a cmdline utility which is called by the **wake
+  cmdline**. It's job is to solve the dependency graph and retrieving packages
+  from the internet (or elsewhere).
+- The **store** which handles storing data (packages and modules) so they
+  can (seemingly) be accessed locally within an `exec`'s `container`.
 
 
-## [[.state]]
-These two pieces work together by the evaluation engine executing the (pure)
-jsonnet configuration within `cycles`, moving the state of wake objects through
-the following flow. States are always in _italics_ within this documentation.
+## Package State
+**Package** and **module** objects can have different states, which represent
+different amounts of completeness. The **wake cmdline** manages moving objects
+through these states via discovery, retrieval and execution of packages.
+
 - _undefined_: the object is a dependency in a _declared_ pkg or module.
 - _declared_: the object's _declaration_ has been retrieved, but not all of its
   dependencies have been _defined_.
@@ -121,7 +133,7 @@ the following flow. States are always in _italics_ within this documentation.
     the **store**.
 
 
-## Overrides
+# Overrides
 These are the overrides available to users to change wake's behavior in various
 phases ([[SPC-phase]]). All of these objects are `exec` objects who's `args`
 and `config` are both set to `null` (they will be overriden), and who's
@@ -132,92 +144,172 @@ where everything (except the store) can be overriden _per module_.
 
 All overrides must implement the [JSH] interface for communication.
 
-### [[.wakeStoreOverride]]: Override where to store completed objects
+## packageManager: Override how packages are obtained
+## (SPC-packageManager) <a id="SPC-packageManager" />
+```yaml @
+partof:
+- SPC-arch
+```
 
-`root.pkgs.wakeStoreOverride` can be (optionally) set to an `exec` who's
+There can only be a single package manager used within a wake execution, which
+may (internally) farm it's work out to other language-specific package managers.
+
+A package is specified by a `pkgReq` (see [SPC-type]). The package manager
+handles resolving all requirements into the appropriate package graph.
+
+### resolvePkgs method
+
+**Inputs**
+- **pkgInfo**: the manifested root package requirements (i.e. globals
+  resolved).
+- **locked**: this is a map of `pkgName: pkgReq` objects. This is used to
+  prevent unsecure packages from being included (which the package manager may
+  also take care of by itself) as well as enabling "freezing" local application
+  builds for the purpose of usability or debugging. The package manager must
+  merge any use of these packages.
+- **signatures**: these are used for signing packages for trust. They are an
+  object of `pkgName: signature` where `signature` is the **signature** object.
+  Every package used must have a signature, although this process is typically
+  integrated with the package manager via the `getSignatures` method, a user
+  can also specify them explicitly.
+- **credentials**: this is unspecified object that the pkgManager should
+  understand and can be used for verifying that the user has appropriate access
+  to the package or can be used for tracking/billing usage of the package
+  manager. It was obtained by calling the `overrideCredentials` exec on the
+  root package, but is passed to the packageManager as a JSON object.
+
+**Outputs**:
+- **info**: a _fully defined_ **pkgInfo** object which specifies the complete
+  graph of package dependencies. There should be only `pkgVer` objects.
+- **remote**: map of `pkgVer: pkgRemote` specifying how to retrieve the
+  packages using **readPkg**.
+
+The resolvePkgs method must do the heavy lifting of resolving dependencies
+within all packages.  Given a list of `pkgReqs` it must determine the specific
+`pkgVer` of all root packages (given by `pkgReqs`) and **all** of their
+recursive dependencies such that the result can be theoretically built.
+
+To do this, the package manager must solve the dependency heiarchy for the
+specific use-case of every package. In some cases (i.e.  python), this means
+that there might be restrictions on the number of versions of each package
+within a **dependency group**, which is defined as the recursive build
+dependencies of any package.
+
+To help determine this isolation, `wake.deps` allows for specifying several
+levels of restrictions on dependencies:
+
+- **unrestricted**: these are dependencies with no version restrictions, meaning
+  the same package can exist at multiple versions within its build pool. For
+  instance, if you depend on a specific version of a script for building a
+  module.
+- **restricted**: these dependencies (and their `deps.restricted`, etc) must
+  have only a single version per `pkgName.name`. This is for languages who's
+  `import` mechanics are dependent on having only a single version available.
+  Examples: python, javascript, C
+- **restrictedMajor** or **restrictedMinor**: like **restricted**, these
+  dependencies (and their `deps.restrictedMajor`, etc) must have only a single
+  version per _major/minor version_ of any `pkgName.name`.
+  - For **major** you can have another version if it is a different major version
+    (i.e both 3.2.1 and 2.2.1 can be used, but not 2.1.1 as well)
+  - For **minor** you can have another version if it is a different major OR minor
+    version (i.e. both 2.2.1 and 2.1.1 can be used, but not 2.2.3 as well)
+- **global**: these are dependencies which _must_ be specified in the top-level
+  package or one of it's _local_ dependencies (i.e. a local path to a file).
+  This is typically used for things like compiler version, encryption library
+  version, etc. Unlike other dependencies, these are specified as a function
+  `function(depMap) -> list[depReq]`.
+  - **depMap** must be a (possibly) nested object of global dependencies
+    which follows some language convention, i.e. `lang.sh`, `lang.clang`,
+    `lang.python.python2`, `system.lib.libc`, `system.lib.openssl`, etc
+  - The `function(depMap)` must then convert the given global dependencies
+    into the versions it wants for that package.
+    - note: technically it can use a different version, although frequently
+      items in **global** are also **locked**.
+
+
+All **restricted** lists are _transitive_, meaning that if a dependency is
+**restricted** and itself contains **restricted** dependencies, then they are
+all part of the same "pool" which must have exactly matching dependencies. This
+caries through _any_ restricted dependency, and if a dependency is in more than
+one restricted pool then the most exclusive will take precedence.
+
+The advantage of this is that **unrestricted** dependencies are allowed to have
+their own dependency pool. So if you depend on the applications `PostgreSQL`
+and `MongoDB` they do not have to have matching dependencies -- they can both
+be listed as **unrestricted** dependencies and built within their own isolated
+dependency "pools".
+
+Similarily, if a library is being built stand-alone it can be listed as
+**unrestricted**. An example might be if a python library uses a C library
+internally. That C library's dependencies don't have to be shared within the
+"python build system", the library's usage is contained to that single python
+module.
+
+### readPkg method
+**Inputs**:
+- **tmp**: temporary directory to store downloaded packages, typically gotten
+  from the **store**.
+- **remote**: see `resolvePkgs`
+- **signatures**: see `resolvePkgs`
+- **credentials**: see `resolvePkgs`
+
+**Outputs**:
+- **pkgPaths**: list of `pkgPath` objects, typically to be passed to the **store**.
+
+The `readPkg` method downloads the packages returned by **resolvePkgs** into a
+temporary directory.
+
+
+## Store Override: Override where to store completed objects
+
+`root.wakeStoreOverride` can be (optionally) set to an `exec` who's
 `container=wake.LOCAL_CONTAINER` and `args`, `env` and `config` are all `null`
 (must be fully self contained and cross-platform).
 
+The **store** exec is passed to every **container** and must be supported by
+all containers. A good example would be a distributed filesystem which all
+types of containers (and the user's computer) use to mount the required
+fsentries for building modules.
+
 This exec must support the following [JSH] API
 
-- **readPkgs** method: query the store for a list of pkgs or modules.
-  - params: None
-  - inputs: pkgVer strings
-  - outputs: pkgVer or NotFound objects.
-- **readTmp** method: get a readable empty directory to store data
+Tmp Methods:
+- **createTmp** method: get a readable empty directory to store data
   - outputs: string path to a temporary directory on the local filesystem.
-- **create** method: Create an entry for the pkg or module at the specified
-  directory. This indicates the end of pkg retrieval or a module build.
+- **deleteTmp** method: clear a tmp directory
   - params:
-    - dir (string): directory of module/pkg
-    - modVer: (only if it is a module) the exact module version
-    - pkgVer: (only if it is a package) the exact package version
+    - dir: the path to the directory
 
-The **wakeStoreOverride** is passed to every **container** and must be
-supported by all containers. A good example would be a distributed filesystem
-which all types of containers (and the user's computer) use to mount the
-required fsentries for building modules.
+Package Methods:
+- **readPackages** method: query the store for a list of packages
+  - params:
+    - versions: list of pkgVer strings.
+  - outputs: `pkgPath` or `NotFound` objects.
+- **createPackage** method: create an entry for the package at the specified
+  directory. The directory may be moved or deleted by calling this method
+  unless `keep` is `true`.
+  - params:
+    - dir (string): directory of downloaded package
+    - pkgVer: the exact package version
+    - keep: if `true` the directory must not be moved or deleted (default
+      `false`).
+  - outputs: `{"pkgPath": <pkgPath>}`
 
 
-### [[.wakeCredentialsOverride]]: Override how credentials are retrieved
+## Credentials Override
 This is how a user/group/company can create and share their own trusted
-dpendency credentials, using their group/company specific secret sharing
+dependency credentials, using their group/company specific secret sharing
 mechanism.
 
 This is currently poorly defined, but the basic idea is:
 
-- User defines hashed credentials is `$WAKEPATH/user.jsonnet`. This could
-  also be re-generated every time `wake build` is run.
+- User defines hashed credentials in (or imported within)
+  `$WAKEPATH/user.jsonnet`. This could also be re-generated every time `wake
+  build` is run.
 - **wakeCredentialsOverride** is called with these credentials and the
   container environment to generate LST.
 
 Something like that... more design is necessary.
-
-
-### [[.wakeGetPkgOverride]]
-
-If a self-contained `exec` is specified as the in a [[SPC-api.getPkg]] call, then it will be
-used to retrieve the pkg specified.
-
-The `exec` must adhere to the [JSH] API and support the following methods:
-
-#### readPkgsReq method
-
-- param pkgReqs list[pkgReq]: a list of pkg requirement strings (i.e.
-  "sp@pkgA@>=1.0.2") returns: single object of the form `pkgReq: pkgInfo`. The
-  object must include the specific version for the pkg, as well as _specific
-  versions_ for all of it's dependency pkgReqs.  dependencies. It can also
-  return an error (TODO: define object) detailing that resolution is not
-  possible and why.
-
-```
-{
-    "sp@pkgA@>=1.0.2": {
-        version: "1.2.3",                # a specific version
-        pkgs: ["sp@pkgB@>=2.3.2", ...],  # the pkgReq dependencies of this version
-    },
-    "sp@pkgB@>=2.3.2": {
-        version: "3.2.0",
-        pkgs: ["sp@pkgE@>=0.2.3", ...],
-    ],
-    ...
-}
-```
-
-
-#### readPkg method
-
-Retrieve full pkgs from the retriever, putting any downloaded pkgs in
-`.wake/DIR_RETRIEVED`
-
-- param definitionOnly (bool): If true, *may* only retrieve the files necessary
-  for the definition.
-- param pkgVersions (list[pkgVersionStr]): The specific versions to retrieve,
-  i.e. `["sp@pkgA@1.2.3", "sp@pkgB@2.3.2"]`
-
-
-Note: If the pkg has a [[.localDependenciesFile]] then it must also retrieve the
-required dependencies and put them in the directories specified in that file.
 
 
 ## [[.store]] Store
