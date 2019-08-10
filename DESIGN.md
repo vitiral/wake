@@ -40,7 +40,7 @@ can change even for a single version.
 - modVer: (if a module wasn't found) the module that wasn't found
 
 **pkgInfo**: specifies a package's requested or resolved dependency tree. When
-returned from the package manager all values will be defined as a single
+returned from the Package Manager all values will be defined as a single
 `pkgVer`.
 - pkgName: the name of the package
 - pkgVer: (optional) the exact package version
@@ -51,7 +51,7 @@ returned from the package manager all values will be defined as a single
 packages (TODO).
 
 **pkgRemote**: a map of `pkgVer: remoteLocation`, where `remoteLocation` is an
-unspecified blob of data. This is used soley within the package manager for
+unspecified blob of data. This is used soley within the Package Manager for
 specifying how packages are retrieved.
 
 ```
@@ -92,13 +92,14 @@ specifying how packages are retrieved.
 
 Wake has multiple pieces:
 
-- The **wake.libsonnet** jsonnet library, which is how users write wake packages
+- The **wake.libsonnet** jsonnet library, which is how users write wake packages and
+  contains functions and values for constructing and using wake types.
 - The **wake cmdline** utility, which has multiple _phases_ of execution:
-  - _packageLocal_: all local pkgs are found and given to the **store**
+  - _packageLocal_: all local pkgs are found and given to the [Store]
   - _packageRetrieve_: **wake cmdline** talks to the **packageManager** to
     determine and download all needed dependencies, which are given to the
-    **store**.
-  - _moduleBuild_: the **store** creates a sandbox where each `package.exec` (with data)
+    [Store].
+  - _moduleBuild_: the [Store] creates a sandbox where each `package.exec` (with data)
     can be executed within its `container`. This creates a `module`, which can
     be a dependency of a later `package.exec`
   - _moduleExec_: modules can then be executed in a stateful fashion to (for
@@ -107,10 +108,10 @@ Wake has multiple pieces:
     - start services
     - act as traditional software
 
-- The **packageManager** which is a cmdline utility which is called by the **wake
+- The [Package Manager] which is a cmdline utility which is called by the **wake
   cmdline**. It's job is to solve the dependency graph and retrieving packages
   from the internet (or elsewhere).
-- The **store** which handles storing data (packages and modules) so they
+- The [Store] which handles storing data (packages and modules) so they
   can (seemingly) be accessed locally within an `exec`'s `container`.
 
 
@@ -128,9 +129,9 @@ through these states via discovery, retrieval and execution of packages.
   The module is ready to be executed and _completed_.
 - _completed_:
   - for `pkg`: the pkg and all dependencies are fully downloaded and in the
-    **store**.
+    [Store].
   - for `module`: `module.exec` has been executed (built) and the data is in
-    the **store**.
+    the [Store].
 
 
 # Overrides
@@ -144,18 +145,21 @@ where everything (except the store) can be overriden _per module_.
 
 All overrides must implement the [JSH] interface for communication.
 
-## packageManager: Override how packages are obtained
+## Package Manager: Override how packages are obtained
 ## (SPC-packageManager) <a id="SPC-packageManager" />
 ```yaml @
 partof:
 - SPC-arch
 ```
 
-There can only be a single package manager used within a wake execution, which
-may (internally) farm it's work out to other language-specific package managers.
+There can only be a single Package Manager used within a wake execution, which
+may (internally) farm it's work out to other language-specific Package Managers.
 
-A package is specified by a `pkgReq` (see [SPC-type]). The package manager
+A package is specified by a `pkgReq` (see [SPC-type]). The Package Manager
 handles resolving all requirements into the appropriate package graph.
+
+The package manager is specified by `root.packageManager` and must support
+the following [JSH] API.
 
 ### resolvePkgs method
 
@@ -163,14 +167,14 @@ handles resolving all requirements into the appropriate package graph.
 - **pkgInfo**: the manifested root package requirements (i.e. globals
   resolved).
 - **locked**: this is a map of `pkgName: pkgReq` objects. This is used to
-  prevent unsecure packages from being included (which the package manager may
+  prevent unsecure packages from being included (which the Package Manager may
   also take care of by itself) as well as enabling "freezing" local application
-  builds for the purpose of usability or debugging. The package manager must
+  builds for the purpose of usability or debugging. The Package Manager must
   merge any use of these packages.
 - **signatures**: these are used for signing packages for trust. They are an
   object of `pkgName: signature` where `signature` is the **signature** object.
   Every package used must have a signature, although this process is typically
-  integrated with the package manager via the `getSignatures` method, a user
+  integrated with the Package Manager via the `getSignatures` method, a user
   can also specify them explicitly.
 - **credentials**: this is unspecified object that the pkgManager should
   understand and can be used for verifying that the user has appropriate access
@@ -189,7 +193,7 @@ within all packages.  Given a list of `pkgReqs` it must determine the specific
 `pkgVer` of all root packages (given by `pkgReqs`) and **all** of their
 recursive dependencies such that the result can be theoretically built.
 
-To do this, the package manager must solve the dependency heiarchy for the
+To do this, the Package Manager must solve the dependency heiarchy for the
 specific use-case of every package. In some cases (i.e.  python), this means
 that there might be restrictions on the number of versions of each package
 within a **dependency group**, which is defined as the recursive build
@@ -248,25 +252,26 @@ module.
 ### readPkg method
 **Inputs**:
 - **tmp**: temporary directory to store downloaded packages, typically gotten
-  from the **store**.
+  from the [Store].
 - **remote**: see `resolvePkgs`
 - **signatures**: see `resolvePkgs`
 - **credentials**: see `resolvePkgs`
 
 **Outputs**:
-- **pkgPaths**: list of `pkgPath` objects, typically to be passed to the **store**.
+- **pkgPaths**: list of `pkgPath` objects, typically to be passed to the [Store].
 
 The `readPkg` method downloads the packages returned by **resolvePkgs** into a
 temporary directory.
 
 
 ## Store Override: Override where to store completed objects
+## (SPC-store) <a id="SPC-store" />
 
-`root.wakeStoreOverride` can be (optionally) set to an `exec` who's
+`root.store` can be (optionally) set to an `exec` who's
 `container=wake.LOCAL_CONTAINER` and `args`, `env` and `config` are all `null`
 (must be fully self contained and cross-platform).
 
-The **store** exec is passed to every **container** and must be supported by
+The [Store] exec is passed to every **container** and must be supported by
 all containers. A good example would be a distributed filesystem which all
 types of containers (and the user's computer) use to mount the required
 fsentries for building modules.
@@ -313,15 +318,15 @@ Something like that... more design is necessary.
 
 
 ## [[.store]] Store
-The **store** has a presentation API to both the libsonnet and eval engines:
+The [Store] has a presentation API to both the libsonnet and eval engines:
 
-- [[.wakeStoreSonnet]]: For `wake.libsonnet` API, the **store** appears as the
+- [[.wakeStoreSonnet]]: For `wake.libsonnet` API, the [Store] appears as the
   [[SPC-api.getPkg]] API, which lazily retrieves pkgs.
-- eval: for the evaluation engine, there are multiple stages of the **store**
+- eval: for the evaluation engine, there are multiple stages of the [Store]
   depending on the **phase**.
   - In [[SPC-arch.phaseLocal]] and [[SPC-arch.phasePkgComplete]] the store is
     always the local filesystem who's behavior is defined by the wake CLI.
-  - In [[SPC-arch.phaseModuleComplete]]: the **store** can be either the local
+  - In [[SPC-arch.phaseModuleComplete]]: the [Store] can be either the local
     filesystem, or overriden with [[SPC-arch.wakeStoreOverride]].
 
 
@@ -595,3 +600,5 @@ The basic API of wake is:
 
 [JSH]: http://github.com/vitiral/jsh
 [semver]: https://semver.org
+[Package Manager]: #SPC-packageManager
+[Store]: #SPC-store
