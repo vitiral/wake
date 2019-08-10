@@ -54,6 +54,13 @@ packages (TODO).
 unspecified blob of data. This is used soley within the Package Manager for
 specifying how packages are retrieved.
 
+**pkgOrigin**: a package origin.
+- `pkgVer`: exact name and version of package
+- `author`: the author of the package.
+- `license`: the license string of the package.
+- `website`: website of the package.
+- `issues`: link where to report bugs for the package.
+
 ```
     "T_OBJECT": "object",
     "T_PKG": "pkg",
@@ -94,25 +101,19 @@ Wake has multiple pieces:
 
 - The **wake.libsonnet** jsonnet library, which is how users write wake packages and
   contains functions and values for constructing and using wake types.
-- The **wake cmdline** utility, which has multiple _phases_ of execution:
-  - _packageLocal_: all local pkgs are found and given to the [Store]
-  - _packageRetrieve_: **wake cmdline** talks to the **packageManager** to
-    determine and download all needed dependencies, which are given to the
-    [Store].
-  - _moduleBuild_: the [Store] creates a sandbox where each `package.exec` (with data)
-    can be executed within its `container`. This creates a `module`, which can
-    be a dependency of a later `package.exec`
-  - _moduleExec_: modules can then be executed in a stateful fashion to (for
-    example):
-    - run tests
-    - start services
-    - act as traditional software
+
+- The **wake cmdline** utility, which manages the build process through the various stages of
+  execution.
 
 - The [Package Manager] which is a cmdline utility which is called by the **wake
-  cmdline**. It's job is to solve the dependency graph and retrieving packages
+  cmdline**. It's job is to solve the dependency graph and retrieve packages
   from the internet (or elsewhere).
+
 - The [Store] which handles storing data (packages and modules) so they
   can (seemingly) be accessed locally within an `exec`'s `container`.
+
+- The [Credentials Manager] which handles credentials for the package manager
+  and store.
 
 
 ## Package State
@@ -134,19 +135,8 @@ through these states via discovery, retrieval and execution of packages.
     the [Store].
 
 
-# Overrides
-These are the overrides available to users to change wake's behavior in various
-phases ([[SPC-phase]]). All of these objects are `exec` objects who's `args`
-and `config` are both set to `null` (they will be overriden), and who's
-`container=wake.LOCAL`.
-
-Overrides are _part of the language_. They should be seen as dynamic plugins,
-where everything (except the store) can be overriden _per module_.
-
-All overrides must implement the [JSH] interface for communication.
-
-## Package Manager: Override how packages are obtained
-## (SPC-packageManager) <a id="SPC-packageManager" />
+# Package Manager: Override how packages are obtained
+# (SPC-packageManager) <a id="SPC-packageManager" />
 ```yaml @
 partof:
 - SPC-arch
@@ -161,9 +151,9 @@ handles resolving all requirements into the appropriate package graph.
 The package manager is specified by `root.packageManager` and must support
 the following [JSH] API.
 
-### resolvePkgs method
+## resolvePkgs method
 
-**Inputs**
+Input Params:
 - **pkgInfo**: the manifested root package requirements (i.e. globals
   resolved).
 - **locked**: this is a map of `pkgName: pkgReq` objects. This is used to
@@ -182,7 +172,8 @@ the following [JSH] API.
   manager. It was obtained by calling the `overrideCredentials` exec on the
   root package, but is passed to the packageManager as a JSON object.
 
-**Outputs**:
+
+Outputs:
 - **info**: a _fully defined_ **pkgInfo** object which specifies the complete
   graph of package dependencies. There should be only `pkgVer` objects.
 - **remote**: map of `pkgVer: pkgRemote` specifying how to retrieve the
@@ -249,23 +240,23 @@ internally. That C library's dependencies don't have to be shared within the
 "python build system", the library's usage is contained to that single python
 module.
 
-### readPkg method
-**Inputs**:
+## readPkg method
+Input Params:
 - **tmp**: temporary directory to store downloaded packages, typically gotten
   from the [Store].
 - **remote**: see `resolvePkgs`
 - **signatures**: see `resolvePkgs`
 - **credentials**: see `resolvePkgs`
 
-**Outputs**:
+Outputs:
 - **pkgPaths**: list of `pkgPath` objects, typically to be passed to the [Store].
 
 The `readPkg` method downloads the packages returned by **resolvePkgs** into a
 temporary directory.
 
 
-## Store Override: Override where to store completed objects
-## (SPC-store) <a id="SPC-store" />
+# Store Override: Override where to store completed objects
+# (SPC-store) <a id="SPC-store" />
 
 `root.store` can be (optionally) set to an `exec` who's
 `container=wake.LOCAL_CONTAINER` and `args`, `env` and `config` are all `null`
@@ -278,14 +269,14 @@ fsentries for building modules.
 
 This exec must support the following [JSH] API
 
-Tmp Methods:
+## Tmp Methods
 - **createTmp** method: get a readable empty directory to store data
   - outputs: string path to a temporary directory on the local filesystem.
 - **deleteTmp** method: clear a tmp directory
   - params:
     - dir: the path to the directory
 
-Package Methods:
+## Package Methods
 - **readPackages** method: query the store for a list of packages
   - params:
     - versions: list of pkgVer strings.
@@ -301,7 +292,7 @@ Package Methods:
   - outputs: `{"pkgPath": <pkgPath>}`
 
 
-## Credentials Override
+# Credentials Override (SPC-credentials) <a id="SPC-credentials /a>
 This is how a user/group/company can create and share their own trusted
 dependency credentials, using their group/company specific secret sharing
 mechanism.
@@ -317,40 +308,27 @@ This is currently poorly defined, but the basic idea is:
 Something like that... more design is necessary.
 
 
-## [[.store]] Store
-The [Store] has a presentation API to both the libsonnet and eval engines:
+# Wake Cmdline Utility
 
-- [[.wakeStoreSonnet]]: For `wake.libsonnet` API, the [Store] appears as the
-  [[SPC-api.getPkg]] API, which lazily retrieves pkgs.
-- eval: for the evaluation engine, there are multiple stages of the [Store]
-  depending on the **phase**.
-  - In [[SPC-arch.phaseLocal]] and [[SPC-arch.phasePkgComplete]] the store is
-    always the local filesystem who's behavior is defined by the wake CLI.
-  - In [[SPC-arch.phaseModuleComplete]]: the [Store] can be either the local
-    filesystem, or overriden with [[SPC-arch.wakeStoreOverride]].
+The cmdline utility is what manages the build and execution phases, moving through
+the following **phases**:
+  - _packageLocal_: the root package's jsonnet is executed. All the [Store] and
+    [Package Manager] are defined and all local packages are given to the
+    [Store].
+  - _packageRetrieve_: **wake cmdline** talks to the **packageManager** to
+    determine and download all needed dependencies, which are given to the
+    [Store].
+  - _moduleBuild_: the root package's jsonnet is re-executed. `getPkg` will now
+    return the _defined_ package object and `exports` can be called.
 
-
-## Phases
-There are only three phases to wake execution:
-
-- [[.phaseLocal]]: where the local pkg's hashes are calculated and exported
-  into `.wake/fingerprint.json`, then put into [[SPC-arch.wakeStoreLocal]]
-- [[.phasePkgComplete]]: where pkgs are retrieved and put in the
-  [[SPC-arch.wakeStoreLocal]]. This can run multiple cycles until all pkgs
-  are resolved and the proper dependency tree is determined.
-- [[.phaseModuleComplete]]: all pkgs have been retrieved and configuration calculated
-  in the pure jsonnet manifest. The `exec` objects are then executed within
-  their `container` in the proper build order with the proper links to their
-  dependent pkgs and modules.
-
-Note that by the end of **phasePkgCompete** all pkgs _and_ modules have been
-fully _defined_, and no more jsonnet needs to be evaluated.
-
-Note: When modules are being built, they are given only the manifested
-**json**, not jsonnet objects. So jsonnet functions remain only as
-configuration utilities, whereas module inputs remain only pure data.
-In other words, they only have access to their local config except what has
-been explicitly manifested as json.
+    [Store] creates a sandbox where each `package.exec` (with data)
+    can be executed within its `container`. This creates a `module`, which can
+    be a dependency of a later `package.exec`
+  - _moduleExec_: modules can then be executed in a stateful fashion to (for
+    example):
+    - run tests
+    - start services
+    - act as traditional software
 
 ## Special Files and Directories
 
@@ -602,3 +580,4 @@ The basic API of wake is:
 [semver]: https://semver.org
 [Package Manager]: #SPC-packageManager
 [Store]: #SPC-store
+[Credentials Manager]: #SPC-credentials

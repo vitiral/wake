@@ -171,6 +171,8 @@ C + { local wake = self
         //
         // Type: function(wake, pkgDefined) -> Object
         exports=null,
+
+        // TODO: move origin from module to here.
     ): {
         [C.F_TYPE]: C.T_PKG,
         [C.F_STATE]: C.S_DECLARED,
@@ -195,7 +197,7 @@ C + { local wake = self
     //
     // Note that when `exec` is running it is within its `container` and has read
     // access to all files and inputs the local `pkg` the module is defined in, as
-    // well as any pkgs and modules it is dependt on.
+    // well as any pkgs and modules it is dependent on.
     , declareModule(
         // The pkg this module is defined in.
         pkg,
