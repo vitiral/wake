@@ -34,6 +34,65 @@ from pdb import set_trace
 
 path = os.path
 
+class SafeObject(object):
+    """A safe form of ``object``.
+
+    Does not allow hashes or comparisons by default.
+    """
+
+    def __hash__(self):
+        raise TypeError("{} has no hash".format(self))
+
+    def __eq__(self, _other):
+        raise TypeError("{} cannot be compared".format(self))
+
+    def __lt__(self, other):
+        raise TypeError("{} cannot be compared".format(self))
+
+    def __lte__(self, other):
+        raise TypeError("{} cannot be compared".format(self))
+
+    def __gt__(self, other):
+        raise TypeError("{} cannot be compared".format(self))
+
+    def __gte__(self, other):
+        raise TypeError("{} cannot be compared".format(self))
+
+
+class TupleObject(object):
+    """An object which can be represented as a tuple for comparisons."""
+
+    def _tuple(self):
+        """Override this to return a tuple of only basic types."""
+        raise NotImplementedError("Must implement _tuple")
+
+    def _check_class(self, other):
+        if not isinstance(other, self.__class__):
+            raise TypeError("Classes not comparable: {} with {}".format(
+                self.__class__, other.__class__))
+
+    def __hash__(self):
+        return hash(self._tuple())
+
+    def __eq__(self, other):
+        self._check_class(other)
+        return self._tuple() == other._tuple()
+
+    def __lt__(self, other):
+        self._check_class(other)
+        return self._tuple() < other._tuple()
+
+    def __lte__(self, other):
+        self._check_class(other)
+        return self._tuple() <= other._tuple()
+
+    def __gt__(self, other):
+        self._check_class(other)
+        return self._tuple() > other._tuple()
+
+    def __gte__(self, other):
+        self._check_class(other)
+        return self._tuple() >= other._tuple()
 
 def pjoin(base, p):
     if p.startswith('./'):
