@@ -46,7 +46,7 @@ class PkgConfig(object):
         return "PkgConfig({})".format(self.base)
 
 
-class PkgKey(object):
+class PkgName(object):
     def __init__(self, namespace, name):
         self.namespace = namespace
         self.name = name
@@ -58,7 +58,7 @@ class PkgKey(object):
         return WAKE_SEP.join((self.namespace, self.name))
 
     def __repr__(self):
-        return "PkgKey({})".format(self)
+        return "PkgName({})".format(self)
 
 
 class PkgReq(object):
@@ -176,7 +176,7 @@ class PkgSimple(object):
         self.exports = exports
 
     def get_pkg_key(self):
-        return PkgKey(self.namespace, self.name)
+        return PkgName(self.namespace, self.name)
 
     def __repr__(self):
         return "{}(id={}, state={})".format(self.__class__.__name__,

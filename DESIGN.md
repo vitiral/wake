@@ -439,7 +439,7 @@ ReqRange(min, max)
 - the min and max can be inclusive or exclusive.
 - if min(inclusive)==max(exclusive) it is an exact version.
 
-We have now constructed a map of objects `Map[PkgKey, FinalReq]`.
+We have now constructed a map of objects `Map[PkgName, FinalReq]`.
 We just need to feed the pkgsAvailable to it and we will have
 PkgChoices objects. We then walk through the `pkgsReqs` to choose
 the dependencies of each pkg and write it to `pkgsImport.libsonnet`

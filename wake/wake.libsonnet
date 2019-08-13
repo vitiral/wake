@@ -95,7 +95,7 @@ C + { local wake = self
         # String specifying the sub-pkg who's exports to use.
         usingPkg=null,
     ):
-        local pkgName = _P.getPkgKey(pkgReq);
+        local pkgName = _P.getPkgName(pkgReq);
         # TODO: check in pkgsComplete first
         if pkgName in _P.pkgsDefined then
             local pkgFn = _P.pkgsDefined[pkgName];
@@ -452,7 +452,7 @@ C + { local wake = self
 
         , hasSep(s): U.containsChr(C.WAKE_SEP, s)
 
-        , getPkgKey(str):
+        , getPkgName(str):
             local items = std.splitLimit(str, C.WAKE_SEP, 3);
             wake.pkgName(items[0], items[1])
     }
