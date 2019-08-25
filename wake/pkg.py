@@ -1,5 +1,6 @@
 from .constants import *
 from . import utils
+from . import digest
 
 
 class PkgName(utils.TupleObject):
@@ -44,35 +45,43 @@ class PkgReq(utils.TupleObject):
 
 
 class PkgVer(utils.TupleObject):
-    def __init__(self, namespace, name, version, diget):
+    def __init__(self, namespace, name, version, digest):
         self.namespace = namespace
         self.name = name
         self.version = version
         self.digest = digest
 
     @classmethod
-    def from_str(cls, s):
-        spl = s.split(WAKE_SEP)
-        if len(spl) > 4:
+    def deserialize(cls, string):
+        split = string.split(WAKE_SEP)
+        if len(split) > 4:
             raise ValueError("Must have 4 components split by {}: {}".format(
-                WAKE_SEP, s))
+                WAKE_SEP, string))
 
-        namespace, name, version, digest = spl
+        namespace, name, version, digest_str = split
         return cls(
             namespace=namespace,
             name=name,
             version=version,
-            digest=digest,
+            digest=digest.Digest.deserialize(digest_str),
         )
 
+    def serialize(self):
+        return WAKE_SEP.join((
+            self.namespace,
+            self.name,
+            self.version,
+            self.digest.serialize(),
+        ))
+
     def __str__(self):
-        return WAKE_SEP.join(self._tuple())
+        return self.serialize()
 
     def __repr__(self):
         return "ver:{}".format(self)
 
     def _tuple(self):
-        return (self.namespace, self.name, self.version, digest)
+        return (self.namespace, self.name, self.version, self.digest)
 
 
 class PkgDigest(utils.SafeObject):
@@ -90,12 +99,12 @@ class PkgDigest(utils.SafeObject):
         self.paths = paths
         self.deps = deps
 
-
     @classmethod
     def from_dict(cls, dct, pkg_file):
+        pkg_ver_str = utils.ensure_str('pkgVer', dct['pkgVer'])
         return cls(
             pkg_file=pkg_file,
-            pkgVer=utils.ensure_str('pkgVer', dct['pkgVer']),
+            pkgVer=PkgVer.deserialize(pkg_ver_str),
             pkgOrigin=dct.get('pkgOrigin'),
             paths=set(utils.ensure_valid_paths(dct['paths'])),
             deps=dct['deps'],

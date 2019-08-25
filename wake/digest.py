@@ -43,7 +43,7 @@ def loadPkgDigest(state, pkg_file):
     state_dir = state.create_temp_dir()
     try:
         # Dump fake `.digest.json`
-        utils.jsondumpf(digest_path, "md5:fake")
+        utils.jsondumpf(digest_path, Digest.SEP.join(["md5", "fake"]))
 
         # Put the jsonnet run file in place
         run_digest_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
@@ -86,18 +86,18 @@ class Digest(utils.TupleObject):
     def __init__(self, digest, digest_type):
         self.digest = digest
         if digest_type not in DIGEST_TYPES:
-            raise ValueError("digest_type must be one of: {}".format(list(DIGEST_TYPEs.keys())))
+            raise ValueError("digest_type must be one of: {}".format(list(DIGEST_TYPES.keys())))
         self.digest_type = digest_type
 
     def _tuple(self):
-        return (self.digest, self.digest_type)
+        return (self.digest_type, self.digest)
 
     def __repr__(self):
         return self.SEP.join(self.digest_type, self.digest)
 
     @classmethod
     def deserialize(cls, string):
-        digest_type, digest = string.split(self.SEP, 1)
+        digest_type, digest = string.split(cls.SEP, 1)
         return cls(
             digest=digest,
             digest_type=digest_type,
