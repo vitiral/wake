@@ -44,4 +44,4 @@ test3-dbg:
 test: test3 test2
 
 clean:
-	rm -rf py2 py3 dist wake.egg-info
+	rm -rf py2 py3 dist wake.egg-info .wake/
