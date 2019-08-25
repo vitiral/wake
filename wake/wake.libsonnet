@@ -109,6 +109,22 @@ C + { local wake = self
         exports: exports,
     }
 
+    # Declare dependencies for a package.
+    , deps(
+        unrestricted=null,
+        restricted=null,
+        restrictedMajor=null,
+        restrictedMinor=null,
+        global=null,
+    ): {
+        [C.F_TYPE]: C.T_DEPS,
+        unrestricted: unrestricted,
+        restricted: restricted,
+        restrictedMajor: restrictedMajor,
+        restrictedMinor: restrictedMinor,
+        global: global,
+    }
+
     # (#SPC-api.declareModule): declare how to build something.
     #
     # Modules are included in `pkg.exports`, as they are always tied to a pkg.

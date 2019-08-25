@@ -1,5 +1,6 @@
 pkg_file: PKG.libsonnet
-pkgVer: "@simple@0.1.0@md5.0e86e5c6a0b61667eb1f4886eb3a0664"
-pkgOrigin: None
-paths: PKG.libsonnet
+pkgVer: "@simple@0.1.0@md5.eddd76ddb4770fa7e8349eeb3d63be4c"
+pkgOrigin: null
+paths:
+  - ./PKG.libsonnet
 deps: {}

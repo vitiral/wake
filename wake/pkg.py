@@ -91,7 +91,7 @@ class PkgDigest(utils.SafeObject):
     """
     def __init__(self, pkg_file, pkgVer, pkgOrigin, paths, deps):
         if pkg_file not in paths:
-            paths.add(pkg_file)
+            paths.add('./' + DEFAULT_PKG_LIBSONNET)
 
         self.pkg_file = pkg_file
         self.pkgVer = pkgVer
@@ -112,10 +112,10 @@ class PkgDigest(utils.SafeObject):
 
     def serialize(self):
         pdir, pfile = os.path.split(self.pkg_file)
-        relpaths = utils.relpaths(self.paths, pdir)
+        relpaths = sorted(self.paths)
         return {
             "pkg_file": pfile,
-            "pkgVer": self.pkgVer,
+            "pkgVer": self.pkgVer.serialize(),
             "pkgOrigin": self.pkgOrigin,
             "paths": relpaths,
             "deps": self.deps,

@@ -181,7 +181,7 @@ def copy_fsentry(src, dst):
 
 def ensure_valid_paths(paths):
     for p in paths:
-        assert_valid_path(p)
+        ensure_valid_path(p)
 
     return paths
 
@@ -220,6 +220,8 @@ def is_unresolved(dct):
 def relpaths(paths, start):
     return [os.path.relpath(p, start=start) for p in paths]
 
+def joinpaths(start, paths):
+    return [os.path.join(start, p) for p in paths]
 
 def rmtree(d):
     if path.exists(d):

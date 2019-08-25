@@ -74,9 +74,9 @@ def loadPkgDigest(state, pkg_file):
 
 def calc_digest(pkgDigest):
     """Calculate the actual hash from a pkgDigest object."""
-    digest = DigestBuilder(pkg_dir=os.path.dirname(pkgDigest.pkg_file))
-    digest.update_paths(pkgDigest.paths)
-    return digest.build()
+    builder = DigestBuilder(pkg_dir=os.path.dirname(pkgDigest.pkg_file))
+    builder.update_paths(utils.joinpaths(builder.pkg_dir, pkgDigest.paths))
+    return builder.build()
 
 
 class Digest(utils.TupleObject):

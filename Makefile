@@ -17,7 +17,7 @@ init:
 	# python3
 	virtualenv --python=python3 py3
 	py3/bin/pip install pytest pyyaml
-	py3/bin/pip yapf pylint twine
+	py3/bin/pip install yapf pylint twine
 	py3/bin/pip install -r requirements.txt
 
 fix:
