@@ -18,7 +18,7 @@
 from .utils import *
 
 
-class PkgConfig(object):
+class PkgConfig(SafeObject):
     def __init__(self, base):
         self.base = abspath(base)
         self.pkg_root = pjoin(self.base, FILE_PKG)
@@ -46,13 +46,10 @@ class PkgConfig(object):
         return "PkgConfig({})".format(self.base)
 
 
-class PkgName(object):
+class PkgName(TupleObject):
     def __init__(self, namespace, name):
         self.namespace = namespace
         self.name = name
-
-    def __hash__(self):
-        return hash((self.namespace, self.name))
 
     def __str__(self):
         return WAKE_SEP.join((self.namespace, self.name))
@@ -60,8 +57,12 @@ class PkgName(object):
     def __repr__(self):
         return "PkgName({})".format(self)
 
+    def _tuple(self):
+        return (self.namespace, self.name)
 
-class PkgReq(object):
+
+
+class PkgReq(TupleObject):
     def __init__(self, namespace, name, version, hash_=None):
         self.namespace = namespace
         self.name = name
@@ -94,8 +95,11 @@ class PkgReq(object):
     def __repr__(self):
         return "PkgReq({})".format(self)
 
+    def _tuple(self):
+        return (self.namespace, self.name, self.version, self.hash)
 
-class PkgManifest(object):
+
+class PkgManifest(SafeObject):
     """The result of "running" a pkg."""
     def __init__(self, root, all_pkgs):
         self.root = root
@@ -119,7 +123,7 @@ class PkgManifest(object):
         }
 
 
-class Fingerprint(object):
+class Fingerprint(TupleObject):
     def __init__(self, hash_, hash_type):
         self.hash = hash_
         self.hash_type = hash_type
@@ -133,6 +137,9 @@ class Fingerprint(object):
             'hash': self.hash,
             'hashType': self.hash_type,
         }
+
+    def _tuple(self):
+        return (self.hash, self.hash_type)
 
 
 class PkgSimple(object):

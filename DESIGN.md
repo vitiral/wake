@@ -21,6 +21,9 @@ within the components: `@\/`
   it's full name and hash.
 - **pkgPath** (`"{storePkgPath}/{pkgVer}"`): a usable path to the package accessible on
   the "local" filesystem of the process.
+- **pkgLocal**: a request to the store to use a local package. Includes the requesting
+  package and the path.
+
 
 **Module Identifiers**: unlike packages, modules can only be specified by their
 exact version _and hash_. Note that the hash can change as the module's dependencies
@@ -44,13 +47,13 @@ returned from the Package Manager all values will be defined as a single
 `pkgVer`.
 - pkgName: the name of the package
 - pkgVer: (optional) the exact package version
-- deps: _defined_ `wake.deps` object (globals and local deps are manifested).
+- deps: **deps** object
   The values can either be **pkgReq** or **pkgInfo** objects.
 
 **signature**: supports multiple types of cryptographic signature for signing
 packages (TODO).
 
-**pkgRemote**: a map of `pkgVer: remoteLocation`, where `remoteLocation` is an
+**pkgsRemote**: a map of `pkgVer: remoteLocation`, where `remoteLocation` is an
 unspecified blob of data. This is used soley within the Package Manager for
 specifying how packages are retrieved.
 
@@ -61,38 +64,33 @@ specifying how packages are retrieved.
 - `website`: website of the package.
 - `issues`: link where to report bugs for the package.
 
-```
-    "T_OBJECT": "object",
-    "T_PKG": "pkg",
-    "T_GET_EXPORT": "getExport",
-    "T_MODULE": "module",
-    "T_PATH_REF_PKG": "pathRefPkg",
-    "T_PATH_REF_MODULE": "pathRefModule",
-    "T_EXEC": "exec",
+**deps**: the (nonlocal) depenendenices of a package. Has multiple fields. Each
+is a key/value map where the key is a pkg-specific mapping.
 
-    "S_UNRESOLVED": "unresolved",
-    "S_DECLARED": "declared",
-    "S_DEFINED": "defined",
-    "S_COMPLETED": "completed",
+- **unrestricted**: these are dependencies with no version restrictions, meaning
+  the same package can exist at multiple versions within its build pool. For
+  instance, if you depend on a specific version of a script for building a
+  module.
+- **restricted**: these dependencies (and their `deps.restricted`, etc) must
+  have only a single version per `pkgName`. This is for languages who's
+  `import` mechanics are dependent on having only a single version available.
+  Examples: python, javascript, C
+- **restrictedMajor** or **restrictedMinor**: like **restricted**, these
+  dependencies (and their `deps.restrictedMajor`, etc) must have only a single
+  version per _major/minor version_ of any `pkgName`.
+  - For **major** you can have another version if it is a different major version
+    (i.e both 3.2.1 and 2.2.1 can be used, but not 2.1.1 as well)
+  - For **minor** you can have another version if it is a different major OR minor
+    version (i.e. both 2.2.1 and 2.1.1 can be used, but not 2.2.3 as well)
+- **global**: dependencies which have been set by `wake.rootPkg.setGlobal`
+  These are typically used for things like compiler version, encryption library
+  version, etc.
+- **local**: specify local packages using pkgLocal. Typically used for root packages
+  or to aid in configuration.
 
-    "M_READ_PKGS": "readPkgs",
-    "M_READ_PKGS_REQ": "readPkgsReq",
-
-    "DIR_WAKE": ".wake",
-    "DIR_LOCAL_STORE": "localStore",
-    "DIR_RETRIEVED": "retrieved",
-
-    "FILE_PKG": "PKG.libsonnet",
-    "FILE_RUN": "run.jsonnet",
-    "FILE_PKGS": "pkgs.libsonnet",
-    "FILE_EXEC": "exec.json",
-
-    "FILE_FINGERPRINT": "fingerprint.json",
-    "FILE_LOCAL_DEPENDENCIES": "localDependencies.json",
-
-    "EXEC_LOCAL": "execLocal"
-```
-
+**depsManifested**: in the **moduleBuild** phase, the **deps** field's type will change
+to the **depsManifested**. They `keys` will remain the same, but the values will be
+full packages. This will be passed to the `pkg.exports` function.
 
 
 # Wake Architecture (SPC-arch) <a id="SPC-arch" />
@@ -176,7 +174,7 @@ Input Params:
 Outputs:
 - **info**: a _fully defined_ **pkgInfo** object which specifies the complete
   graph of package dependencies. There should be only `pkgVer` objects.
-- **remote**: map of `pkgVer: pkgRemote` specifying how to retrieve the
+- **remote**: map of `pkgVer: pkgsRemote` specifying how to retrieve the
   packages using **readPkg**.
 
 The resolvePkgs method must do the heavy lifting of resolving dependencies
@@ -190,37 +188,8 @@ that there might be restrictions on the number of versions of each package
 within a **dependency group**, which is defined as the recursive build
 dependencies of any package.
 
-To help determine this isolation, `wake.deps` allows for specifying several
-levels of restrictions on dependencies:
-
-- **unrestricted**: these are dependencies with no version restrictions, meaning
-  the same package can exist at multiple versions within its build pool. For
-  instance, if you depend on a specific version of a script for building a
-  module.
-- **restricted**: these dependencies (and their `deps.restricted`, etc) must
-  have only a single version per `pkgName.name`. This is for languages who's
-  `import` mechanics are dependent on having only a single version available.
-  Examples: python, javascript, C
-- **restrictedMajor** or **restrictedMinor**: like **restricted**, these
-  dependencies (and their `deps.restrictedMajor`, etc) must have only a single
-  version per _major/minor version_ of any `pkgName.name`.
-  - For **major** you can have another version if it is a different major version
-    (i.e both 3.2.1 and 2.2.1 can be used, but not 2.1.1 as well)
-  - For **minor** you can have another version if it is a different major OR minor
-    version (i.e. both 2.2.1 and 2.1.1 can be used, but not 2.2.3 as well)
-- **global**: these are dependencies which _must_ be specified in the top-level
-  package or one of it's _local_ dependencies (i.e. a local path to a file).
-  This is typically used for things like compiler version, encryption library
-  version, etc. Unlike other dependencies, these are specified as a function
-  `function(depMap) -> list[depReq]`.
-  - **depMap** must be a (possibly) nested object of global dependencies
-    which follows some language convention, i.e. `lang.sh`, `lang.clang`,
-    `lang.python.python2`, `system.lib.libc`, `system.lib.openssl`, etc
-  - The `function(depMap)` must then convert the given global dependencies
-    into the versions it wants for that package.
-    - note: technically it can use a different version, although frequently
-      items in **global** are also **locked**.
-
+To help determine this isolation, **deps** allows for specifying several
+levels of restrictions on dependencies (see **deps**).
 
 All **restricted** lists are _transitive_, meaning that if a dependency is
 **restricted** and itself contains **restricted** dependencies, then they are

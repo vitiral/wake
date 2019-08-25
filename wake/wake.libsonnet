@@ -18,53 +18,7 @@ C + { local wake = self
     , local U = wake.util
     , local _P = wake._private
 
-    # (#SPC-api.pkgVer): The exact id of a pkg.
-    #
-    # This is similar to pkgReq except it is the _exact_ pkg, with the hash
-    # included in the Id.
-    , pkgVer(namespace, name, version, hash):
-        assert std.isString(hash) : "hash must be string";
-        # Note: the version must be an exact semver, but is checked later.
-        std.join(C.WAKE_SEP, [
-            wake.pkgReq(namespace, name, version),
-            hash,
-        ])
-
-    # (#SPC-api.pkgReq): a pkg requirement with a semantic version.
-    #
-    # This is used as (partof) the filepath for pkgs and modules.
-    #
-    # Errors:
-    # - name and namespace must be length > 3
-    # - It is an error for any field to have commas.
-    # - versionReq must be a valid semverReq
-    , pkgReq(
-        # The namespace to find the pkg.
-        namespace,
-
-        # The name of the pkg.
-        name,
-
-        # The version requirements of the pkgReq.
-        #
-        # wake will attempt to match the requirements, taking
-        # into account other pkgs to use as few pkgs as possible.
-        versionReq=null,
-
-    ): {
-        local versionStr = U.stringDefault(versionReq),
-
-        assert !_P.hasSep(versionStr): "versionReq must not contain '#'",
-
-        result: std.join(C.WAKE_SEP, [
-            wake.pkgName(namespace, name),
-            versionStr,
-        ]),
-    }.result
-
-
-    # A more generalized version of the pkg. Used when looking up pkgs from
-    # locked packages.
+    # The package's namespace and name.
     , pkgName(namespace, name):
         local namespaceStr = U.stringDefault(namespace);
         local namespaceLen = std.length(namespaceStr);
@@ -79,29 +33,41 @@ C + { local wake = self
             name,
         ])
 
-    # (#SPC-api.getPkg): retrieve a pkg lazily.
-    , getPkg(
-        # The pkgReq(...) to retrieve.
-        pkgReq,
+    # Specifies what versions of a package are required using a semver.
+    , pkgReq(
+        # The namespace to find the pkg.
+        namespace,
 
-        # Where to "get" the pkg.
-        #
-        # - If `usingPkg` is `null`: `from` must be a relative path to a local
-        #   directory where the PKG.libsonnet exists.
-        # - else, `from` must be a key or array of keys to descend the `usingPkg`'s
-        #   `exports`.
-        from,
+        # The name of the pkg.
+        name,
 
-        # String specifying the sub-pkg who's exports to use.
-        usingPkg=null,
-    ):
-        local pkgName = _P.getPkgName(pkgReq);
-        # TODO: check in pkgsComplete first
-        if pkgName in _P.pkgsDefined then
-            local pkgFn = _P.pkgsDefined[pkgName];
-            pkgFn(wake)
-        else
-            _P.unresolvedPkg(pkgReq, from, usingPkg)
+        # The semver requirements of the pkgName
+        semver=null,
+
+    ): {
+        local semverStr = U.stringDefault(semver),
+
+        assert !_P.hasSep(semverStr): "semver must not contain '@'",
+
+        result: std.join(C.WAKE_SEP, [
+            wake.pkgName(namespace, name),
+            semverStr,
+        ]),
+    }.result
+
+    # An exact version of a pkgName, including the hash.
+    , pkgVer(namespace, name, version, fingerprint):
+        assert std.isString(hash) : "fingerprint must be a string";
+        # Note: the version must be an exact semver, but is checked later.
+        std.join(C.WAKE_SEP, [
+            wake.pkgName(namespace, name),
+            version,
+            fingerprint,
+        ])
+
+    # Request to retrieve a pkg locally
+    , pkgLocal(requestingPkgVer, path):
+        [requestingPkgVer, path]
 
     # (#SPC-api.declarePkg): declare a pkg.
     #
@@ -147,23 +113,10 @@ C + { local wake = self
         # Type: list[string]
         paths=null,
 
-        # Local paths (files or dirs) this pkg depends on for its definition.
+        # packages that this pkg depends on.
         #
-        # Paths used in the "define" phase must be included in this list.
-        # Typically will just be items this PKG.libsonnet imports in some way.
-        # This should be kept to a minimal size so that it can be retrieved
-        # quickly.
-        #
-        # Note that .wake.libsonnet and PKG.libsonnet are automatically
-        # included in this list.
-        #
-        # Type: list[string]
-        pathsDef=null,
-
-        # pkgs that this pkg depends on.
-        #
-        # Type: object of key/getPkg(...) pairs
-        pkgs=null,
+        # Type: wake.deps object
+        deps=null,
 
         # Exports of this pkg.
         #
