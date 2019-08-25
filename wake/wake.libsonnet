@@ -69,41 +69,12 @@ C + { local wake = self
     , pkgLocal(requestingPkgVer, path):
         [requestingPkgVer, path]
 
-    # (#SPC-api.declarePkg): declare a pkg.
-    #
-    # Must be the only return of the function in PKG.libsonnet of the form
-    #
-    # ```
-    # function(wake)
-    #    wake.declarePkg(
-    #        fingerprint=import "./.wake/fingerprint.json",
-    #        name="mypkg",
-    #        version="1.0.0",
-    #        # ... etc
-    #    )
-    # ```
-    , declarePkg(
-        # The fingerprint, **imported** from .wake/fingerprint.json
-        fingerprint,
+    # Declare a pkg.
+    , pkg(
+        pkgVer,
 
-        # the (optional) namespace of the pkg.
-        #
-        # Type: string
-        namespace,
-
-        # The name of the pkg.
-        #
-        # Type: string
-        name,
-
-        # The exact version of the pkg.
-        #
-        # Type: string
-        version,
-
-        # General description of the pkg, for humans to read.
-        # Type: string
-        description=null,
+        # Description and other metadata regarding the origin of the package.
+        pkgOrigin=null,
 
         # Local paths (files or dirs) this pkg depends on for building.
         #
@@ -210,9 +181,6 @@ C + { local wake = self
     # (#SPC-api.exec): specify an executable from within a pkg and container.
     #
     # All values given to `exec` must be immediately manifestable.
-    #
-    # Where other pkg managers or build systems might have "hooks" or "plugins", wake
-    # has `exec`. Exec is a fully flexible specification on how to execute something.
     #
     # ## How an `exec` operates.
     #
@@ -381,11 +349,7 @@ C + { local wake = self
             [C.F_TYPE]: pkg[C.F_TYPE],
             [C.F_STATE]: pkg[C.F_STATE],
             pkgVer: pkg.pkgVer,
-            namespace: pkg.namespace,
-            name: pkg.name,
-            version: pkg.version,
             description: pkg.description,
-            fingerprint: pkg.fingerprint,
 
             local getIdOrUnresolved = function(dep)
                 if U.isUnresolved(dep) then

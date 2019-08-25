@@ -21,9 +21,6 @@ within the components: `@\/`
   it's full name and hash.
 - **pkgPath** (`"{storePkgPath}/{pkgVer}"`): a usable path to the package accessible on
   the "local" filesystem of the process.
-- **pkgLocal**: a request to the store to use a local package. Includes the requesting
-  package and the path.
-
 
 **Module Identifiers**: unlike packages, modules can only be specified by their
 exact version _and hash_. Note that the hash can change as the module's dependencies
@@ -58,14 +55,14 @@ unspecified blob of data. This is used soley within the Package Manager for
 specifying how packages are retrieved.
 
 **pkgOrigin**: a package origin.
-- `pkgVer`: exact name and version of package
 - `author`: the author of the package.
 - `license`: the license string of the package.
 - `website`: website of the package.
 - `issues`: link where to report bugs for the package.
+- any other key/value list of items
 
-**deps**: the (nonlocal) depenendenices of a package. Has multiple fields. Each
-is a key/value map where the key is a pkg-specific mapping.
+**deps**: the depenendenices of a package. Has multiple fields. Each is a
+key/value map where the key is a pkg-specific mapping.
 
 - **unrestricted**: these are dependencies with no version restrictions, meaning
   the same package can exist at multiple versions within its build pool. For
@@ -85,8 +82,6 @@ is a key/value map where the key is a pkg-specific mapping.
 - **global**: dependencies which have been set by `wake.rootPkg.setGlobal`
   These are typically used for things like compiler version, encryption library
   version, etc.
-- **local**: specify local packages using pkgLocal. Typically used for root packages
-  or to aid in configuration.
 
 **depsManifested**: in the **moduleBuild** phase, the **deps** field's type will change
 to the **depsManifested**. They `keys` will remain the same, but the values will be

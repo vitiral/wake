@@ -20,11 +20,55 @@
 # The MIT License (MIT)
 # Copyright (c) 2015 cakepietoast
 # https://pypi.org/project/checksumdir/#files
+import os
+import hashlib
 
-from .utils import *
+from .constants import *
+from . import utils
+from . import pkg
 
 
-class HashStuff(object):
+def loadPkgDigest(state, pkgFile):
+    pkg_dir = os.path.dirname(pkgFile)
+    digest_path = os.path.join(root_dir, DEFAULT_DIGEST_JSON)
+    run_digest = format_run_digest(pkgFile)
+
+    state_dir = state.create_temp_dir()
+    try:
+        # Dump fake `.digest.json`
+        jsondumpf(digest_path, {})
+
+        # Put the jsonnet run file in place
+        run_digest_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
+        dumpf(run_digest_path, run_digest)
+
+        # Get a pkgDigest with the wrong digest value
+        pkgDigest = pkg.PkgDigest.from_dict(
+            utils.manifest_jsonnet(run_digest_path),
+            pkgFile=pkgFile,
+        )
+
+        # Dump real `.digest.json`
+        jsondumpf(digest_path, calc_digest(pkgDigest))
+
+        return pkg.PkgDigest.from_dict(
+            utils.manifest_jsonnet(run_digest_path),
+            pkgFile=pkgFile,
+        )
+    finally:
+        if os.path.exists(digest_path):
+            os.remove(digest_path)
+        state_dir.cleanup()
+
+
+def calc_digest(pkgDigest):
+    """Calculate the actual hash from a pkgDigest object."""
+    digest = Digest(pkg_dir=os.path.dirname(pkgDigest.pkgFile))
+    digest.update_paths(pkgDigest.paths)
+    return digest.reduce()
+
+
+class Digest(object):
     DIGEST_TYPES = {
         'md5': hashlib.md5,
         'sha1': hashlib.sha1,
@@ -32,10 +76,10 @@ class HashStuff(object):
         'sha512': hashlib.sha512
     }
 
-    def __init__(self, base, hash_type='md5'):
-        assert path.isabs(base)
+    def __init__(self, pkg_dir, hash_type='md5'):
+        assert path.isabs(pkg_dir)
 
-        self.base = base
+        self.pkg_dir = pkg_dir
         self.hash_type = hash_type
         self.hash_func = self.DIGEST_TYPES[hash_type]
         if not self.hash_func:
@@ -43,15 +87,8 @@ class HashStuff(object):
         self.hashmap = {}
         self.visited = set()
 
-    @classmethod
-    def from_config(cls, config):
-        fingerprint = config.get_current_fingerprint()
-        if fingerprint is None:
-            fail("{} fingerprint file must exist".format(
-                config.pkg_fingerprint))
-        return cls(config.base, hash_type=fingerprint[F_DIGESTTYPE])
-
     def update_paths(self, paths):
+        paths = sorted(paths)
         for p in paths:
             if path.isdir(p):
                 self.update_dir(p)
@@ -68,22 +105,23 @@ class HashStuff(object):
         if not os.path.isdir(dirpath):
             raise TypeError('{} is not a directory.'.format(dirpath))
 
-        for root, dirs, files in os.walk(dirpath,
-                                         topdown=True,
-                                         followlinks=True):
+        walking = os.walk(dirpath, topdown=True, followlinks=True)
+        for root, _walking, files in walking:
             for f in files:
                 fpath = pjoin(root, f)
                 if fpath in visited:
                     raise RuntimeError(
                         "Error: infinite directory recursion detected at {}".
                         format(fpath))
-                visited.add(fpath)
                 self.update_file(fpath)
 
         return hashmap
 
     def update_file(self, fpath):
         assert path.isabs(fpath)
+        if fpath in self.visted:
+            return
+        self.visited.add(fpath)
         hasher = self.hash_func()
         blocksize = 64 * 1024
         with open(fpath, 'rb') as fp:
@@ -92,7 +130,7 @@ class HashStuff(object):
                 if not data:
                     break
                 hasher.update(data)
-        pkey = path.relpath(fpath, self.base)
+        pkey = path.relpath(fpath, self.pkg_dir)
         self.hashmap[pkey] = hasher.hexdigest()
 
     def reduce(self):

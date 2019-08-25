@@ -17,7 +17,7 @@
 """
 Debug mode does things like delete folders before starting, etc
 """
-from . import gvars
+from .constants import *
 
 import sys
 import os
@@ -34,12 +34,12 @@ from pdb import set_trace
 
 path = os.path
 
+
 class SafeObject(object):
     """A safe form of ``object``.
 
     Does not allow hashes or comparisons by default.
     """
-
     def __hash__(self):
         raise TypeError("{} has no hash".format(self))
 
@@ -61,7 +61,6 @@ class SafeObject(object):
 
 class TupleObject(object):
     """An object which can be represented as a tuple for comparisons."""
-
     def _tuple(self):
         """Override this to return a tuple of only basic types."""
         raise NotImplementedError("Must implement _tuple")
@@ -94,6 +93,7 @@ class TupleObject(object):
         self._check_class(other)
         return self._tuple() >= other._tuple()
 
+
 def pjoin(base, p):
     if p.startswith('./'):
         p = p[2:]
@@ -104,6 +104,19 @@ def abspath(p):
     return path.abspath(path.expanduser(p))
 
 
+def loadf(path):
+    with open(path) as fp:
+        return fp.read()
+
+
+def dumpf(path, text):
+    with open(path, 'w') as fp:
+        out = fp.write(text)
+        fp.flush()
+        os.fsync(fp)
+        return out
+
+
 def jsonloadf(path):
     with open(path) as fp:
         return json.load(fp)
@@ -111,85 +124,15 @@ def jsonloadf(path):
 
 def jsondumpf(path, data, indent=4):
     with open(path, 'w') as fp:
-        return json.dump(data, fp, indent=indent, sort_keys=True)
+        out = json.dump(data, fp, indent=indent, sort_keys=True)
+        fp.flush()
+        os.fsync(fp)
+        return out
 
 
-PATH_HERE = abspath(__file__)
-HERE_DIR = path.dirname(abspath(__file__))
-
-wakelib = pjoin(HERE_DIR, "wake.libsonnet")
-FILE_CONSTANTS = "wakeConstants.json"
-wakeConstantsPath = pjoin(HERE_DIR, FILE_CONSTANTS)
-wakeConstants = jsonloadf(wakeConstantsPath)
-
-WAKE_SEP = wakeConstants["WAKE_SEP"]
-
-F_TYPE = wakeConstants["F_TYPE"]
-F_STATE = wakeConstants["F_STATE"]
-F_DIGEST = wakeConstants["F_DIGEST"]
-F_DIGESTTYPE = wakeConstants["F_DIGESTTYPE"]
-
-T_OBJECT = wakeConstants["T_OBJECT"]
-T_PKG = wakeConstants["T_PKG"]
-T_MODULE = wakeConstants["T_MODULE"]
-T_PATH_REF_PKG = wakeConstants["T_PATH_REF_PKG"]
-
-S_UNRESOLVED = wakeConstants["S_UNRESOLVED"]
-S_DECLARED = wakeConstants["S_DECLARED"]
-S_DEFINED = wakeConstants["S_DEFINED"]
-S_COMPLETED = wakeConstants["S_COMPLETED"]
-
-C_READ_PKGS = wakeConstants["C_READ_PKGS"]
-C_READ_PKGS_REQ = wakeConstants["C_READ_PKGS_REQ"]
-
-## COMMON PATHS
-
-FILE_PKG = wakeConstants["FILE_PKG"]  # #SPC-arch.pkgFile
-
-# See #SPC-arch.wakeDir
-DIR_WAKE = wakeConstants["DIR_WAKE"]
-DIR_WAKE_REL = path.join(".", DIR_WAKE)
-DIR_LOCAL_STORE = wakeConstants["DIR_LOCAL_STORE"]
-DIR_RETRIEVED = wakeConstants["DIR_RETRIEVED"]
-
-FILE_RUN = wakeConstants["FILE_RUN"]
-FILE_PKG = wakeConstants["FILE_PKG"]
-FILE_PKGS = wakeConstants["FILE_PKGS"]
-FILE_STORE_META = "storeMeta.json"
-
-FILE_FINGERPRINT = wakeConstants["FILE_FINGERPRINT"]
-FILE_LOCAL_DEPENDENCIES = wakeConstants["FILE_LOCAL_DEPENDENCIES"]
-
-## FILE WRITERS
-
-RUN_TEMPLATE = """
-local wakelib = import "{wakelib}";
-local pkgsDefined = import "{pkgs_defined}";
-
-local wake =
-    wakelib
-    + {{
-        _private+: {{
-            pkgsDefined: pkgsDefined,
-        }},
-    }};
-
-// instantiate and return the root pkg
-local pkg_fn = (import "{pkg_root}");
-local pkgInitial = pkg_fn(wake);
-
-local root = wake._private.recurseDefinePkg(wake, pkgInitial);
-
-{{
-    root: wake._private.simplify(root),
-    all: wake._private.recurseSimplify(root),
-}}
-"""
-
-
-def manifest_jsonnet(path):
-    """Manifest a jsonnet path."""
-    cmd = ["jsonnet", path]
+def manifest_jsonnet(run_path):
+    """Manifest a jsonnet run_path."""
+    cmd = ["jsonnet", run_path]
     completed = subprocess.run(
         cmd,
         stdout=subprocess.PIPE,
@@ -198,8 +141,15 @@ def manifest_jsonnet(path):
     )
     if completed.returncode != 0:
         fail("Manifesting jsonnet at {}\n## STDOUT:\n{}\n\n## STDERR:\n{}\n".
-             format(path, completed.stdout, completed.stderr))
+             format(run_path, completed.stdout, completed.stderr))
     return json.loads(completed.stdout)
+
+
+def format_run_digest(pkg_file):
+    """Returned the wake jsonnet run template with items filled out."""
+    templ = RUN_DIGEST_TEMPLATE
+    templ = templ.replace("WAKE_LIB", PATH_WAKELIB)
+    return templ.replace("PKG_ROOT", pkg_root)
 
 
 def fail(msg):
@@ -232,16 +182,25 @@ def copy_fsentry(src, dst):
         shutil.copytree(src, dst)
 
 
-def assert_valid_paths(paths):
+def ensure_valid_paths(paths):
     for p in paths:
         assert_valid_path(p)
 
+    return paths
 
-def assert_valid_path(p):
+
+def ensure_valid_path(p):
     if not p.startswith("./"):
         raise ValueError("all paths must start with ./: " + p)
     if sum(filter(lambda c: c == '..', p.split('/'))):
         raise ValueError("paths must not have `..` components: " + p)
+    return p
+
+
+def ensure_str(name, value, allow_none=False):
+    if value is None and not allow_none:
+        raise ValueError("{} not be null".format(name))
+    return value
 
 
 def assert_not_wake(p):

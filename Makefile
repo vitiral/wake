@@ -28,18 +28,14 @@ lint:
 
 test2:
 	# Testing python2
-	PYTHONHASHSEED=42 py2/bin/py.test -vvv
-
-test2-dbg:
-	# Testing python2
-	PYTHONHASHSEED=42 py2/bin/py.test --pdb -sxvvv
+	PYTHONHASHSEED=42=42 py2/bin/py.test -vvv
 
 test3:
 	# Testing python3
 	py3/bin/py.test -vvv
 
-test3-dbg:
-	py3/bin/py.test --pdb -sxvvv
+testdbg:
+	py3/bin/py.test -sxvvv --pdb
 
 test: test3 test2
 
