@@ -1,8 +1,27 @@
+# ⏾🌊🛠 wake software's true potential
+#
+# Copyright (C) 2019 Rett Berg <github.com/vitiral>
+#
+# The source code is Licensed under either of
+#
+# * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+#   http://www.apache.org/licenses/LICENSE-2.0)
+# * MIT license ([LICENSE-MIT](LICENSE-MIT) or
+#   http://opensource.org/licenses/MIT)
+#
+# at your option.
+#
+# Unless you explicitly state otherwise, any contribution intentionally submitted
+# for inclusion in the work by you, as defined in the Apache-2.0 license, shall
+# be dual licensed as above, without any additional terms or conditions.
+"""Pkg types."""
+
 from .constants import *
 from . import utils
+from . import digest
 
 
-class PkgName(TupleObject):
+class PkgName(utils.TupleObject):
     def __init__(self, namespace, name):
         self.namespace = namespace
         self.name = name
@@ -17,7 +36,7 @@ class PkgName(TupleObject):
         return (self.namespace, self.name)
 
 
-class PkgReq(TupleObject):
+class PkgReq(utils.TupleObject):
     def __init__(self, namespace, name, semver):
         self.namespace = namespace
         self.name = name
@@ -43,36 +62,44 @@ class PkgReq(TupleObject):
         return (self.namespace, self.name, self.semver)
 
 
-class PkgVer(TupleObject):
-    def __init__(self, namespace, name, version, diget):
+class PkgVer(utils.TupleObject):
+    def __init__(self, namespace, name, version, digest):
         self.namespace = namespace
         self.name = name
         self.version = version
         self.digest = digest
 
     @classmethod
-    def from_str(cls, s):
-        spl = s.split(WAKE_SEP)
-        if len(spl) > 4:
+    def deserialize(cls, string):
+        split = string.split(WAKE_SEP)
+        if len(split) > 4:
             raise ValueError("Must have 4 components split by {}: {}".format(
-                WAKE_SEP, s))
+                WAKE_SEP, string))
 
-        namespace, name, version, digest = spl
+        namespace, name, version, digest_str = split
         return cls(
             namespace=namespace,
             name=name,
             version=version,
-            digest=digest,
+            digest=digest.Digest.deserialize(digest_str),
         )
 
+    def serialize(self):
+        return WAKE_SEP.join((
+            self.namespace,
+            self.name,
+            self.version,
+            self.digest.serialize(),
+        ))
+
     def __str__(self):
-        return WAKE_SEP.join(self._tuple())
+        return self.serialize()
 
     def __repr__(self):
         return "ver:{}".format(self)
 
     def _tuple(self):
-        return (self.namespace, self.name, self.version, digest)
+        return (self.namespace, self.name, self.version, self.digest)
 
 
 class PkgDigest(utils.SafeObject):
@@ -80,23 +107,37 @@ class PkgDigest(utils.SafeObject):
 
     These items must completely define the package for transport and use.
     """
-    def __init__(self, pkgFile, pkgVer, pkgOrigin, paths, deps):
-        if pkgFile not in paths:
-            paths.add(pkgFile)
+    def __init__(self, pkg_file, pkgVer, pkgOrigin, paths, deps):
+        if pkg_file not in paths:
+            paths.add('./' + DEFAULT_PKG_LIBSONNET)
 
-        self.pkgFile = pkgFile
+        self.pkg_file = pkg_file
         self.pkgVer = pkgVer
         self.pkgOrigin = pkgOrigin
         self.paths = paths
         self.deps = deps
 
-
     @classmethod
-    def from_dict(cls, dct, pkgFile):
+    def deserialize(cls, dct, pkg_file):
+        pkg_ver_str = utils.ensure_str('pkgVer', dct['pkgVer'])
         return cls(
-            pkgFile=pkgFile,
-            pkgVer=utils.ensure_str('pkgVer', dct['pkgVer']),
+            pkg_file=pkg_file,
+            pkgVer=PkgVer.deserialize(pkg_ver_str),
             pkgOrigin=dct.get('pkgOrigin'),
             paths=set(utils.ensure_valid_paths(dct['paths'])),
             deps=dct['deps'],
         )
+
+    def serialize(self):
+        pdir, pfile = os.path.split(self.pkg_file)
+        relpaths = sorted(self.paths)
+        return {
+            "pkg_file": pfile,
+            "pkgVer": self.pkgVer.serialize(),
+            "pkgOrigin": self.pkgOrigin,
+            "paths": relpaths,
+            "deps": self.deps,
+        }
+
+    def __repr__(self):
+        return 'PkgDigest{}'.format(self.serialize())

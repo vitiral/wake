@@ -1,16 +1,19 @@
-#   Copyright 2019 Rett Berg (googberg@gmail.com)
+# ⏾🌊🛠 wake software's true potential
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
+# Copyright (C) 2019 Rett Berg <github.com/vitiral>
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+# The source code is Licensed under either of
 #
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+# * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+#   http://www.apache.org/licenses/LICENSE-2.0)
+# * MIT license ([LICENSE-MIT](LICENSE-MIT) or
+#   http://opensource.org/licenses/MIT)
+#
+# at your option.
+#
+# Unless you explicitly state otherwise, any contribution intentionally submitted
+# for inclusion in the work by you, as defined in the Apache-2.0 license, shall
+# be dual licensed as above, without any additional terms or conditions.
 
 local C = import "wakeConstants.json";
 
@@ -55,14 +58,14 @@ C + { local wake = self
         ]),
     }.result
 
-    # An exact version of a pkgName, including the hash.
-    , pkgVer(namespace, name, version, fingerprint):
-        assert std.isString(hash) : "fingerprint must be a string";
+    # An exact version of a pkgName, including the digest.
+    , pkgVer(namespace, name, version, digest):
+        assert std.isString(digest) : "digest must be a string";
         # Note: the version must be an exact semver, but is checked later.
         std.join(C.WAKE_SEP, [
             wake.pkgName(namespace, name),
             version,
-            fingerprint,
+            digest,
         ])
 
     # Request to retrieve a pkg locally
@@ -77,86 +80,52 @@ C + { local wake = self
         pkgOrigin=null,
 
         # Local paths (files or dirs) this pkg depends on for building.
-        #
-        # These are included when the full pkg is retrieved or setup in
-        # a sandbox.
-        #
-        # Type: list[string]
         paths=null,
 
         # packages that this pkg depends on.
-        #
-        # Type: wake.deps object
         deps=null,
 
-        # Exports of this pkg.
-        #
-        # > Called once the pkg has been fully defined (all dependencies resolved, etc).
-        #
-        # Type: function(wake, pkgDefined) -> Object
+        # Function which returns the exports of this pkg.
         exports=null,
-
-        # TODO: move origin from module to here.
     ): {
         [C.F_TYPE]: C.T_PKG,
         [C.F_STATE]: C.S_DECLARED,
-        fingerprint: fingerprint,
-        namespace: U.stringDefault(namespace),
-        name: name,
-        version: version,
-        description: description,
-        pkgVer: wake.pkgVer(namespace, name, version, fingerprint.hash),
+        pkgVer: pkgVer,
+        pkgOrigin: pkgOrigin,
         paths: U.arrayDefault(paths),
-        pathsDef: U.arrayDefault(pathsDef),
-        pkgs: U.objDefault(pkgs),
+        deps: U.objDefault(deps),
 
         # lazy functions
         exports: exports,
     }
 
-    # (#SPC-api.declareModule): declare how to build something.
-    #
-    # Modules are included in `pkg.exports`, as they are always tied to a pkg.
-    # It is allowed for a pkg to export another pkg's modules (meta modules).
-    #
-    # Note that when `exec` is running it is within its `container` and has read
-    # access to all files and inputs the local `pkg` the module is defined in, as
-    # well as any pkgs and modules it is dependent on.
+    # Declare dependencies for a package.
+    , deps(
+        unrestricted=null,
+        restricted=null,
+        restrictedMajor=null,
+        restrictedMinor=null,
+        global=null,
+    ): {
+        [C.F_TYPE]: C.T_DEPS,
+        unrestricted: unrestricted,
+        restricted: restricted,
+        restrictedMajor: restrictedMajor,
+        restrictedMinor: restrictedMinor,
+        global: global,
+    }
+
+    # Declare how to build a module.
     , declareModule(
-        # The pkg this module is defined in.
         pkg,
-
-        # Module objects this module depends on.
         modules,
-
-        # (lazy) Additional required `fsentry`s (files or dirs)
-        #
-        # Type: `function(wake, pkg, moduleDef) -> list[fsentry]`
         reqFsEntries=null,
-
-        # function which behaves identically to `pkg.exports`.
-        #
-        # Contains a key/value map of the objects exported by this module.
-        # Must not contain any unresolved objects (unresolved objects will
-        # never be resolved).
         exports=null,
-
-        # (lazy) The `exec` object used for building this module.
-        #
-        # Type `function(wake, module) -> wake.exec(...)`
         exec=null,
-
-        # The origin of the module, such as author, license, etc
         origin=null,
     ): null # TODO
 
-    # (#SPC-api.pathRef): Reference a path from within a pkg or module.
-    #
-    # This is used by `exec` to declare exactly which file to execute,
-    # but it is also the standard way to "export" files for other packages and
-    # modules to use.
-    #
-    # Returns: pathRefPkg or pathRefModule
+    # Reference a path from within a pkg or module.
     , pathRef(
         # A pkg or module to reference.
         ref,
@@ -164,7 +133,7 @@ C + { local wake = self
         # The local path within the ref
         path,
     ): {
-        assert U.isAtLeastDefined(ref) : "ref must be at least defined",
+        assert U.isAtLeastDefined(ref) : "ref must be defined",
 
         local vals = if U.isPkg(ref) then
             {type: C.T_PATH_REF_PKG, id: ref['pkgVer']}
@@ -178,29 +147,7 @@ C + { local wake = self
         path: path,
     }
 
-    # (#SPC-api.exec): specify an executable from within a pkg and container.
-    #
-    # All values given to `exec` must be immediately manifestable.
-    #
-    # ## How an `exec` operates.
-    #
-    # A temporary directory is instantiated by the **store** and set as the current
-    # directory. This directory contains ONLY a `.wake/` directory
-    # containing the following files:
-    #
-    # - `store`: an executable which follows @SPC-store, allowing the
-    #   executable to retrieve links to paths of pkgVers.
-    # - `exec.json`: the `exec` object directly manifested. Contains the
-    #   configuration, etc.
-    # - `wakeConstants.json`: the standard wakeConstants.json file, can be used to
-    #   help construct APIs and read wake types.
-    #
-    # If the `container=wake.EXEC_LOCAL` then the `pathRef` is executed directly,
-    # with the given env and args.
-    #
-    # Otherwise, the `container.pathRef` is executed with the additional env
-    # var `__WAKE_CONTAINER=y`. It is then the job of the container exec to
-    # set up the execution environment and run the exec.
+    # Specify an executable from within a pkg and container.
     , exec(
         # is not necessarily the exec's
         # is determined by the container.
@@ -212,15 +159,7 @@ C + { local wake = self
         container,
 
         # List of strings to pass as arguments to the executable.
-        #null,
-
-        # be an object of strings
-        # for the keys and values.
-        #
-        # Consider using `config` instead.
-        #
-        # Anything beginning with `__WAKE` is reserved for use by wake.
-        env=null,
+        params=null,
     ): {
         [C.F_TYPE]: C.T_EXEC,
         [C.F_STATE]: C.S_DEFINED,
@@ -231,9 +170,13 @@ C + { local wake = self
 
         pathRef: pathRef,
         container: container,
-        config: config,
-        args: U.arrayDefault(args),
-        env: U.objDefault(env),
+        params: U.defaultObj(params),
+    }
+
+    # An error object. Will cause build to fail.
+    , err(msg) {
+        [C.F_TYPE]: C.T_ERROR,
+        msg: msg,
     }
 
     , _private: {
@@ -244,30 +187,9 @@ C + { local wake = self
             'pkgReq': null,
         }
 
-        , unresolvedPkg(pkgReq, from, usingPkg):  {
-            [C.F_TYPE]: C.T_PKG,
-            [C.F_STATE]: C.S_UNRESOLVED,
-            exec: null,
-
-            pkgReq: pkgReq,
-            usingPkg: usingPkg,
-            from: if usingPkg == null then
-                assert std.isString(from) : "from must be a local path if usingPkg=null";
-                from
-            else
-                assert std.isString(usingPkg) : "usingPkg must be a string representing the pkg key";
-                if std.isString(from) then
-                    [from]
-                else
-                    assert std.isArray(from) :
-                        "from must be either a string or array[string] if usingPkg is specified";
-                    from
-        }
-
         # Used to lazily define the exports of the pkg and sub-pkgs.
         , recurseDefinePkg(wake, pkg): {
             local this = self,
-            local _ = std.trace("recurseDefinePkg in " + pkg.pkgVer, null),
             local recurseMaybe = function(depPkg)
                 if U.isUnresolved(depPkg) then
                     depPkg
@@ -335,16 +257,6 @@ C + { local wake = self
             );
             definedCount == std.length(oldPkg.pkgs)
 
-        , recurseSimplify(pkg):
-            if U.isUnresolved(pkg) then
-                [pkg]
-            else
-                local simpleDeps = [
-                    P.recurseSimplify(pkg.pkgs[dep])
-                    for dep in std.objectFields(pkg.pkgs)
-                ];
-                [P.simplify(pkg)] + std.flattenArrays(simpleDeps)
-
         , simplify(pkg): {
             [C.F_TYPE]: pkg[C.F_TYPE],
             [C.F_STATE]: pkg[C.F_STATE],
@@ -367,6 +279,17 @@ C + { local wake = self
             exports: pkg.exports,
         }
 
+        , recurseSimplify(pkg):
+            if U.isUnresolved(pkg) then
+                [pkg]
+            else
+                local simpleDeps = [
+                    P.recurseSimplify(pkg.pkgs[dep])
+                    for dep in std.objectFields(pkg.pkgs)
+                ];
+                [P.simplify(pkg)] + std.flattenArrays(simpleDeps)
+
+
         , hasSep(s): U.containsChr(C.WAKE_SEP, s)
 
         , getPkgName(str):
@@ -379,6 +302,9 @@ C + { local wake = self
         isWakeObject(obj):
             std.isObject(obj)
             && (C.F_TYPE in obj)
+
+        , isErr(obj):
+             U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_ERR
 
         , isPkg(obj):
              U.isWakeObject(obj) && obj[C.F_TYPE] == C.T_PKG

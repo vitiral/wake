@@ -1,0 +1,21 @@
+
+pkg_file: PKG.libsonnet
+pkgVer: "@simple@0.1.0@md5.0e86e5c6a0b61667eb1f4886eb3a0664"
+pkgOrigin: None
+paths: PKG.libsonnet
+deps:
+    __WAKETYPE__: deps
+    global: null
+    restricted: null
+    restrictedMajor: null
+    restrictedMinor: null
+    unrestricted:
+        pytest: pYpI@pytest@>=5.0.0
+
+paths:
+  - ./PKG.libsonnet
+  - ./README.txt
+  - ./script.py
+
+pkgOrigin: null
+pkgVer: '@file_paths@0.1.0@md5.698f6d8c37c42373686198b5d4359a48'

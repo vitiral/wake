@@ -17,7 +17,6 @@
 """
 Debug mode does things like delete folders before starting, etc
 """
-from .constants import *
 
 import sys
 import os
@@ -31,6 +30,8 @@ from collections import OrderedDict
 
 from pprint import pprint as pp
 from pdb import set_trace
+
+from . import constants
 
 path = os.path
 
@@ -147,18 +148,15 @@ def manifest_jsonnet(run_path):
 
 def format_run_digest(pkg_file):
     """Returned the wake jsonnet run template with items filled out."""
-    templ = RUN_DIGEST_TEMPLATE
-    templ = templ.replace("WAKE_LIB", PATH_WAKELIB)
-    return templ.replace("PKG_ROOT", pkg_root)
+    templ = constants.RUN_DIGEST_TEMPLATE.replace("WAKE_LIB",
+                                                  constants.PATH_WAKELIB)
+    return templ.replace("PKG_FILE", pkg_file)
 
 
 def fail(msg):
     msg = "FAIL: {}\n".format(msg)
-    if is_debug():
-        raise RuntimeError(msg)
-    else:
-        sys.stderr.write(msg)
-        sys.exit(1)
+    sys.stderr.write(msg)
+    sys.exit(1)
 
 
 def dumpf(path, s):
@@ -184,7 +182,7 @@ def copy_fsentry(src, dst):
 
 def ensure_valid_paths(paths):
     for p in paths:
-        assert_valid_path(p)
+        ensure_valid_path(p)
 
     return paths
 
@@ -210,25 +208,25 @@ def assert_not_wake(p):
 
 
 def is_pkg(dct):
-    return dct[F_TYPE] == T_PKG
+    return dct[constants.F_TYPE] == constants.T_PKG
 
 
 def is_path_pkg_ref(dct):
-    return dct[F_TYPE] == T_PATH_REF_PKG
+    return dct[constants.F_TYPE] == constants.T_PATH_REF_PKG
 
 
 def is_unresolved(dct):
-    return dct[F_STATE] == S_UNRESOLVED
+    return dct[constants.F_STATE] == constants.S_UNRESOLVED
+
+
+def relpaths(paths, start):
+    return [os.path.relpath(p, start=start) for p in paths]
+
+
+def joinpaths(start, paths):
+    return [os.path.join(start, p) for p in paths]
 
 
 def rmtree(d):
     if path.exists(d):
         shutil.rmtree(d)
-
-
-def pkg_key(pkg_ver):
-    """Convert a pkg_ver to the more general pkg_key."""
-
-
-def is_debug():
-    return gvars.MODE == gvars.DEBUG
