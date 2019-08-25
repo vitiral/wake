@@ -25,7 +25,7 @@ from .utils import *
 
 
 class HashStuff(object):
-    HASH_TYPES = {
+    DIGEST_TYPES = {
         'md5': hashlib.md5,
         'sha1': hashlib.sha1,
         'sha256': hashlib.sha256,
@@ -37,7 +37,7 @@ class HashStuff(object):
 
         self.base = base
         self.hash_type = hash_type
-        self.hash_func = self.HASH_TYPES[hash_type]
+        self.hash_func = self.DIGEST_TYPES[hash_type]
         if not self.hash_func:
             raise NotImplementedError('{} not implemented.'.format(hash_type))
         self.hashmap = {}
@@ -49,7 +49,7 @@ class HashStuff(object):
         if fingerprint is None:
             fail("{} fingerprint file must exist".format(
                 config.pkg_fingerprint))
-        return cls(config.base, hash_type=fingerprint[F_HASHTYPE])
+        return cls(config.base, hash_type=fingerprint[F_DIGESTTYPE])
 
     def update_paths(self, paths):
         for p in paths:

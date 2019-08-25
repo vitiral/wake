@@ -28,7 +28,7 @@ lint:
 
 test2:
 	# Testing python2
-	PYTHONHASHSEED=42 py2/bin/py.test -vvv
+	PYTHONHASHSEED=42=42 py2/bin/py.test -vvv
 
 test3:
 	# Testing python3

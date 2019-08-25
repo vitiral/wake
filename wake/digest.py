@@ -28,7 +28,7 @@ def loadPkgDigest(root_file):
 
 
 class Digest(object):
-    HASH_TYPES = {
+    DIGEST_TYPES = {
         'md5': hashlib.md5,
         'sha1': hashlib.sha1,
         'sha256': hashlib.sha256,
@@ -40,7 +40,7 @@ class Digest(object):
 
         self.base = base
         self.hash_type = hash_type
-        self.hash_func = self.HASH_TYPES[hash_type]
+        self.hash_func = self.DIGEST_TYPES[hash_type]
         if not self.hash_func:
             raise NotImplementedError('{} not implemented.'.format(hash_type))
         self.hashmap = {}
@@ -51,7 +51,7 @@ class Digest(object):
         digest = config.get_current_digest()
         if digest is None:
             fail("{} digest file must exist".format(config.pkg_digest))
-        return cls(config.base, hash_type=digest[F_HASHTYPE])
+        return cls(config.base, hash_type=digest[F_DIGESTTYPE])
 
     def update_paths(self, paths):
         for p in paths:

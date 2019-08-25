@@ -3,8 +3,8 @@
 
     "F_TYPE": "__WAKETYPE__",
     "F_STATE": "__WAKESTATE__",
-    "F_HASH": "hashType",
-    "F_HASHTYPE": "hashType",
+    "F_DIGEST": "hashType",
+    "F_DIGESTTYPE": "hashType",
 
     "T_OBJECT": "object",
     "T_PKG": "pkg",

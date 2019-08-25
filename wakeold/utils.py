@@ -126,8 +126,8 @@ WAKE_SEP = wakeConstants["WAKE_SEP"]
 
 F_TYPE = wakeConstants["F_TYPE"]
 F_STATE = wakeConstants["F_STATE"]
-F_HASH = wakeConstants["F_HASH"]
-F_HASHTYPE = wakeConstants["F_HASHTYPE"]
+F_DIGEST = wakeConstants["F_DIGEST"]
+F_DIGESTTYPE = wakeConstants["F_DIGESTTYPE"]
 
 T_OBJECT = wakeConstants["T_OBJECT"]
 T_PKG = wakeConstants["T_PKG"]
