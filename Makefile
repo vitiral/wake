@@ -12,12 +12,13 @@ ship: check
 init:
 	# python2
 	virtualenv --python=python2 py2
-	py2/bin/pip install pytest
+	py2/bin/pip install pytest pyyaml
 	py2/bin/pip install -r requirements.txt
 	# python3
 	virtualenv --python=python3 py3
-	py3/bin/pip install pytest yapf pylint twine
-	py2/bin/pip install -r requirements.txt
+	py3/bin/pip install pytest pyyaml
+	py3/bin/pip yapf pylint twine
+	py3/bin/pip install -r requirements.txt
 
 fix:
 	py3/bin/yapf --in-place -r wake/ tests

@@ -217,6 +217,9 @@ def is_path_pkg_ref(dct):
 def is_unresolved(dct):
     return dct[constants.F_STATE] == constants.S_UNRESOLVED
 
+def relpaths(paths, start):
+    return [os.path.relpath(p, start=start) for p in paths]
+
 
 def rmtree(d):
     if path.exists(d):

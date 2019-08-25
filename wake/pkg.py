@@ -100,7 +100,7 @@ class PkgDigest(utils.SafeObject):
         self.deps = deps
 
     @classmethod
-    def from_dict(cls, dct, pkg_file):
+    def deserialize(cls, dct, pkg_file):
         pkg_ver_str = utils.ensure_str('pkgVer', dct['pkgVer'])
         return cls(
             pkg_file=pkg_file,
@@ -109,3 +109,17 @@ class PkgDigest(utils.SafeObject):
             paths=set(utils.ensure_valid_paths(dct['paths'])),
             deps=dct['deps'],
         )
+
+    def serialize(self):
+        pdir, pfile = os.path.split(self.pkg_file)
+        relpaths = utils.relpaths(self.paths, pdir)
+        return {
+            "pkg_file": pfile,
+            "pkgVer": self.pkgVer,
+            "pkgOrigin": self.pkgOrigin,
+            "paths": relpaths,
+            "deps": self.deps,
+        }
+
+    def __repr__(self):
+        return 'PkgDigest{}'.format(self.serialize())

@@ -2,6 +2,8 @@ import unittest
 import wake
 import os
 
+import yaml
+
 from wake.constants import *
 
 DIR_TEST = os.path.dirname(os.path.abspath(__file__))
@@ -22,4 +24,11 @@ class TestJsonnetOnly(unittest.TestCase):
         assert False, "not done"
 
     def test_simple(self):
-        self.run_test('simple')
+        expected = {
+            'pkg_file': 'PKG.libsonnet',
+            'pkgVer': 'ver:@simple@0.1.0@md5.0e86e5c6a0b61667eb1f4886eb3a0664',
+            'pkgOrigin': None,
+            'paths': ['PKG.libsonnet'],
+            'deps': {},
+        }
+        self.run_test('simple', expected)

@@ -50,7 +50,7 @@ def loadPkgDigest(state, pkg_file):
         utils.dumpf(run_digest_path, run_digest_text)
 
         # Get a pkgDigest with the wrong digest value
-        pkgDigest = pkg.PkgDigest.from_dict(
+        pkgDigest = pkg.PkgDigest.deserialize(
             utils.manifest_jsonnet(run_digest_path),
             pkg_file=pkg_file,
         )
@@ -59,7 +59,7 @@ def loadPkgDigest(state, pkg_file):
         digest = calc_digest(pkgDigest)
         utils.jsondumpf(digest_path, digest.serialize())
 
-        pkgDigest = pkg.PkgDigest.from_dict(
+        pkgDigest = pkg.PkgDigest.deserialize(
             utils.manifest_jsonnet(run_digest_path),
             pkg_file=pkg_file,
         )
