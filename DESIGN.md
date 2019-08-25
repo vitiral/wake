@@ -58,11 +58,11 @@ unspecified blob of data. This is used soley within the Package Manager for
 specifying how packages are retrieved.
 
 **pkgOrigin**: a package origin.
-- `pkgVer`: exact name and version of package
 - `author`: the author of the package.
 - `license`: the license string of the package.
 - `website`: website of the package.
 - `issues`: link where to report bugs for the package.
+- any other key/value list of items
 
 **deps**: the (nonlocal) depenendenices of a package. Has multiple fields. Each
 is a key/value map where the key is a pkg-specific mapping.
