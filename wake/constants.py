@@ -1,10 +1,16 @@
-DIR_WAKELIB = path.dirname(abspath(__file__))
-DEFAULT_PKG_LIBSONNET = "PKG.libsonnet"
+import os
+from . import utils
 
-wakelib = pjoin(HERE_DIR, "wake.libsonnet")
+DIR_WAKELIB = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_PKG_LIBSONNET = "PKG.libsonnet"
+DEFAULT_DIGEST_JSON = ".digest.json"
+
+wakelib = utils.pjoin(DIR_WAKELIB, "wake.libsonnet")
 FILE_CONSTANTS = "wakeConstants.json"
-wakeConstantsPath = pjoin(HERE_DIR, FILE_CONSTANTS)
-wakeConstants = jsonloadf(wakeConstantsPath)
+FILE_RUN = "wakeRun.jsonnet"
+wakeConstantsPath = os.path.join(DIR_WAKELIB, FILE_CONSTANTS)
+wakeConstants = utils.jsonloadf(wakeConstantsPath)
+_RUN_TEMPLATE = utils.loadf(os.path.join(DIR_WAKELIB, FILE_RUN))
 
 WAKE_SEP = wakeConstants["WAKE_SEP"]
 
@@ -32,7 +38,7 @@ FILE_PKG = wakeConstants["FILE_PKG"]  # #SPC-arch.pkgFile
 
 # See #SPC-arch.wakeDir
 DIR_WAKE = wakeConstants["DIR_WAKE"]
-DIR_WAKE_REL = path.join(".", DIR_WAKE)
+DIR_WAKE_REL = os.path.join(".", DIR_WAKE)
 DIR_LOCAL_STORE = wakeConstants["DIR_LOCAL_STORE"]
 DIR_RETRIEVED = wakeConstants["DIR_RETRIEVED"]
 
@@ -46,35 +52,10 @@ FILE_LOCAL_DEPENDENCIES = wakeConstants["FILE_LOCAL_DEPENDENCIES"]
 
 ## FILE WRITERS
 
-_RUN_TEMPLATE = """
-local wakelib = import "{wakelib}";
-# local pkgsDefined = import "{pkgs_defined}";
-
-local wake =
-    wakelib
-    + {{
-        _private+: {{
-            # pkgsDefined: pkgsDefined,
-        }},
-    }};
-
-// instantiate and return the root pkg
-local pkg_fn = (import "{pkg_root}");
-local pkgInitial = pkg_fn(wake);
-
-local root = wake._private.recurseDefinePkg(wake, pkgInitial);
-
-{{
-    root: wake._private.simplify(root),
-    all: wake._private.recurseSimplify(root),
-}}
-"""
-
 
 def format_run_template(wake_libsonnet, pkg_root):
     """Returned the wake jsonnet run template with items filled out."""
-    return RUN_TEMPLATE.format(
-        wakelib=wake_libsonnet,
-        pkg_root=pkg_root,
-        pkgs_defined="TODO",
-    )
+    templ = _RUN_TEMPLATE
+    templ = templ.replace("WAKE_LIB", wake_libsonnet)
+    templ = templ.replace("PKG_ROOT", pkg_root)
+    return templ.replace("PKGS_DEFINED", "TODO")

@@ -104,6 +104,11 @@ def abspath(p):
     return path.abspath(path.expanduser(p))
 
 
+def loadf(path):
+    with open(path) as fp:
+        return fp.read()
+
+
 def jsonloadf(path):
     with open(path) as fp:
         return json.load(fp)

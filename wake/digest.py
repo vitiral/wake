@@ -20,11 +20,18 @@
 # The MIT License (MIT)
 # Copyright (c) 2015 cakepietoast
 # https://pypi.org/project/checksumdir/#files
+import os
+import hashlib
 
-from .utils import *
+from .constants import *
+from . import utils
+
 
 def loadPkgDigest(root_file):
-    pass
+    root_dir = os.path.dirname(root_file)
+    # dump fake `.digest.json`
+    jsondumpf(os.path.join(root_dir, DEFAULT_DIGEST_JSON), {})
+    manifest = utils.manifest_jsonnet(root_file)
 
 
 class Digest(object):
@@ -46,14 +53,8 @@ class Digest(object):
         self.hashmap = {}
         self.visited = set()
 
-    @classmethod
-    def from_config(cls, config):
-        digest = config.get_current_digest()
-        if digest is None:
-            fail("{} digest file must exist".format(config.pkg_digest))
-        return cls(config.base, hash_type=digest[F_DIGESTTYPE])
-
     def update_paths(self, paths):
+        paths = sorted(paths)
         for p in paths:
             if path.isdir(p):
                 self.update_dir(p)
@@ -70,22 +71,23 @@ class Digest(object):
         if not os.path.isdir(dirpath):
             raise TypeError('{} is not a directory.'.format(dirpath))
 
-        for root, dirs, files in os.walk(dirpath,
-                                         topdown=True,
-                                         followlinks=True):
+        walking = os.walk(dirpath, topdown=True, followlinks=True)
+        for root, _walking, files in walking:
             for f in files:
                 fpath = pjoin(root, f)
                 if fpath in visited:
                     raise RuntimeError(
                         "Error: infinite directory recursion detected at {}".
                         format(fpath))
-                visited.add(fpath)
                 self.update_file(fpath)
 
         return hashmap
 
     def update_file(self, fpath):
         assert path.isabs(fpath)
+        if fpath in self.visted:
+            return
+        self.visited.add(fpath)
         hasher = self.hash_func()
         blocksize = 64 * 1024
         with open(fpath, 'rb') as fp:
