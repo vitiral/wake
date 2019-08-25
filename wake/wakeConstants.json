@@ -7,6 +7,7 @@
     "F_DIGESTTYPE": "hashType",
 
     "T_OBJECT": "object",
+    "T_ERR": "err",
     "T_PKG": "pkg",
     "T_DEPS": "deps",
     "T_GET_EXPORT": "getExport",
@@ -15,7 +16,6 @@
     "T_PATH_REF_MODULE": "pathRefModule",
     "T_EXEC": "exec",
 
-    "S_UNRESOLVED": "unresolved",
     "S_DECLARED": "declared",
     "S_DEFINED": "defined",
     "S_COMPLETED": "completed",
