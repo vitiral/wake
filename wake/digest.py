@@ -14,12 +14,15 @@
 # Unless you explicitly state otherwise, any contribution intentionally submitted
 # for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 # be dual licensed as above, without any additional terms or conditions.
-
-# Heavily modified from checksumdir v1.1.5
+####################################
+# Based on a heavily modified snapshot of checksumdir v1.1.5
 #
 # The MIT License (MIT)
 # Copyright (c) 2015 cakepietoast
 # https://pypi.org/project/checksumdir/#files
+
+"""Calaculate the hash digest of a package or module."""
+
 import os
 import hashlib
 
@@ -34,53 +37,15 @@ DIGEST_TYPES = {
     'sha512': hashlib.sha512
 }
 
-
-def loadPkgDigest(state, pkg_file):
-    pkg_dir = os.path.dirname(pkg_file)
-    digest_path = os.path.join(pkg_dir, DEFAULT_FILE_DIGEST)
-    run_digest_text = utils.format_run_digest(pkg_file)
-
-    state_dir = state.create_temp_dir()
-    try:
-        # Dump fake `.digest.json`
-        utils.jsondumpf(digest_path, Digest.SEP.join(["md5", "fake"]))
-
-        # Put the jsonnet run file in place
-        run_digest_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
-        utils.dumpf(run_digest_path, run_digest_text)
-
-        # Get a pkgDigest with the wrong digest value
-        pkgDigest = pkg.PkgDigest.deserialize(
-            utils.manifest_jsonnet(run_digest_path),
-            pkg_file=pkg_file,
-        )
-
-        # Dump real `.digest.json`
-        digest = calc_digest(pkgDigest)
-        utils.jsondumpf(digest_path, digest.serialize())
-
-        pkgDigest = pkg.PkgDigest.deserialize(
-            utils.manifest_jsonnet(run_digest_path),
-            pkg_file=pkg_file,
-        )
-
-        assert pkgDigest.pkgVer.digest == digest
-        return pkgDigest
-    finally:
-        if os.path.exists(digest_path):
-            os.remove(digest_path)
-        state_dir.cleanup()
-
-
 def calc_digest(pkgDigest):
-    """Calculate the actual hash from a pkgDigest object."""
+    """Calculate the actual hash from a loaded pkgDigest object."""
     builder = DigestBuilder(pkg_dir=os.path.dirname(pkgDigest.pkg_file))
     builder.update_paths(utils.joinpaths(builder.pkg_dir, pkgDigest.paths))
     return builder.build()
 
 
 class Digest(utils.TupleObject):
-    """The data representation of a digest."""
+    """Serializable digest."""
     SEP = '.'
 
     def __init__(self, digest, digest_type):
@@ -88,12 +53,6 @@ class Digest(utils.TupleObject):
         if digest_type not in DIGEST_TYPES:
             raise ValueError("digest_type must be one of: {}".format(list(DIGEST_TYPES.keys())))
         self.digest_type = digest_type
-
-    def _tuple(self):
-        return (self.digest_type, self.digest)
-
-    def __repr__(self):
-        return self.SEP.join(self.digest_type, self.digest)
 
     @classmethod
     def deserialize(cls, string):
@@ -103,8 +62,21 @@ class Digest(utils.TupleObject):
             digest_type=digest_type,
         )
 
+    @classmethod
+    def fake(cls):
+        return cls(
+            digest='THIS-IS-FAKE',
+            digest_type='md5',
+        )
+
     def serialize(self):
         return self.SEP.join(self._tuple())
+
+    def _tuple(self):
+        return (self.digest_type, self.digest)
+
+    def __repr__(self):
+        return self.SEP.join(self.digest_type, self.digest)
 
     def __repr__(self):
         return self.serialize()
@@ -112,6 +84,7 @@ class Digest(utils.TupleObject):
 
 
 class DigestBuilder(utils.SafeObject):
+    """Build a digest from input files and directories."""
     def __init__(self, pkg_dir, digest_type='md5'):
         assert os.path.isabs(pkg_dir)
         if digest_type not in DIGEST_TYPES:

@@ -1,9 +1,8 @@
 import unittest
-import wake
 import os
 
 import yaml
-
+import wake
 from wake.constants import *
 
 DIR_TEST = os.path.dirname(os.path.abspath(__file__))
@@ -24,7 +23,7 @@ class TestJsonnetOnly(unittest.TestCase):
     def run_test(self, name):
         directory = os.path.join(DIR_JSONLY, name)
         pkgFile = os.path.join(directory, DEFAULT_PKG_LIBSONNET)
-        result = wake.digest.loadPkgDigest(self.state, pkgFile)
+        result = wake.load.loadPkgDigest(self.state, pkgFile)
         expected = load_yaml(os.path.join(directory, "expected.yml"))
         assert expected == result.serialize(), '[[ In ' + name + ' ]]'
 
