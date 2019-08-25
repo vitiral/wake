@@ -189,30 +189,30 @@ C + { local wake = self
     , _private: {
         local P = self
 
-        # , recurseCallExports(wake, pkg): {
-        #     local this = self,
+        , recurseCallExports(wake, pkg): {
+            local this = self,
 
-        #     [C.F_TYPE]: pkg[C.F_TYPE],
-        #     [C.F_STATE]: C.S_DEFINED,
-        #     pkgVer: self.pkgVer,
-        #     pkgDigest: wake.pkgDigest(this),
+            [C.F_TYPE]: pkg[C.F_TYPE],
+            [C.F_STATE]: C.S_DEFINED,
+            pkgVer: self.pkgVer,
+            pkgDigest: wake.pkgDigest(this),
 
-        #     local getIdOrErr = function(dep)
-        #         if U.isUnresolved(dep) then
-        #             dep
-        #         else
-        #             dep.pkgVer,
+            local callExports = function(dep)
+                if U.isUnresolved(dep) then
+                    dep
+                else
+                    dep.pkgVer,
 
-        #     local deps = {
-        #         [dep]: getIdOrUnresolved(pkg.pkgs[dep])
-        #         for dep in std.objectFields(pkg.pkgs)
+            local deps = {
+                [dep]: getIdOrUnresolved(pkg.pkgs[dep])
+                for dep in std.objectFields(pkg.pkgs)
 
-        #     },
+            },
 
-        #     returnPkg = pkg + {
+            returnPkg = pkg + {
 
-        #     },
-        # }.returnPkg
+            },
+        }.returnPkg
 
         , simplify(pkg): {
             [C.F_TYPE]: pkg[C.F_TYPE],
