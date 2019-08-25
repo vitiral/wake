@@ -81,8 +81,22 @@ class PkgDigest(utils.SafeObject):
     These items must completely define the package for transport and use.
     """
     def __init__(self, pkgFile, pkgVer, pkgOrigin, paths, deps):
+        if pkgFile not in paths:
+            paths.add(pkgFile)
+
         self.pkgFile = pkgFile
         self.pkgVer = pkgVer
         self.pkgOrigin = pkgOrigin
         self.paths = paths
         self.deps = deps
+
+
+    @classmethod
+    def from_dict(cls, dct, pkgFile):
+        return cls(
+            pkgFile=pkgFile,
+            pkgVer=utils.ensure_str('pkgVer', dct['pkgVer']),
+            pkgOrigin=dct.get('pkgOrigin'),
+            paths=set(utils.ensure_valid_paths(dct['paths'])),
+            deps=dct['deps'],
+        )

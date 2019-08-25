@@ -25,17 +25,47 @@ import hashlib
 
 from .constants import *
 from . import utils
+from . import pkg
 
 
-def loadPkgDigest(root_file):
-    root_dir = os.path.dirname(root_file)
+def loadPkgDigest(state, pkgFile):
+    pkg_dir = os.path.dirname(pkgFile)
+    digest_path = os.path.join(root_dir, DEFAULT_DIGEST_JSON)
+    run_digest = format_run_digest(pkgFile)
 
-    # dump fake `.digest.json`
-    jsondumpf(os.path.join(root_dir, DEFAULT_DIGEST_JSON), {})
+    state_dir = state.create_temp_dir()
+    try:
+        # Dump fake `.digest.json`
+        jsondumpf(digest_path, {})
 
-    run_jsonnet = format_run_jsonnet(wake_libsonnet=
+        # Put the jsonnet run file in place
+        run_digest_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
+        dumpf(run_digest_path, run_digest)
 
-    manifest = utils.manifest_jsonnet(root_file)
+        # Get a pkgDigest with the wrong digest value
+        pkgDigest = pkg.PkgDigest.from_dict(
+            utils.manifest_jsonnet(run_digest_path),
+            pkgFile=pkgFile,
+        )
+
+        # Dump real `.digest.json`
+        jsondumpf(digest_path, calc_digest(pkgDigest))
+
+        return pkg.PkgDigest.from_dict(
+            utils.manifest_jsonnet(run_digest_path),
+            pkgFile=pkgFile,
+        )
+    finally:
+        if os.path.exists(digest_path):
+            os.remove(digest_path)
+        state_dir.cleanup()
+
+
+def calc_digest(pkgDigest):
+    """Calculate the actual hash from a pkgDigest object."""
+    digest = Digest(pkg_dir=os.path.dirname(pkgDigest.pkgFile))
+    digest.update_paths(pkgDigest.paths)
+    return digest.reduce()
 
 
 class Digest(object):
@@ -46,10 +76,10 @@ class Digest(object):
         'sha512': hashlib.sha512
     }
 
-    def __init__(self, base, hash_type='md5'):
-        assert path.isabs(base)
+    def __init__(self, pkg_dir, hash_type='md5'):
+        assert path.isabs(pkg_dir)
 
-        self.base = base
+        self.pkg_dir = pkg_dir
         self.hash_type = hash_type
         self.hash_func = self.DIGEST_TYPES[hash_type]
         if not self.hash_func:
@@ -100,7 +130,7 @@ class Digest(object):
                 if not data:
                     break
                 hasher.update(data)
-        pkey = path.relpath(fpath, self.base)
+        pkey = path.relpath(fpath, self.pkg_dir)
         self.hashmap[pkey] = hasher.hexdigest()
 
     def reduce(self):

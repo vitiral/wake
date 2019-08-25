@@ -25,7 +25,6 @@
     "DIR_WAKE": ".wake",
     "FILE_WAKELIB": "wake.libsonnet",
     "FILE_PKG_DEFAULT": "PKG.libsonnet",
-    "FILE_RUN": "wakeRun.jsonnet",
     "FILE_PKGS": "pkgs.libsonnet",
     "FILE_EXEC": "exec.json",
 

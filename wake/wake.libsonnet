@@ -69,25 +69,12 @@ C + { local wake = self
     , pkgLocal(requestingPkgVer, path):
         [requestingPkgVer, path]
 
-    # (#SPC-api.pkg): declare a pkg.
-    #
-    # Must be the only return of the function in PKG.libsonnet of the form
-    #
-    # ```
-    # function(wake)
-    #    wake.pkg(
-    #        fingerprint=import "./.wake/fingerprint.json",
-    #        name="mypkg",
-    #        version="1.0.0",
-    #        # ... etc
-    #    )
-    # ```
+    # Declare a pkg.
     , pkg(
         pkgVer,
 
-        # General description of the pkg, for humans to read.
-        # Type: string
-        description=null,
+        # Description and other metadata regarding the origin of the package.
+        pkgOrigin=null,
 
         # Local paths (files or dirs) this pkg depends on for building.
         #

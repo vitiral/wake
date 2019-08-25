@@ -109,6 +109,14 @@ def loadf(path):
         return fp.read()
 
 
+def dumpf(path, text):
+    with open(path, 'w') as fp:
+        out = fp.write(text)
+        fp.flush()
+        os.fsync(fp)
+        return out
+
+
 def jsonloadf(path):
     with open(path) as fp:
         return json.load(fp)
@@ -116,12 +124,15 @@ def jsonloadf(path):
 
 def jsondumpf(path, data, indent=4):
     with open(path, 'w') as fp:
-        return json.dump(data, fp, indent=indent, sort_keys=True)
+        out = json.dump(data, fp, indent=indent, sort_keys=True)
+        fp.flush()
+        os.fsync(fp)
+        return out
 
 
-def manifest_jsonnet(path):
-    """Manifest a jsonnet path."""
-    cmd = ["jsonnet", path]
+def manifest_jsonnet(run_path):
+    """Manifest a jsonnet run_path."""
+    cmd = ["jsonnet", run_path]
     completed = subprocess.run(
         cmd,
         stdout=subprocess.PIPE,
@@ -130,16 +141,15 @@ def manifest_jsonnet(path):
     )
     if completed.returncode != 0:
         fail("Manifesting jsonnet at {}\n## STDOUT:\n{}\n\n## STDERR:\n{}\n".
-             format(path, completed.stdout, completed.stderr))
+             format(run_path, completed.stdout, completed.stderr))
     return json.loads(completed.stdout)
 
 
-def format_run_jsonnet(wake_libsonnet, pkg_root):
+def format_run_digest(pkg_file):
     """Returned the wake jsonnet run template with items filled out."""
-    templ = _RUN_TEMPLATE
-    templ = templ.replace("WAKE_LIB", wake_libsonnet)
-    templ = templ.replace("PKG_ROOT", pkg_root)
-    return templ.replace("PKGS_DEFINED", "TODO")
+    templ = RUN_DIGEST_TEMPLATE
+    templ = templ.replace("WAKE_LIB", PATH_WAKELIB)
+    return templ.replace("PKG_ROOT", pkg_root)
 
 
 def fail(msg):
@@ -172,16 +182,25 @@ def copy_fsentry(src, dst):
         shutil.copytree(src, dst)
 
 
-def assert_valid_paths(paths):
+def ensure_valid_paths(paths):
     for p in paths:
         assert_valid_path(p)
 
+    return paths
 
-def assert_valid_path(p):
+
+def ensure_valid_path(p):
     if not p.startswith("./"):
         raise ValueError("all paths must start with ./: " + p)
     if sum(filter(lambda c: c == '..', p.split('/'))):
         raise ValueError("paths must not have `..` components: " + p)
+    return p
+
+
+def ensure_str(name, value, allow_none=False):
+    if value is None and not allow_none:
+        raise ValueError("{} not be null".format(name))
+    return value
 
 
 def assert_not_wake(p):
@@ -213,4 +232,3 @@ def pkg_key(pkg_ver):
 
 def is_debug():
     return gvars.MODE == gvars.DEBUG
-
