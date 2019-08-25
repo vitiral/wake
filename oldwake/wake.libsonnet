@@ -15,7 +15,7 @@
 # for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 # be dual licensed as above, without any additional terms or conditions.
 
-local C = (import "wakeConstants.json");
+local C = import "wakeConstants.json";
 
 C + { local wake = self
     , local U = wake.util
@@ -37,7 +37,17 @@ C + { local wake = self
         ])
 
     # Specifies what versions of a package are required using a semver.
-    , pkgReq(namespace, name, semver=null): {
+    , pkgReq(
+        # The namespace to find the pkg.
+        namespace,
+
+        # The name of the pkg.
+        name,
+
+        # The semver requirements of the pkgName
+        semver=null,
+
+    ): {
         local semverStr = U.stringDefault(semver),
 
         assert !_P.hasSep(semverStr): "semver must not contain '@'",
@@ -62,7 +72,7 @@ C + { local wake = self
     , pkgLocal(requestingPkgVer, path):
         [requestingPkgVer, path]
 
-    # Declare a pkg (in PKG.libsonnet)
+    # Declare a pkg.
     , pkg(
         pkgVer,
 
@@ -89,12 +99,6 @@ C + { local wake = self
         exports: exports,
     }
 
-    # Convert a pkg object into only it's digest elements.
-    , pkgDigest(pkg): {
-        [k]: pkg[k] for k in std.objectFields(pkg)
-        if k != "exports"
-    }
-
     # Declare dependencies for a package.
     , deps(
         unrestricted=null,
@@ -112,7 +116,7 @@ C + { local wake = self
     }
 
     # Declare how to build a module.
-    , module(
+    , declareModule(
         pkg,
         modules,
         reqFsEntries=null,
@@ -170,78 +174,94 @@ C + { local wake = self
     }
 
     # An error object. Will cause build to fail.
-    , err(msg): {
+    , err(msg) {
         [C.F_TYPE]: C.T_ERROR,
         msg: msg,
     }
 
-
     , _private: {
         local P = self
 
-        # Looks up all items in the dependency tree
-        , lookupDeps(requestingPkgVer, deps):
-            # Looks up the pkgReq based on who's asking.
-            local lookupPkg = function(requestingPkgVer, category, pkgReq)
-                local pkgKey = std.join(C.WAKE_SEP, [
-                    requestingPkgVer,
-                    pkgReq,
-                ]);
-                if pkgKey in P.pkgsDefined then
-                    # !! NOTE: wake._private.pkgsDefined is **injected** by
-                    # !! wake/runWakeExport.jsonnet
-                    P.pkgsDefined[pkgKey]
+        , F_IDS: {
+            'pkgVer': null,
+            'pkgReq': null,
+        }
+
+        # Used to lazily define the exports of the pkg and sub-pkgs.
+        , recurseDefinePkg(wake, pkg): {
+            local this = self,
+            local recurseMaybe = function(depPkg)
+                if U.isUnresolved(depPkg) then
+                    depPkg
                 else
-                    wake.err("%s requested %s (in %s) but it does not exist in the store" % [
-                        requestingPkgVer,
-                        pkgReq,
-                        category,
-                    ]);
+                    P.recurseDefinePkg(wake, depPkg),
 
-            # Lookup all packages in deps
-            local lookupPkgs = function(category, depPkgs) {
-                [k]: lookupPkg(requestingPkgVer, category, depPkgs[k])
-                for k in std.objectFields(depPkgs)
-            };
+            returnPkg: pkg + {
+                # Do a first pass on the pkgs.
+                local pkgsPass = {
+                    [dep]: recurseMaybe(pkg.pkgs[dep])
+                    for dep in std.objectFields(pkg.pkgs)
+                }
 
-            # Return the looked up dependencies
-            {
-                "unrestricted": lookupPkgs("unrestricted", deps.unrestricted),
-                "restricted": lookupPkgs("restricted", deps.restricted),
-                "restrictedMajor": lookupPkgs("restrictedMajor", deps.restrictedMajor),
-                "restrictedMinor": lookupPkgs("restrictedMinor", deps.restrictedMinor),
-                "global": lookupPkgs("global", deps.global),
+                , [C.F_STATE]: if P.hasBeenDefined(pkg, this.returnPkg) then
+                    C.S_DEFINED else pkg[C.F_STATE]
+
+                , local defineGetPkg = function(depPkg)
+                    if U.isUnresolved(depPkg) then
+                        if depPkg.usingPkg == null then
+                            depPkg
+                        else
+                            _P.handleGetPkgFromExec(this.returnPkg, depPkg)
+                    else
+                        depPkg
+
+                , pkgs: {
+                    [dep]: defineGetPkg(pkgsPass[dep])
+                    for dep in std.objectFields(pkgsPass)
+                }
+
+                , exports:
+                    if U.isDefined(this.returnPkg) then
+                        local out = pkg.exports(wake, this.returnPkg);
+                        assert std.isObject(out)
+                            : "%s exports did not return an object"
+                            % [this.returnPkg.pkgVer];
+                        out
+                    else
+                        null
             }
+        }.returnPkg
 
-        # , recurseCallExports(wake, pkg): {
-        #     local this = self,
+        , handleGetPkgFromExec(parentPkg, getPkg):
+            local pkgName = getPkg.usingPkg;
+            assert pkgName in parentPkg.pkgs :
+                parentPkg.pkgVer + " does not contain " + pkgName;
+            local execPkg = parentPkg.pkgs[pkgName];
 
-        #     [C.F_TYPE]: pkg[C.F_TYPE],
-        #     [C.F_STATE]: C.S_DEFINED,
-        #     pkgVer: self.pkgVer,
-        #     pkgDigest: wake.pkgDigest(this),
+            if U.isAtLeastDefined(execPkg) then
+                getPkg + {
+                    exec: U.getKeys(execPkg.exports, getPkg.from),
+                }
+            else
+                getPkg
 
-        #     local callExports = function(dep)
-        #         if U.isUnresolved(dep) then
-        #             dep
-        #         else
-        #             dep.pkgVer,
-
-        #     local deps = {
-        #         [dep]: getIdOrUnresolved(pkg.pkgs[dep])
-        #         for dep in std.objectFields(pkg.pkgs)
-
-        #     },
-
-        #     returnPkg = pkg + {
-
-        #     },
-        # }.returnPkg
+        # Return if the newPkg is defined.
+        , hasBeenDefined(oldPkg, newPkg):
+            local definedCount = std.foldl(
+                function(prev, v) prev + v,
+                [
+                    U.boolToInt(U.isDefined(newPkg.pkgs[dep]))
+                    for dep in std.objectFields(newPkg.pkgs)
+                ],
+                0,
+            );
+            definedCount == std.length(oldPkg.pkgs)
 
         , simplify(pkg): {
             [C.F_TYPE]: pkg[C.F_TYPE],
             [C.F_STATE]: pkg[C.F_STATE],
             pkgVer: pkg.pkgVer,
+            description: pkg.description,
 
             local getIdOrUnresolved = function(dep)
                 if U.isUnresolved(dep) then

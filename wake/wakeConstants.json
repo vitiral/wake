@@ -1,5 +1,5 @@
 {
-    "WAKE_SEP": "@",
+    "WAKE_SEP": "🌊",
 
     "F_TYPE": "__WAKETYPE__",
     "F_STATE": "__WAKESTATE__",
@@ -16,6 +16,7 @@
     "T_PATH_REF_MODULE": "pathRefModule",
     "T_EXEC": "exec",
 
+    "S_UNRESOLVED": "TODO-REMOVE-unresolved",
     "S_DECLARED": "declared",
     "S_DEFINED": "defined",
     "S_COMPLETED": "completed",

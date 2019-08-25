@@ -13,8 +13,8 @@ function(wake)
         pkgVer = pkgVer,
         paths = paths,
         deps = wake.deps(
-            unrestricted={
-                "pytest": wake.pkgReq("pYpI", "pytest", ">=5.0.0"),
+            global={
+                "libA": wake.pkgReq("fake", "libA", ">=5.2.0"),
             },
         ),
     )

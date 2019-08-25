@@ -33,3 +33,6 @@ class TestJsonnetOnly(unittest.TestCase):
 
     def test_file_paths(self):
         self.run_test('file_paths')
+
+    def test_dir_paths(self):
+        self.run_test('dir_paths')
