@@ -188,32 +188,35 @@ C + { local wake = self
 
     , _private: {
         local P = self
+
         # Looks up all items in the dependency tree
-        , lookupDeps(requestingPkgVer, deps): {
-            [k]: P._lookupPkgs(requestingPkgVer, k, deps[k])
-            for k in std.objectFields(deps)
-        }
-
-        , _lookupPkgs(requestingPkgVer, category, depPkgs): {
-            [k]: P._lookupPkg(requestingPkgVer, category, depPkgs[k])
-            for k in std.objectFields(depPkgs)
-        }
-
-
-        # Looks up the pkgReq based on who's asking.
-        , _lookupPkg(requestingPkgVer, category, pkgReq):
-            local pkgKey = std.join(C.WAKE_SEP, [
-                requestingPkgVer,
-                pkgReq,
-            ]);
-            if pkgKey in P.pkgsDefined then
-                P.pkgsDefined[pkgKey]
-            else
-                wake.err("%s requested %s (in %s) but it does not exist in the store" % [
+        , lookupDeps(requestingPkgVer, deps):
+            # Looks up the pkgReq based on who's asking.
+            local lookupPkg = function(requestingPkgVer, category, pkgReq)
+                local pkgKey = std.join(C.WAKE_SEP, [
                     requestingPkgVer,
                     pkgReq,
-                    category,
-                ])
+                ]);
+                if pkgKey in P.pkgsDefined then
+                    P.pkgsDefined[pkgKey]
+                else
+                    wake.err("%s requested %s (in %s) but it does not exist in the store" % [
+                        requestingPkgVer,
+                        pkgReq,
+                        category,
+                    ]);
+
+            # Lookup all packages in deps
+            local lookupPkgs = function(category, depPkgs) {
+                [k]: lookupPkg(requestingPkgVer, category, depPkgs[k])
+                for k in std.objectFields(depPkgs)
+            };
+
+            # Return the looked up pkgs
+            {
+                [k]: lookupPkgs(k, deps[k])
+                for k in std.objectFields(deps)
+            }
 
         # , recurseCallExports(wake, pkg): {
         #     local this = self,

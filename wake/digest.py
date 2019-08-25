@@ -118,7 +118,7 @@ class DigestBuilder(utils.SafeObject):
         walking = os.walk(dirpath, topdown=True, followlinks=True)
         for root, _walking, files in walking:
             for f in files:
-                fpath = pjoin(root, f)
+                fpath = os.path.join(root, f)
                 if fpath in visited:
                     raise RuntimeError(
                         "Error: infinite directory recursion detected at {}".

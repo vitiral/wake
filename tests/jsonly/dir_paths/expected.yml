@@ -1,6 +1,6 @@
 
 pkg_file: PKG.libsonnet
-pkgVer: '@file_paths@0.1.0@md5.698f6d8c37c42373686198b5d4359a48'
+pkgVer: "@dir_paths@0.1.0@md5.a1f4280a48046ff6ca557b7464526ff7"
 pkgOrigin: None
 paths: PKG.libsonnet
 deps:
@@ -15,6 +15,7 @@ deps:
 paths:
   - ./PKG.libsonnet
   - ./README.txt
+  - ./dir/
   - ./script.py
 
 pkgOrigin: null
