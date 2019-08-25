@@ -5,57 +5,34 @@ DIR_WAKELIB = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_PKG_LIBSONNET = "PKG.libsonnet"
 DEFAULT_DIGEST_JSON = ".digest.json"
 
-wakelib = utils.pjoin(DIR_WAKELIB, "wake.libsonnet")
-FILE_CONSTANTS = "wakeConstants.json"
-FILE_RUN = "wakeRun.jsonnet"
-wakeConstantsPath = os.path.join(DIR_WAKELIB, FILE_CONSTANTS)
-wakeConstants = utils.jsonloadf(wakeConstantsPath)
+_wakeConstants = utils.jsonloadf(os.path.join(DIR_WAKELIB, "wakeConstants.json"))
+
+WAKE_SEP = _wakeConstants["WAKE_SEP"]
+
+F_TYPE = _wakeConstants["F_TYPE"]
+F_STATE = _wakeConstants["F_STATE"]
+F_DIGEST = _wakeConstants["F_DIGEST"]
+F_DIGESTTYPE = _wakeConstants["F_DIGESTTYPE"]
+
+T_OBJECT = _wakeConstants["T_OBJECT"]
+T_PKG = _wakeConstants["T_PKG"]
+T_MODULE = _wakeConstants["T_MODULE"]
+T_PATH_REF_PKG = _wakeConstants["T_PATH_REF_PKG"]
+
+S_UNRESOLVED = _wakeConstants["S_UNRESOLVED"]
+S_DECLARED = _wakeConstants["S_DECLARED"]
+S_DEFINED = _wakeConstants["S_DEFINED"]
+S_COMPLETED = _wakeConstants["S_COMPLETED"]
+
+C_READ_PKGS = _wakeConstants["C_READ_PKGS"]
+C_READ_PKGS_REQ = _wakeConstants["C_READ_PKGS_REQ"]
+
+DIR_WAKE = _wakeConstants["DIR_WAKE"]
+FILE_WAKELIB = _wakeConstants["FILE_WAKELIB"]  #wake.libsonnet
+FILE_PKG_DEFAULT = _wakeConstants["FILE_PKG_DEFAULT"]  # PKG.libsonnet
+FILE_RUN = _wakeConstants["FILE_RUN"]  # wakeRun.jsonnet
+FILE_PKGS = _wakeConstants["FILE_PKGS"]
+
+# Commong paths and data
+PATH_WAKE_LIB = os.path.join(DIR_WAKELIB, FILE_WAKELIB)
 _RUN_TEMPLATE = utils.loadf(os.path.join(DIR_WAKELIB, FILE_RUN))
-
-WAKE_SEP = wakeConstants["WAKE_SEP"]
-
-F_TYPE = wakeConstants["F_TYPE"]
-F_STATE = wakeConstants["F_STATE"]
-F_DIGEST = wakeConstants["F_DIGEST"]
-F_DIGESTTYPE = wakeConstants["F_DIGESTTYPE"]
-
-T_OBJECT = wakeConstants["T_OBJECT"]
-T_PKG = wakeConstants["T_PKG"]
-T_MODULE = wakeConstants["T_MODULE"]
-T_PATH_REF_PKG = wakeConstants["T_PATH_REF_PKG"]
-
-S_UNRESOLVED = wakeConstants["S_UNRESOLVED"]
-S_DECLARED = wakeConstants["S_DECLARED"]
-S_DEFINED = wakeConstants["S_DEFINED"]
-S_COMPLETED = wakeConstants["S_COMPLETED"]
-
-C_READ_PKGS = wakeConstants["C_READ_PKGS"]
-C_READ_PKGS_REQ = wakeConstants["C_READ_PKGS_REQ"]
-
-## COMMON PATHS
-
-FILE_PKG = wakeConstants["FILE_PKG"]  # #SPC-arch.pkgFile
-
-# See #SPC-arch.wakeDir
-DIR_WAKE = wakeConstants["DIR_WAKE"]
-DIR_WAKE_REL = os.path.join(".", DIR_WAKE)
-DIR_LOCAL_STORE = wakeConstants["DIR_LOCAL_STORE"]
-DIR_RETRIEVED = wakeConstants["DIR_RETRIEVED"]
-
-FILE_RUN = wakeConstants["FILE_RUN"]
-FILE_PKG = wakeConstants["FILE_PKG"]
-FILE_PKGS = wakeConstants["FILE_PKGS"]
-FILE_STORE_META = "storeMeta.json"
-
-FILE_FINGERPRINT = wakeConstants["FILE_FINGERPRINT"]
-FILE_LOCAL_DEPENDENCIES = wakeConstants["FILE_LOCAL_DEPENDENCIES"]
-
-## FILE WRITERS
-
-
-def format_run_template(wake_libsonnet, pkg_root):
-    """Returned the wake jsonnet run template with items filled out."""
-    templ = _RUN_TEMPLATE
-    templ = templ.replace("WAKE_LIB", wake_libsonnet)
-    templ = templ.replace("PKG_ROOT", pkg_root)
-    return templ.replace("PKGS_DEFINED", "TODO")

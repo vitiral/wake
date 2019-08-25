@@ -29,8 +29,12 @@ from . import utils
 
 def loadPkgDigest(root_file):
     root_dir = os.path.dirname(root_file)
+
     # dump fake `.digest.json`
     jsondumpf(os.path.join(root_dir, DEFAULT_DIGEST_JSON), {})
+
+    run_jsonnet = format_run_jsonnet(wake_libsonnet=
+
     manifest = utils.manifest_jsonnet(root_file)
 
 

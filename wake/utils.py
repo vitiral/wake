@@ -134,6 +134,14 @@ def manifest_jsonnet(path):
     return json.loads(completed.stdout)
 
 
+def format_run_jsonnet(wake_libsonnet, pkg_root):
+    """Returned the wake jsonnet run template with items filled out."""
+    templ = _RUN_TEMPLATE
+    templ = templ.replace("WAKE_LIB", wake_libsonnet)
+    templ = templ.replace("PKG_ROOT", pkg_root)
+    return templ.replace("PKGS_DEFINED", "TODO")
+
+
 def fail(msg):
     msg = "FAIL: {}\n".format(msg)
     if is_debug():
@@ -205,3 +213,4 @@ def pkg_key(pkg_ver):
 
 def is_debug():
     return gvars.MODE == gvars.DEBUG
+
