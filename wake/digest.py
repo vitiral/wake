@@ -20,7 +20,6 @@
 # The MIT License (MIT)
 # Copyright (c) 2015 cakepietoast
 # https://pypi.org/project/checksumdir/#files
-
 """Calaculate the hash digest of a package or module."""
 
 import os
@@ -37,6 +36,7 @@ DIGEST_TYPES = {
     'sha512': hashlib.sha512
 }
 
+
 def calc_digest(pkgDigest):
     """Calculate the actual hash from a loaded pkgDigest object."""
     builder = DigestBuilder(pkg_dir=os.path.dirname(pkgDigest.pkg_file))
@@ -51,7 +51,8 @@ class Digest(utils.TupleObject):
     def __init__(self, digest, digest_type):
         self.digest = digest
         if digest_type not in DIGEST_TYPES:
-            raise ValueError("digest_type must be one of: {}".format(list(DIGEST_TYPES.keys())))
+            raise ValueError("digest_type must be one of: {}".format(
+                list(DIGEST_TYPES.keys())))
         self.digest_type = digest_type
 
     @classmethod
@@ -82,13 +83,13 @@ class Digest(utils.TupleObject):
         return self.serialize()
 
 
-
 class DigestBuilder(utils.SafeObject):
     """Build a digest from input files and directories."""
     def __init__(self, pkg_dir, digest_type='md5'):
         assert os.path.isabs(pkg_dir)
         if digest_type not in DIGEST_TYPES:
-            raise NotImplementedError('Hasher {} not implemented.'.format(digest_type))
+            raise NotImplementedError(
+                'Hasher {} not implemented.'.format(digest_type))
 
         self.pkg_dir = pkg_dir
         self.digest_type = digest_type

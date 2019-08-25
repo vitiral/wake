@@ -148,7 +148,8 @@ def manifest_jsonnet(run_path):
 
 def format_run_digest(pkg_file):
     """Returned the wake jsonnet run template with items filled out."""
-    templ = constants.RUN_DIGEST_TEMPLATE.replace("WAKE_LIB", constants.PATH_WAKELIB)
+    templ = constants.RUN_DIGEST_TEMPLATE.replace("WAKE_LIB",
+                                                  constants.PATH_WAKELIB)
     return templ.replace("PKG_FILE", pkg_file)
 
 
@@ -217,11 +218,14 @@ def is_path_pkg_ref(dct):
 def is_unresolved(dct):
     return dct[constants.F_STATE] == constants.S_UNRESOLVED
 
+
 def relpaths(paths, start):
     return [os.path.relpath(p, start=start) for p in paths]
 
+
 def joinpaths(start, paths):
     return [os.path.join(start, p) for p in paths]
+
 
 def rmtree(d):
     if path.exists(d):

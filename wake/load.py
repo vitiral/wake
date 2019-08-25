@@ -24,6 +24,7 @@ from . import utils
 from . import pkg
 from . import digest
 
+
 def loadPkgDigest(state, pkg_file):
     """Load a package digest, returning PkgDigest.
 
@@ -64,4 +65,3 @@ def loadPkgDigest(state, pkg_file):
         if os.path.exists(digest_path):
             os.remove(digest_path)
         state_dir.cleanup()
-

@@ -8,6 +8,7 @@ from wake.constants import *
 DIR_TEST = os.path.dirname(os.path.abspath(__file__))
 DIR_JSONLY = os.path.join(DIR_TEST, "jsonly")
 
+
 def load_yaml(path):
     with open(path) as fd:
         return yaml.safe_load(fd)
@@ -32,4 +33,3 @@ class TestJsonnetOnly(unittest.TestCase):
 
     def test_file_paths(self):
         self.run_test('file_paths')
-
