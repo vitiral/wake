@@ -1,6 +1,7 @@
-local wake = import "WAKELIB";
-local pkg_fn = (import "PKG_ROOT");
+local wake = import "WAKE_LIB";
+local pkg_fn = (import "PKG_FILE");
+local pkg = pkg_fn(wake);
 {
-    [k]: obj[k] for k in std.objectFields(obj) if k != "exports",
-    pkg_fun(wake)
+    [k]: pkg[k] for k in std.objectFields(pkg)
+    if k != "exports"
 }

@@ -27,34 +27,45 @@ from .constants import *
 from . import utils
 from . import pkg
 
+DIGEST_TYPES = {
+    'md5': hashlib.md5,
+    'sha1': hashlib.sha1,
+    'sha256': hashlib.sha256,
+    'sha512': hashlib.sha512
+}
 
-def loadPkgDigest(state, pkgFile):
-    pkg_dir = os.path.dirname(pkgFile)
-    digest_path = os.path.join(root_dir, DEFAULT_DIGEST_JSON)
-    run_digest = format_run_digest(pkgFile)
+
+def loadPkgDigest(state, pkg_file):
+    pkg_dir = os.path.dirname(pkg_file)
+    digest_path = os.path.join(pkg_dir, DEFAULT_FILE_DIGEST)
+    run_digest_text = utils.format_run_digest(pkg_file)
 
     state_dir = state.create_temp_dir()
     try:
         # Dump fake `.digest.json`
-        jsondumpf(digest_path, {})
+        utils.jsondumpf(digest_path, "md5:fake")
 
         # Put the jsonnet run file in place
         run_digest_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
-        dumpf(run_digest_path, run_digest)
+        utils.dumpf(run_digest_path, run_digest_text)
 
         # Get a pkgDigest with the wrong digest value
         pkgDigest = pkg.PkgDigest.from_dict(
             utils.manifest_jsonnet(run_digest_path),
-            pkgFile=pkgFile,
+            pkg_file=pkg_file,
         )
 
         # Dump real `.digest.json`
-        jsondumpf(digest_path, calc_digest(pkgDigest))
+        digest = calc_digest(pkgDigest)
+        utils.jsondumpf(digest_path, digest.serialize())
 
-        return pkg.PkgDigest.from_dict(
+        pkgDigest = pkg.PkgDigest.from_dict(
             utils.manifest_jsonnet(run_digest_path),
-            pkgFile=pkgFile,
+            pkg_file=pkg_file,
         )
+
+        assert pkgDigest.pkgVer.digest == digest
+        return pkgDigest
     finally:
         if os.path.exists(digest_path):
             os.remove(digest_path)
@@ -63,40 +74,65 @@ def loadPkgDigest(state, pkgFile):
 
 def calc_digest(pkgDigest):
     """Calculate the actual hash from a pkgDigest object."""
-    digest = Digest(pkg_dir=os.path.dirname(pkgDigest.pkgFile))
+    digest = DigestBuilder(pkg_dir=os.path.dirname(pkgDigest.pkg_file))
     digest.update_paths(pkgDigest.paths)
-    return digest.reduce()
+    return digest.build()
 
 
-class Digest(object):
-    DIGEST_TYPES = {
-        'md5': hashlib.md5,
-        'sha1': hashlib.sha1,
-        'sha256': hashlib.sha256,
-        'sha512': hashlib.sha512
-    }
+class Digest(utils.TupleObject):
+    """The data representation of a digest."""
+    SEP = '.'
 
-    def __init__(self, pkg_dir, hash_type='md5'):
-        assert path.isabs(pkg_dir)
+    def __init__(self, digest, digest_type):
+        self.digest = digest
+        if digest_type not in DIGEST_TYPES:
+            raise ValueError("digest_type must be one of: {}".format(list(DIGEST_TYPEs.keys())))
+        self.digest_type = digest_type
+
+    def _tuple(self):
+        return (self.digest, self.digest_type)
+
+    def __repr__(self):
+        return self.SEP.join(self.digest_type, self.digest)
+
+    @classmethod
+    def deserialize(cls, string):
+        digest_type, digest = string.split(self.SEP, 1)
+        return cls(
+            digest=digest,
+            digest_type=digest_type,
+        )
+
+    def serialize(self):
+        return self.SEP.join(self._tuple())
+
+    def __repr__(self):
+        return self.serialize()
+
+
+
+class DigestBuilder(utils.SafeObject):
+    def __init__(self, pkg_dir, digest_type='md5'):
+        assert os.path.isabs(pkg_dir)
+        if digest_type not in DIGEST_TYPES:
+            raise NotImplementedError('Hasher {} not implemented.'.format(digest_type))
 
         self.pkg_dir = pkg_dir
-        self.hash_type = hash_type
-        self.hash_func = self.DIGEST_TYPES[hash_type]
-        if not self.hash_func:
-            raise NotImplementedError('{} not implemented.'.format(hash_type))
+        self.digest_type = digest_type
+        self.hash_func = DIGEST_TYPES[digest_type]
         self.hashmap = {}
         self.visited = set()
 
     def update_paths(self, paths):
         paths = sorted(paths)
         for p in paths:
-            if path.isdir(p):
+            if os.path.isdir(p):
                 self.update_dir(p)
             else:
                 self.update_file(p)
 
     def update_dir(self, dirpath):
-        assert path.isabs(dirpath), dirpath
+        assert os.path.isabs(dirpath), dirpath
 
         hash_func = self.hash_func
         hashmap = self.hashmap
@@ -118,8 +154,8 @@ class Digest(object):
         return hashmap
 
     def update_file(self, fpath):
-        assert path.isabs(fpath)
-        if fpath in self.visted:
+        assert os.path.isabs(fpath)
+        if fpath in self.visited:
             return
         self.visited.add(fpath)
         hasher = self.hash_func()
@@ -130,7 +166,7 @@ class Digest(object):
                 if not data:
                     break
                 hasher.update(data)
-        pkey = path.relpath(fpath, self.pkg_dir)
+        pkey = os.path.relpath(fpath, self.pkg_dir)
         self.hashmap[pkey] = hasher.hexdigest()
 
     def reduce(self):
@@ -140,3 +176,6 @@ class Digest(object):
             hasher.update(fpath.encode())
             hasher.update(hashmap[fpath].encode())
         return hasher.hexdigest()
+
+    def build(self):
+        return Digest(digest=self.reduce(), digest_type=self.digest_type)

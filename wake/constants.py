@@ -3,7 +3,7 @@ from . import utils
 
 DIR_WAKELIB = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_PKG_LIBSONNET = "PKG.libsonnet"
-DEFAULT_DIGEST_JSON = ".digest.json"
+DEFAULT_FILE_DIGEST = ".wakeDigest.json"
 
 _wakeConstants = utils.jsonloadf(
     os.path.join(DIR_WAKELIB, "wakeConstants.json"))

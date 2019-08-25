@@ -2,7 +2,7 @@ from .constants import *
 from . import utils
 
 
-class PkgName(TupleObject):
+class PkgName(utils.TupleObject):
     def __init__(self, namespace, name):
         self.namespace = namespace
         self.name = name
@@ -17,7 +17,7 @@ class PkgName(TupleObject):
         return (self.namespace, self.name)
 
 
-class PkgReq(TupleObject):
+class PkgReq(utils.TupleObject):
     def __init__(self, namespace, name, semver):
         self.namespace = namespace
         self.name = name
@@ -43,7 +43,7 @@ class PkgReq(TupleObject):
         return (self.namespace, self.name, self.semver)
 
 
-class PkgVer(TupleObject):
+class PkgVer(utils.TupleObject):
     def __init__(self, namespace, name, version, diget):
         self.namespace = namespace
         self.name = name
@@ -80,11 +80,11 @@ class PkgDigest(utils.SafeObject):
 
     These items must completely define the package for transport and use.
     """
-    def __init__(self, pkgFile, pkgVer, pkgOrigin, paths, deps):
-        if pkgFile not in paths:
-            paths.add(pkgFile)
+    def __init__(self, pkg_file, pkgVer, pkgOrigin, paths, deps):
+        if pkg_file not in paths:
+            paths.add(pkg_file)
 
-        self.pkgFile = pkgFile
+        self.pkg_file = pkg_file
         self.pkgVer = pkgVer
         self.pkgOrigin = pkgOrigin
         self.paths = paths
@@ -92,9 +92,9 @@ class PkgDigest(utils.SafeObject):
 
 
     @classmethod
-    def from_dict(cls, dct, pkgFile):
+    def from_dict(cls, dct, pkg_file):
         return cls(
-            pkgFile=pkgFile,
+            pkg_file=pkg_file,
             pkgVer=utils.ensure_str('pkgVer', dct['pkgVer']),
             pkgOrigin=dct.get('pkgOrigin'),
             paths=set(utils.ensure_valid_paths(dct['paths'])),

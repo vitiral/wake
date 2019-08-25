@@ -55,14 +55,14 @@ C + { local wake = self
         ]),
     }.result
 
-    # An exact version of a pkgName, including the hash.
-    , pkgVer(namespace, name, version, fingerprint):
-        assert std.isString(hash) : "fingerprint must be a string";
+    # An exact version of a pkgName, including the digest.
+    , pkgVer(namespace, name, version, digest):
+        assert std.isString(digest) : "digest must be a string";
         # Note: the version must be an exact semver, but is checked later.
         std.join(C.WAKE_SEP, [
             wake.pkgName(namespace, name),
             version,
-            fingerprint,
+            digest,
         ])
 
     # Request to retrieve a pkg locally
@@ -100,15 +100,10 @@ C + { local wake = self
     ): {
         [C.F_TYPE]: C.T_PKG,
         [C.F_STATE]: C.S_DECLARED,
-        fingerprint: fingerprint,
-        namespace: U.stringDefault(namespace),
-        name: name,
-        version: version,
-        description: description,
-        pkgVer: wake.pkgVer(namespace, name, version, fingerprint.hash),
+        pkgVer: pkgVer,
+        pkgOrigin: pkgOrigin,
         paths: U.arrayDefault(paths),
-        pathsDef: U.arrayDefault(pathsDef),
-        pkgs: U.objDefault(pkgs),
+        deps: U.objDefault(deps),
 
         # lazy functions
         exports: exports,
@@ -212,15 +207,7 @@ C + { local wake = self
         container,
 
         # List of strings to pass as arguments to the executable.
-        #null,
-
-        # be an object of strings
-        # for the keys and values.
-        #
-        # Consider using `config` instead.
-        #
-        # Anything beginning with `__WAKE` is reserved for use by wake.
-        env=null,
+        params=null,
     ): {
         [C.F_TYPE]: C.T_EXEC,
         [C.F_STATE]: C.S_DEFINED,
@@ -231,9 +218,7 @@ C + { local wake = self
 
         pathRef: pathRef,
         container: container,
-        config: config,
-        args: U.arrayDefault(args),
-        env: U.objDefault(env),
+        params: U.defaultObj(params),
     }
 
     , _private: {
