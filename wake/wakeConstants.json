@@ -16,6 +16,7 @@
     "T_PATH_REF_MODULE": "pathRefModule",
     "T_EXEC": "exec",
 
+    "S_UNRESOLVED": "TODO-REMOVE-unresolved",
     "S_DECLARED": "declared",
     "S_DEFINED": "defined",
     "S_COMPLETED": "completed",

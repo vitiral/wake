@@ -99,12 +99,6 @@ C + { local wake = self
         exports: exports,
     }
 
-    # Convert a pkg object into only it's digest elements.
-    , pkgDigest(pkg): {
-        [k]: pkg[k] for k in std.objectFields(pkg)
-        if k != "exports"
-    }
-
     # Declare dependencies for a package.
     , deps(
         unrestricted=null,
@@ -180,44 +174,94 @@ C + { local wake = self
     }
 
     # An error object. Will cause build to fail.
-    , err(msg): {
+    , err(msg) {
         [C.F_TYPE]: C.T_ERROR,
         msg: msg,
     }
 
-
     , _private: {
         local P = self
 
-        # , recurseCallExports(wake, pkg): {
-        #     local this = self,
+        , F_IDS: {
+            'pkgVer': null,
+            'pkgReq': null,
+        }
 
-        #     [C.F_TYPE]: pkg[C.F_TYPE],
-        #     [C.F_STATE]: C.S_DEFINED,
-        #     pkgVer: self.pkgVer,
-        #     pkgDigest: wake.pkgDigest(this),
+        # Used to lazily define the exports of the pkg and sub-pkgs.
+        , recurseDefinePkg(wake, pkg): {
+            local this = self,
+            local recurseMaybe = function(depPkg)
+                if U.isUnresolved(depPkg) then
+                    depPkg
+                else
+                    P.recurseDefinePkg(wake, depPkg),
 
-        #     local getIdOrErr = function(dep)
-        #         if U.isUnresolved(dep) then
-        #             dep
-        #         else
-        #             dep.pkgVer,
+            returnPkg: pkg + {
+                # Do a first pass on the pkgs.
+                local pkgsPass = {
+                    [dep]: recurseMaybe(pkg.pkgs[dep])
+                    for dep in std.objectFields(pkg.pkgs)
+                }
 
-        #     local deps = {
-        #         [dep]: getIdOrUnresolved(pkg.pkgs[dep])
-        #         for dep in std.objectFields(pkg.pkgs)
+                , [C.F_STATE]: if P.hasBeenDefined(pkg, this.returnPkg) then
+                    C.S_DEFINED else pkg[C.F_STATE]
 
-        #     },
+                , local defineGetPkg = function(depPkg)
+                    if U.isUnresolved(depPkg) then
+                        if depPkg.usingPkg == null then
+                            depPkg
+                        else
+                            _P.handleGetPkgFromExec(this.returnPkg, depPkg)
+                    else
+                        depPkg
 
-        #     returnPkg = pkg + {
+                , pkgs: {
+                    [dep]: defineGetPkg(pkgsPass[dep])
+                    for dep in std.objectFields(pkgsPass)
+                }
 
-        #     },
-        # }.returnPkg
+                , exports:
+                    if U.isDefined(this.returnPkg) then
+                        local out = pkg.exports(wake, this.returnPkg);
+                        assert std.isObject(out)
+                            : "%s exports did not return an object"
+                            % [this.returnPkg.pkgVer];
+                        out
+                    else
+                        null
+            }
+        }.returnPkg
+
+        , handleGetPkgFromExec(parentPkg, getPkg):
+            local pkgName = getPkg.usingPkg;
+            assert pkgName in parentPkg.pkgs :
+                parentPkg.pkgVer + " does not contain " + pkgName;
+            local execPkg = parentPkg.pkgs[pkgName];
+
+            if U.isAtLeastDefined(execPkg) then
+                getPkg + {
+                    exec: U.getKeys(execPkg.exports, getPkg.from),
+                }
+            else
+                getPkg
+
+        # Return if the newPkg is defined.
+        , hasBeenDefined(oldPkg, newPkg):
+            local definedCount = std.foldl(
+                function(prev, v) prev + v,
+                [
+                    U.boolToInt(U.isDefined(newPkg.pkgs[dep]))
+                    for dep in std.objectFields(newPkg.pkgs)
+                ],
+                0,
+            );
+            definedCount == std.length(oldPkg.pkgs)
 
         , simplify(pkg): {
             [C.F_TYPE]: pkg[C.F_TYPE],
             [C.F_STATE]: pkg[C.F_STATE],
             pkgVer: pkg.pkgVer,
+            description: pkg.description,
 
             local getIdOrUnresolved = function(dep)
                 if U.isUnresolved(dep) then
