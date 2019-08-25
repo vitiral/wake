@@ -188,31 +188,57 @@ C + { local wake = self
 
     , _private: {
         local P = self
+        # Looks up all items in the dependency tree
+        , lookupDeps(requestingPkgVer, deps): {
+            [k]: P._lookupPkgs(requestingPkgVer, k, deps[k])
+            for k in std.objectFields(deps)
+        }
 
-        , recurseCallExports(wake, pkg): {
-            local this = self,
+        , _lookupPkgs(requestingPkgVer, category, depPkgs): {
+            [k]: P._lookupPkg(requestingPkgVer, category, depPkgs[k])
+            for k in std.objectFields(depPkgs)
+        }
 
-            [C.F_TYPE]: pkg[C.F_TYPE],
-            [C.F_STATE]: C.S_DEFINED,
-            pkgVer: self.pkgVer,
-            pkgDigest: wake.pkgDigest(this),
 
-            local callExports = function(dep)
-                if U.isUnresolved(dep) then
-                    dep
-                else
-                    dep.pkgVer,
+        # Looks up the pkgReq based on who's asking.
+        , _lookupPkg(requestingPkgVer, category, pkgReq):
+            local pkgKey = std.join(C.WAKE_SEP, [
+                requestingPkgVer,
+                pkgReq,
+            ]);
+            if pkgKey in P.pkgsDefined then
+                P.pkgsDefined[pkgKey]
+            else
+                wake.err("%s requested %s (in %s) but it does not exist in the store" % [
+                    requestingPkgVer,
+                    pkgReq,
+                    category,
+                ])
 
-            local deps = {
-                [dep]: getIdOrUnresolved(pkg.pkgs[dep])
-                for dep in std.objectFields(pkg.pkgs)
+        # , recurseCallExports(wake, pkg): {
+        #     local this = self,
 
-            },
+        #     [C.F_TYPE]: pkg[C.F_TYPE],
+        #     [C.F_STATE]: C.S_DEFINED,
+        #     pkgVer: self.pkgVer,
+        #     pkgDigest: wake.pkgDigest(this),
 
-            returnPkg = pkg + {
+        #     local callExports = function(dep)
+        #         if U.isUnresolved(dep) then
+        #             dep
+        #         else
+        #             dep.pkgVer,
 
-            },
-        }.returnPkg
+        #     local deps = {
+        #         [dep]: getIdOrUnresolved(pkg.pkgs[dep])
+        #         for dep in std.objectFields(pkg.pkgs)
+
+        #     },
+
+        #     returnPkg = pkg + {
+
+        #     },
+        # }.returnPkg
 
         , simplify(pkg): {
             [C.F_TYPE]: pkg[C.F_TYPE],
