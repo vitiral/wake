@@ -1,6 +1,6 @@
 
 pkg_file: PKG.libsonnet
-pkgVer: "🌊simple-fake_deps🌊0.1.0🌊md5.ab8be1d543f0fcd51324bef38d2add5d"
+pkgVer: "🌊simple-fake_deps🌊0.1.0🌊md5.06e17be6472000464aaae26c3dba74f9"
 
 pkgOrigin: None
 paths: PKG.libsonnet
@@ -13,13 +13,21 @@ deps:
         libA:
             pkgVer: '🌊libA🌊5.5.0🌊md5.df06b83280600f9df41af881bacc5160'
             deps: {}
+            depsReq: {}
             export: {'answer': 42}
             paths: []
             pkgOrigin: null
-            __WAKESTATE__: 'declared'
             __WAKETYPE__: 'pkg'
+            __WAKESTATE__: 'declared'
 
-depsReq: {}
+depsReq:
+    global: {}
+    restricted: {}
+    restrictedMajor: {}
+    restrictedMinor: {}
+    unrestricted:
+        libA: 'fake🌊libA🌊>=5.2.0'
+
 
 paths:
   - ./PKG.libsonnet

@@ -104,7 +104,7 @@ def loadPkgExport(state, pkgsDefined, pkgDigest):
 
         # Run the export (includes depenencies) and get result
         pkgExport = utils.manifest_jsonnet(run_export_path)
-        return pkgExport
+        return pkg.PkgExport.deserialize(pkgExport, pkg_file=pkgDigest.pkg_file)
     finally:
         if pkgs_defined_path:
             os.remove(pkgs_defined_path)

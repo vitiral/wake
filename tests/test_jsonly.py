@@ -56,7 +56,7 @@ class TestJsonnetOnly(unittest.TestCase):
                 pkgsDefined=pkgsDefined,
                 pkgDigest=pkgDigest,
             )
-            assert expected == result, '[[ export ' + name + ' ]]'
+            assert expected == result.serialize(), '[[ export ' + name + ' ]]'
 
     def test_simple(self):
         self.run_test('simple')
@@ -67,16 +67,16 @@ class TestJsonnetOnly(unittest.TestCase):
     def test_dir_paths(self):
         self.run_test('dir_paths')
 
-    # def test_simple_fake_deps(self):
-    #     def create_pkgs_defined(pkgDigest):
-    #         libA_request = wake.pkg.PkgRequest(
-    #             pkgDigest.pkgVer,
-    #             wake.pkg.PkgReq("fake", "libA", ">=5.2.0"),
-    #         )
+    def test_simple_fake_deps(self):
+        def create_pkgs_defined(pkgDigest):
+            libA_request = wake.pkg.PkgRequest(
+                pkgDigest.pkgVer,
+                wake.pkg.PkgReq("fake", "libA", ">=5.2.0"),
+            )
 
-    #         return {
-    #             libA_request.serialize(): self.libA_pkgDigest.pkg_file,
-    #         }
+            return {
+                libA_request.serialize(): self.libA_pkgDigest.pkg_file,
+            }
 
-    #     self.run_test('simple-fake_deps',
-    #                   create_pkgs_defined=create_pkgs_defined)
+        self.run_test('simple-fake_deps',
+                      create_pkgs_defined=create_pkgs_defined)

@@ -190,17 +190,13 @@ class PkgExport(PkgDigest):
             pkgVer=digest.pkgVer,
             pkgOrigin=digest.pkgOrigin,
             paths=digest.paths,
-            depsReq=dct['depsReq'],
+            depsReq=digest.depsReq,
+            deps=dct['deps'],
             export=dct['export'],
         )
 
     def serialize(self):
-        pdir, pfile = os.path.split(self.pkg_file)
-        relpaths = sorted(self.paths)
-        return {
-            "pkg_file": pfile,
-            "pkgVer": self.pkgVer.serialize(),
-            "pkgOrigin": self.pkgOrigin,
-            "paths": relpaths,
-            "depsReq": self.depsReq,
-        }
+        dct = super(PkgExport, self).serialize()
+        dct['deps'] = self.deps
+        dct['export'] = self.export
+        return dct
