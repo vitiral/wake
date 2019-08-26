@@ -15,7 +15,7 @@
 # for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 # be dual licensed as above, without any additional terms or conditions.
 
-local C = import "wakeConstants.json";
+local C = (import "wakeConstants.json");
 
 C + { local wake = self
     , local U = wake.util
@@ -37,17 +37,7 @@ C + { local wake = self
         ])
 
     # Specifies what versions of a package are required using a semver.
-    , pkgReq(
-        # The namespace to find the pkg.
-        namespace,
-
-        # The name of the pkg.
-        name,
-
-        # The semver requirements of the pkgName
-        semver=null,
-
-    ): {
+    , pkgReq(namespace, name, semver=null): {
         local semverStr = U.stringDefault(semver),
 
         assert !_P.hasSep(semverStr): "semver must not contain '@'",
@@ -72,7 +62,7 @@ C + { local wake = self
     , pkgLocal(requestingPkgVer, path):
         [requestingPkgVer, path]
 
-    # Declare a pkg.
+    # Declare a pkg (in PKG.libsonnet)
     , pkg(
         pkgVer,
 
@@ -122,7 +112,7 @@ C + { local wake = self
     }
 
     # Declare how to build a module.
-    , declareModule(
+    , module(
         pkg,
         modules,
         reqFsEntries=null,
@@ -198,6 +188,8 @@ C + { local wake = self
                     pkgReq,
                 ]);
                 if pkgKey in P.pkgsDefined then
+                    # !! NOTE: wake._private.pkgsDefined is **injected** by
+                    # !! wake/runWakeExport.jsonnet
                     P.pkgsDefined[pkgKey]
                 else
                     wake.err("%s requested %s (in %s) but it does not exist in the store" % [
@@ -212,10 +204,13 @@ C + { local wake = self
                 for k in std.objectFields(depPkgs)
             };
 
-            # Return the looked up pkgs
+            # Return the looked up dependencies
             {
-                [k]: lookupPkgs(k, deps[k])
-                for k in std.objectFields(deps)
+                "unrestricted": lookupPkgs("unrestricted", deps.unrestricted),
+                "restricted": lookupPkgs("restricted", deps.restricted),
+                "restrictedMajor": lookupPkgs("restrictedMajor", deps.restrictedMajor),
+                "restrictedMinor": lookupPkgs("restrictedMinor", deps.restrictedMinor),
+                "global": lookupPkgs("global", deps.global),
             }
 
         # , recurseCallExports(wake, pkg): {

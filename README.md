@@ -1,3 +1,9 @@
+Notes:
+- "local packages" are just "locked packages" and they can only be defined by
+  the root.
+- package manager cmd has to be able to handle local paths (to PKG.libsonnet)
+- these should be specified by `null`/empty as the namespace (maybe?)
+
 # ⏾🌊🛠 **wake** software's true potential
 
 > **!! EXTREMELY EXPERIMENTAL, IN DESIGN !!**

@@ -14,7 +14,7 @@ function(wake)
         paths = paths,
         deps = wake.deps(
             unrestricted={
-                "pytest": "pYpI@pytest@>=5.0.0",
+                "pytest": wake.pkgReq("pYpI", "pytest", ">=5.0.0"),
             },
         ),
     )
