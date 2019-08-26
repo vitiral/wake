@@ -89,7 +89,7 @@ C {
         deps: U.objDefault(deps),
 
         # lazy functions
-        export: export,
+        export:: export,
     }
 
     ,
@@ -97,7 +97,6 @@ C {
     pkgDigest(pkg): {
         [k]: pkg[k]
         for k in std.objectFields(pkg)
-        if k != 'export'
     }
 
     ,
