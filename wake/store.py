@@ -20,6 +20,7 @@ import os
 import shutil
 import copy
 
+from . import constants
 from . import utils
 from . import digest
 from . import load
@@ -32,38 +33,47 @@ class Store(utils.SafeObject):
         self.temp_dir = self.state.create_temp_dir(prefix="store-")
         self.dir = self.temp_dir.dir
         self.packages = {}
-        self.storeMap = {}
 
     def create_pkg(self, pkgDigest):
         """Insert a package into the store and return the result."""
-        pkg_dir = os.path.join(self.dir, pkgDigest.pkgVer)
+        pkgVerStr = pkgDigest.pkgVer.serialize()
+        pkg_dir = os.path.join(self.dir, pkgVerStr)
 
         if pkgDigest.pkgVer in self.packages:
             assert os.path.exists(pkg_dir)
-            if self.packages[
-                    pkgDigest.pkgVer].pkgVersion == pkgDigest.pkgVersion:
-                return
+            existing = self.read_pkg(pkgDigest.pkgVer)
+            if existing == pkgDigest.pkgVer:
+                return existing
             else:
                 shutil.rmtree(pkg_dir)
 
         os.mkdir(pkg_dir)
         for path in pkgDigest.paths:
-            src = os.path.join(pkgDigest.pkg_dir, path)
-            dst = os.path.join(pkg_dir, path)
-            shutil.copytree(src, dst, symlinks=True)
+            src = utils.pjoin(pkgDigest.pkg_dir, path)
+            dst = utils.pjoin(pkg_dir, path)
+            utils.copytree(src, dst)
 
-        result = self.read_pkg(pkgDigest.pkgVer)
+        result = self.read_pkg(
+            pkgDigest.pkgVer,
+            skip_cache=True,
+            check_cache=False,
+        )
 
-        if pkgDigest.pkgVersion.digest != result.pkgVersion.digest:
+        if result.pkgVer.digest != pkgDigest.pkgVer.digest:
             raise ValueError(
-                "given pkgDigest had invalid digest value: {} != {}".format(
-                    pkgDigest.pkgVersion.digest, result.pkgVersion.digest))
+                "The given pkgDigest had an invalid digest value: {} != {}".
+                format(result.pkgVer.digest, pkgDigest.pkgVer.digest))
 
         self.packages[result.pkgVer] = result
-        self.storeMap[result.pkgVer] = result.pkg_file
         return result
 
-    def read_pkg(self, pkgVer):
-        pkg_dir = os.path.join(self.dir, pkgVer)
-        pkg_file = os.path.join(pkg_dir, FILE_PKG_DEFAULT)
-        return load.loadPkgDigest(state, pkg_file, calc_digest=True)
+    def read_pkg(self, pkgVer, skip_cache=False, check_cache=False):
+        if skip_cache or check_cache:
+            pkg_dir = os.path.join(self.dir, pkgVer.serialize())
+            pkg_file = os.path.join(pkg_dir, constants.FILE_PKG_DEFAULT)
+            result = load.loadPkgDigest(self.state, pkg_file, calc_digest=True)
+            if check_cache:
+                assert result.pkgVer == pkgVer
+            return result
+
+        return self.packages[pkgVer]

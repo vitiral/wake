@@ -43,23 +43,47 @@ class PkgReq(utils.TupleObject):
         self.semver = semver
 
     @classmethod
-    def from_str(cls, s):
-        spl = s.split(WAKE_SEP)
-        if len(spl) > 3:
+    def deserialize(cls, string):
+        split = string.split(WAKE_SEP)
+        if len(split) > 3:
             raise ValueError("Must have 3 components split by {}: {}".format(
-                WAKE_SEP, s))
+                WAKE_SEP, string))
 
-        namespace, name, semver = spl
+        namespace, name, semver = split
         return cls(namespace=namespace, name=name, semver=semver)
 
-    def __str__(self):
+    def serialize(self):
         return WAKE_SEP.join(self._tuple())
+
+    def __str__(self):
+        return self.serialize()
 
     def __repr__(self):
         return "req:{}".format(self)
 
     def _tuple(self):
         return (self.namespace, self.name, self.semver)
+
+
+class PkgRequest(utils.TupleObject):
+    def __init__(self, requestingPkgVer, pkgReq):
+        self.requestingPkgVer = requestingPkgVer
+        self.pkgReq = pkgReq
+
+    def serialize(self):
+        return WAKE_SEP.join((
+            self.requestingPkgVer.serialize(),
+            self.pkgReq.serialize(),
+        ))
+
+    def __str__(self):
+        return self.serialize()
+
+    def __repr__(self):
+        return "pkgRequest:{}".format(self)
+
+    def _tuple(self):
+        return (self.requestingPkgVer, self.pkgReq)
 
 
 class PkgVer(utils.TupleObject):

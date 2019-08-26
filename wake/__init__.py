@@ -19,4 +19,5 @@ from . import digest
 from . import load
 from . import pkg
 from . import state
+from . import store
 from . import utils

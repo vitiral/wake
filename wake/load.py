@@ -81,23 +81,25 @@ def loadPkgExport(state, pkgsDefined, pkgDigest):
     storeMap: dictionary of the expected lookup keys to the location of their PKG files.
     """
 
+    pkgs_defined_path = None
     state_dir = state.create_temp_dir()
     try:
+        # Dump the dependencies
         pkgs_defined_path = _dump_pkgs_defined(
             state_dir.dir,
             pkgsDefined=pkgsDefined,
         )
-        run_export_text = utils.format_run_export(
-            pkgDigest.pkg_file,
-            pkgs_defined_path=pkgs_defined_path,
-        )
-        run_export_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
 
         # Dump real `.digest.json`
         utils.jsondumpf(pkgDigest.pkg_digest,
                         pkgDigest.pkgVer.digest.serialize())
 
         # Put the jsonnet run file in place
+        run_export_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
+        run_export_text = utils.format_run_export(
+            pkgDigest.pkg_file,
+            pkgs_defined_path=pkgs_defined_path,
+        )
         utils.dumpf(run_export_path, run_export_text)
 
         # Run the export (includes depenencies) and get result
@@ -105,8 +107,8 @@ def loadPkgExport(state, pkgsDefined, pkgDigest):
 
         return pkgExport
     finally:
-        if os.path.exists(digest_path):
-            os.remove(digest_path)
+        if pkgs_defined_path:
+            os.remove(pkgs_defined_path)
         state_dir.cleanup()
 
 
@@ -119,8 +121,9 @@ def _dump_pkgs_defined(directory, pkgsDefined):
     with open(pkgs_defined_path, 'w') as fd:
         fd.write("{\n")
         for key, path in sorted(six.iteritems(pkgsDefined)):
-            key, path = json.dumps(key), json.dumps(path)
-            fd.write("  {}: (import {}),\n\n".format(key, path))
+            # TODO: things went bonkers with json format
+            # key, path = json.dumps(key), json.dumps(path)
+            fd.write("  \"{}\": (import \"{}\"),\n\n".format(key, path))
         fd.write("}\n")
 
         utils.closefd(fd)

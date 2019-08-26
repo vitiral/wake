@@ -203,10 +203,12 @@ C {
                 # !! NOTE: wake._private.pkgsDefined is **injected** by
                 # !! wake/runWakeExport.jsonnet
                 assert pkgKey in P.pkgsDefined :
-                       '%s requested %s (in %s) but it does not exist in the store' % [
+                       '%s requested %s (in %s) but it does not exist in the store:
+                       (pkgKey=%s)' % [
                     requestingPkgVer,
                     pkgReq,
                     category,
+                    pkgKey,
                 ];
 
                 P.pkgsDefined[pkgKey];

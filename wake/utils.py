@@ -33,8 +33,6 @@ from pdb import set_trace
 
 from . import constants
 
-path = os.path
-
 
 class SafeObject(object):
     """A safe form of ``object``.
@@ -98,11 +96,11 @@ class TupleObject(object):
 def pjoin(base, p):
     if p.startswith('./'):
         p = p[2:]
-    return path.join(base, p)
+    return os.path.join(base, p)
 
 
 def abspath(p):
-    return path.abspath(path.expanduser(p))
+    return os.path.abspath(path.expanduser(p))
 
 
 def closefd(fd):
@@ -177,17 +175,10 @@ def dumpf(path, s):
         f.write(s)
 
 
-def copy_fsentry(src, dst):
-    """Perform a deep copy on the filesystem entry (file, dir, symlink).
-
-    This fully copies all files, following symlinks to copy the data.
-    """
-    dstdir = path.dirname(dst)
-    if dstdir and not os.path.exists(dstdir):
-        os.makedirs(dstdir, exist_ok=True)
-
-    if path.isfile(src):
-        shutil.copy(src, dst)
+def copytree(src, dst):
+    """Allow copytree to copy files."""
+    if os.path.isfile(src):
+        shutil.copy2(src, dst)
     else:
         shutil.copytree(src, dst)
 
@@ -240,7 +231,7 @@ def joinpaths(start, paths):
 
 
 def rmtree(d):
-    if path.exists(d):
+    if os.path.exists(d):
         shutil.rmtree(d)
 
 

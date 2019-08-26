@@ -7,7 +7,7 @@ local paths = [
 
 function(wake)
     local digest = import "./.wakeDigest.json";
-    local pkgVer = wake.pkgVer(null, "file_paths", "0.1.0", digest);
+    local pkgVer = wake.pkgVer(null, "simple-fake_deps", "0.1.0", digest);
 
     wake.pkg(
         pkgVer=pkgVer,

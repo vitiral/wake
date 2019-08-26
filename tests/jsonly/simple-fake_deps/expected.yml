@@ -1,6 +1,6 @@
 
 pkg_file: PKG.libsonnet
-pkgVer: "🌊file_paths🌊0.1.0🌊md5.d41ebd5adadb75f0d714cad0d3f1906a"
+pkgVer: "🌊simple-fake_deps🌊0.1.0🌊md5.45df2d9f984a8250ca21fb54cdda79de"
 pkgOrigin: None
 paths: PKG.libsonnet
 deps:
