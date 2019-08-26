@@ -28,7 +28,7 @@ from . import pkg
 from . import digest
 
 
-def loadPkgDigest(state, pkg_file):
+def loadPkgDigest(state, pkg_file, calc_digest=False):
     """Load a package digest, returning PkgDigest.
 
     Note: The `state` is used to create a temporary directory for storing the
@@ -40,29 +40,31 @@ def loadPkgDigest(state, pkg_file):
 
     state_dir = state.create_temp_dir()
     try:
-        # Dump fake `.digest.json`
-        utils.jsondumpf(digest_path, digest.Digest.fake().serialize())
+        if calc_digest:
+            # Dump fake `.digest.json`
+            utils.jsondumpf(digest_path, digest.Digest.fake().serialize())
 
         # Put the jsonnet run file in place
         run_digest_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
         utils.dumpf(run_digest_path, run_digest_text)
 
-        # Get a pkgDigest with the wrong digest value
+        # Get a pkgDigest with (potentially) the wrong digest value
         pkgDigest = pkg.PkgDigest.deserialize(
             utils.manifest_jsonnet(run_digest_path),
             pkg_file=pkg_file,
         )
 
-        # Dump real `.digest.json`
-        digest_value = digest.calc_digest(pkgDigest)
-        utils.jsondumpf(digest_path, digest_value.serialize())
+        if calc_digest:
+            # Dump real `.digest.json`
+            digest_value = digest.calc_digest(pkgDigest)
+            utils.jsondumpf(digest_path, digest_value.serialize())
 
-        pkgDigest = pkg.PkgDigest.deserialize(
-            utils.manifest_jsonnet(run_digest_path),
-            pkg_file=pkg_file,
-        )
+            pkgDigest = pkg.PkgDigest.deserialize(
+                utils.manifest_jsonnet(run_digest_path),
+                pkg_file=pkg_file,
+            )
+            assert pkgDigest.pkgVer.digest == digest_value
 
-        assert pkgDigest.pkgVer.digest == digest_value
         return pkgDigest
     finally:
         if os.path.exists(digest_path):
@@ -78,8 +80,6 @@ def loadPkgExport(state, pkgsDefined, pkgDigest):
         custom-created jsonnet running script.
     storeMap: dictionary of the expected lookup keys to the location of their PKG files.
     """
-    pkg_dir = os.path.dirname(pkgDigest.pkg_file)
-    digest_path = os.path.join(pkg_dir, DEFAULT_FILE_DIGEST)
 
     state_dir = state.create_temp_dir()
     try:
@@ -94,7 +94,8 @@ def loadPkgExport(state, pkgsDefined, pkgDigest):
         run_export_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
 
         # Dump real `.digest.json`
-        utils.jsondumpf(digest_path, pkgDigest.pkgVer.digest.serialize())
+        utils.jsondumpf(pkgDigest.pkg_digest,
+                        pkgDigest.pkgVer.digest.serialize())
 
         # Put the jsonnet run file in place
         utils.dumpf(run_export_path, run_export_text)

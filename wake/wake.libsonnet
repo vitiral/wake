@@ -233,7 +233,7 @@ C {
                 [k]: P.recurseCallExport(wake, pkgs[k])
                 for k in std.objectFields(pkgs)
             };
-            assert fnDeps != null: "fnDeps is null";
+            assert fnDeps != null : 'fnDeps is null';
             {
                 local this = self,
 
@@ -253,7 +253,7 @@ C {
 
                 # Use the reference which includes resolved dependencies
                 export: pkg.export(wake, this),
-            }
+            },
 
         # , simplify(pkg): {
         #     [C.F_TYPE]: pkg[C.F_TYPE],

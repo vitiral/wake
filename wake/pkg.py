@@ -109,9 +109,11 @@ class PkgDigest(utils.SafeObject):
     """
     def __init__(self, pkg_file, pkgVer, pkgOrigin, paths, deps):
         if pkg_file not in paths:
-            paths.add('./' + DEFAULT_PKG_LIBSONNET)
+            paths.add('./' + FILE_PKG_DEFAULT)
 
         self.pkg_file = pkg_file
+        self.pkg_dir = os.path.dirname(pkg_file)
+        self.pkg_digest = os.path.join(self.pkg_dir, DEFAULT_FILE_DIGEST)
         self.pkgVer = pkgVer
         self.pkgOrigin = pkgOrigin
         self.paths = paths

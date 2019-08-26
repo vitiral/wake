@@ -242,3 +242,11 @@ def joinpaths(start, paths):
 def rmtree(d):
     if path.exists(d):
         shutil.rmtree(d)
+
+
+def walk(dirpath):
+    """Walk the directory."""
+    def _onerror(err):
+        raise err
+
+    return os.walk(dirpath, topdown=True, onerror=_onerror)

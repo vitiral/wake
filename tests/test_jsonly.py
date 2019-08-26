@@ -8,21 +8,7 @@ from wake.constants import *
 DIR_TEST = os.path.dirname(os.path.abspath(__file__))
 DIR_JSONLY = os.path.join(DIR_TEST, "jsonly")
 
-# ./fakeStore/{libA}/PKG.jsonnet
-DIR_FAKE_STORE = os.path.join(DIR_JSONLY, "fakeStore")
-KEY_LIBA = WAKE_SEP.join([
-    "",
-    "file_paths",
-    "0.1.0",
-    "md5.fake-digest",
-    "fake",
-    "libA",
-    ">=5.2.0",
-])
-DIR_LIBA = os.path.join(DIR_FAKE_STORE, KEY_LIBA)
-PKG_LIBA = os.path.join(DIR_LIBA, DEFAULT_PKG_LIBSONNET)
-
-STORE_MAP = {KEY_LIBA: PKG_LIBA}
+DIR_EXAMPLE_DEPS = os.path.join(DIR_JSONLY, "exampleDeps")
 
 
 def load_yaml(path):
@@ -33,21 +19,35 @@ def load_yaml(path):
 class TestJsonnetOnly(unittest.TestCase):
     def setUp(self):
         self.state = wake.state.State()
+        self.store = wake.store.Store()
 
     def tearDown(self):
         self.state.cleanup()
 
-    def run_test(self, name):
+    def run_test(self, name, with_deps=None):
+        with_deps = with_deps or []
+        for dep in with_deps:
+            pkgDigest = os.path.join(DIR_EXAMPLE_DEPS, dep, FILE_PKG_DEFAULT)
+            self.store.create_pkg(pkgDigest)
+
         directory = os.path.join(DIR_JSONLY, name)
-        pkgFile = os.path.join(directory, DEFAULT_PKG_LIBSONNET)
-        pkgDigest = wake.load.loadPkgDigest(self.state, pkgFile)
+        pkgFile = os.path.join(directory, FILE_PKG_DEFAULT)
+        pkgDigest = wake.load.loadPkgDigest(
+            self.state,
+            pkgFile,
+            calc_digest=True,
+        )
         expected = load_yaml(os.path.join(directory, "expected.yml"))
         assert expected == pkgDigest.serialize(), '[[ digest ' + name + ' ]]'
 
         export_path = os.path.join(directory, "expectedExport.yml")
         if os.path.exists(export_path):
             expected = load_yaml(export_path)
-            result = wake.load.loadPkgExport(self.state, STORE_MAP, pkgDigest)
+            result = wake.load.loadPkgExport(
+                self.state,
+                self.store.storeMap,
+                pkgDigest,
+            )
             assert expected == result, '[[ export ' + name + ' ]]'
 
     def test_simple(self):

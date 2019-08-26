@@ -16,7 +16,6 @@ import os
 from . import utils
 
 DIR_WAKELIB = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_PKG_LIBSONNET = "PKG.libsonnet"
 DEFAULT_FILE_DIGEST = ".wakeDigest.json"
 
 _wakeConstants = utils.jsonloadf(
