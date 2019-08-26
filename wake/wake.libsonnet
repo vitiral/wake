@@ -27,9 +27,9 @@ C + { local wake = self
         local namespaceLen = std.length(namespaceStr);
 
         assert namespaceLen == 0 || namespaceLen > 3: "namespace length must be > 3";
-        assert !_P.hasSep(namespaceStr): "namespace must not contain '#'";
+        assert !U.hasSep(namespaceStr): "namespace must not contain '#'";
         assert std.length(name) > 3: "name length must be > 3";
-        assert !_P.hasSep(name): "name must not contain '#'";
+        assert !U.hasSep(name): "name must not contain '#'";
 
         std.join(C.WAKE_SEP, [
             namespaceStr,
@@ -40,7 +40,7 @@ C + { local wake = self
     , pkgReq(namespace, name, semver=null): {
         local semverStr = U.stringDefault(semver),
 
-        assert !_P.hasSep(semverStr): "semver must not contain '@'",
+        assert !U.hasSep(semverStr): "semver must not contain '@'",
 
         result: std.join(C.WAKE_SEP, [
             wake.pkgName(namespace, name),
@@ -57,10 +57,6 @@ C + { local wake = self
             version,
             digest,
         ])
-
-    # Request to retrieve a pkg locally
-    , pkgLocal(requestingPkgVer, path):
-        [requestingPkgVer, path]
 
     # Declare a pkg (in PKG.libsonnet)
     , pkg(
@@ -187,16 +183,17 @@ C + { local wake = self
                     requestingPkgVer,
                     pkgReq,
                 ]);
-                if pkgKey in P.pkgsDefined then
-                    # !! NOTE: wake._private.pkgsDefined is **injected** by
-                    # !! wake/runWakeExport.jsonnet
-                    P.pkgsDefined[pkgKey]
-                else
-                    wake.err("%s requested %s (in %s) but it does not exist in the store" % [
+
+                # !! NOTE: wake._private.pkgsDefined is **injected** by
+                # !! wake/runWakeExport.jsonnet
+                assert pkgKey in P.pkgsDefined:
+                    "%s requested %s (in %s) but it does not exist in the store" % [
                         requestingPkgVer,
                         pkgReq,
                         category,
-                    ]);
+                    ];
+
+                P.pkgsDefined[pkgKey];
 
             # Lookup all packages in deps
             local lookupPkgs = function(category, depPkgs) {
@@ -213,68 +210,61 @@ C + { local wake = self
                 "global": lookupPkgs("global", deps.global),
             }
 
-        # , recurseCallExports(wake, pkg): {
-        #     local this = self,
+        , recurseCallExport(wake, pkg): {
+            local this = self,
 
+            # straight copy of pkg
+            [C.F_TYPE]: pkg[C.F_TYPE],
+            [C.F_STATE]: C.S_DEFINED,
+            pkgVer: pkg.pkgVer,
+            pkgOrigin: pkg.pkgOrigin,
+            paths: pkg.paths,
+
+            local fnDeps = P.lookupDeps(pkg.pkgVer, pkg.deps),
+            local callPkgsExport = function(pkgs) {
+                [k]: P.recurseCallExports(wake, pkgs[k])
+                for k in std.objectFields(pkgs)
+            },
+
+            # Recursively resolve all dependencies
+            deps: {
+                [k]: callPkgsExport(fnDeps[k]) for k in fnDeps
+            },
+
+            # Use the reference which includes resolved dependencies
+            export: pkg.export(wake, this),
+        },
+
+        # , simplify(pkg): {
         #     [C.F_TYPE]: pkg[C.F_TYPE],
-        #     [C.F_STATE]: C.S_DEFINED,
-        #     pkgVer: self.pkgVer,
-        #     pkgDigest: wake.pkgDigest(this),
+        #     [C.F_STATE]: pkg[C.F_STATE],
+        #     pkgVer: pkg.pkgVer,
 
-        #     local callExports = function(dep)
+        #     local getIdOrUnresolved = function(dep)
         #         if U.isUnresolved(dep) then
         #             dep
         #         else
         #             dep.pkgVer,
 
-        #     local deps = {
+        #     pathsDef: pkg.pathsDef,
+        #     paths: pkg.paths,
+        #     # FIXME: pathsReq
+        #     pkgs: {
         #         [dep]: getIdOrUnresolved(pkg.pkgs[dep])
         #         for dep in std.objectFields(pkg.pkgs)
-
         #     },
+        #     export: pkg.export,
+        # }
 
-        #     returnPkg = pkg + {
-
-        #     },
-        # }.returnPkg
-
-        , simplify(pkg): {
-            [C.F_TYPE]: pkg[C.F_TYPE],
-            [C.F_STATE]: pkg[C.F_STATE],
-            pkgVer: pkg.pkgVer,
-
-            local getIdOrUnresolved = function(dep)
-                if U.isUnresolved(dep) then
-                    dep
-                else
-                    dep.pkgVer,
-
-            pathsDef: pkg.pathsDef,
-            paths: pkg.paths,
-            # FIXME: pathsReq
-            pkgs: {
-                [dep]: getIdOrUnresolved(pkg.pkgs[dep])
-                for dep in std.objectFields(pkg.pkgs)
-            },
-            export: pkg.export,
-        }
-
-        , recurseSimplify(pkg):
-            if U.isUnresolved(pkg) then
-                [pkg]
-            else
-                local simpleDeps = [
-                    P.recurseSimplify(pkg.pkgs[dep])
-                    for dep in std.objectFields(pkg.pkgs)
-                ];
-                [P.simplify(pkg)] + std.flattenArrays(simpleDeps)
-
-
-        , hasSep(s): U.containsChr(C.WAKE_SEP, s)
-
-        , getPkgName(str):
-            local items = std.splitLimit(str, C.WAKE_SEP, 3);
-            wake.pkgName(items[0], items[1])
+        # , recurseSimplify(pkg):
+        #     if U.isUnresolved(pkg) then
+        #         [pkg]
+        #     else
+        #         local simpleDeps = [
+        #             P.recurseSimplify(pkg.pkgs[dep])
+        #             for dep in std.objectFields(pkg.pkgs)
+        #         ];
+        #         [P.simplify(pkg)] + std.flattenArrays(simpleDeps)
     }
 
     , util: {
@@ -316,6 +306,8 @@ C + { local wake = self
 
         , isExecLocal(obj):
             U.isExec(obj) && obj.container == C.EXEC_LOCAL
+
+        , hasSep(s): U.containsChr(C.WAKE_SEP, s)
 
         # General Helpers
         , boolToInt(bool): if bool then 1 else 0

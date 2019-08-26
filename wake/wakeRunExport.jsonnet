@@ -30,9 +30,6 @@ local wake =
 // instantiate and return the root pkg
 local pkgInitial = pkg_fn(wake);
 
-local root = wake._private.recurseDefinePkg(wake, pkgInitial);
+local pkgExport = wake._private.recurseCallExport(wake, pkgInitial);
 
-{
-    root: wake._private.simplify(root),
-    all: wake._private.recurseSimplify(root),
-}
+pkgExport

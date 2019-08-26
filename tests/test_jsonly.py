@@ -40,14 +40,14 @@ class TestJsonnetOnly(unittest.TestCase):
     def run_test(self, name):
         directory = os.path.join(DIR_JSONLY, name)
         pkgFile = os.path.join(directory, DEFAULT_PKG_LIBSONNET)
-        result = wake.load.loadPkgDigest(self.state, pkgFile)
+        pkgDigest = wake.load.loadPkgDigest(self.state, pkgFile)
         expected = load_yaml(os.path.join(directory, "expected.yml"))
-        assert expected == result.serialize(), '[[ digest ' + name + ' ]]'
+        assert expected == pkgDigest.serialize(), '[[ digest ' + name + ' ]]'
 
-        export_path = load_yaml(os.path.join(directory, "expectedExport.yml"))
+        export_path = os.path.join(directory, "expectedExport.yml")
         if os.path.exists(export_path):
             expected = load_yaml(export_path)
-            result = wake.load.loadPkgExport(self.state, STORE_MAP, pkgFile)
+            result = wake.load.loadPkgExport(self.state, STORE_MAP, pkgDigest)
             assert expected == result, '[[ export ' + name + ' ]]'
 
     def test_simple(self):

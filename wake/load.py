@@ -20,6 +20,8 @@ import os
 import hashlib
 import json
 
+import six
+
 from .constants import *
 from . import utils
 from . import pkg
@@ -86,13 +88,13 @@ def loadPkgExport(state, pkgsDefined, pkgDigest):
             pkgsDefined=pkgsDefined,
         )
         run_export_text = utils.format_run_export(
-            pkg_file,
+            pkgDigest.pkg_file,
             pkgs_defined_path=pkgs_defined_path,
         )
         run_export_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
 
         # Dump real `.digest.json`
-        utils.jsondumpf(digest_path, pkgDigest.digest.serialize())
+        utils.jsondumpf(digest_path, pkgDigest.pkgVer.digest.serialize())
 
         # Put the jsonnet run file in place
         utils.dumpf(run_export_path, run_export_text)
@@ -112,8 +114,8 @@ def _dump_pkgs_defined(directory, pkgsDefined):
 
     This allows them to be looked up by key.
     """
-    pkgs_defined_path = os.path.join(directory, "pkgsDefined.libsonnet"), 'w'
-    with open(pkgs_defined_path) as fd:
+    pkgs_defined_path = os.path.join(directory, "pkgsDefined.libsonnet")
+    with open(pkgs_defined_path, 'w') as fd:
         fd.write("{\n")
         for key, path in sorted(six.iteritems(pkgsDefined)):
             key, path = json.dumps(key), json.dumps(path)
