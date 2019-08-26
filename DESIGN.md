@@ -85,7 +85,7 @@ key/value map where the key is a pkg-specific mapping.
 
 **depsManifested**: in the **moduleBuild** phase, the **deps** field's type will change
 to the **depsManifested**. They `keys` will remain the same, but the values will be
-full packages. This will be passed to the `pkg.exports` function.
+full packages. This will be passed to the `pkg.export` function.
 
 
 # Wake Architecture (SPC-arch) <a id="SPC-arch" />
@@ -283,7 +283,7 @@ the following **phases**:
     determine and download all needed dependencies, which are given to the
     [Store].
   - _moduleBuild_: the root package's jsonnet is re-executed. `getPkg` will now
-    return the _defined_ package object and `exports` can be called.
+    return the _defined_ package object and `export` can be called.
 
     [Store] creates a sandbox where each `package.exec` (with data)
     can be executed within its `container`. This creates a `module`, which can
@@ -519,7 +519,7 @@ The basic API of wake is:
 - The pkg then goes through multiple states as its dependencies are resolved.
   These states are _declared_ -> _defined_ -> [_ready_ ->] _completed_, where
   _ready_ is only for modules.
-  - Closures on the pkg (like `exports`) are called when the pkg has achieved a
+  - Closures on the pkg (like `export`) are called when the pkg has achieved a
     state marked with the name of the input, i.e. `pkgDefined` is a pkg in
     state _defined_.
 - Modules are of type `function(wake, pkgReady, config) ->
@@ -538,7 +538,7 @@ The basic API of wake is:
 - [[.declareModule]]: declare how to build something with a pkg.
 - [[.pathRef]]: Reference a path from within a pkg or module.
 - [[.exec]]: a declared executable. Is typically a member of `module.exec`
-  or can be a member of `exports` for a pkg or module.
+  or can be a member of `export` for a pkg or module.
 
 [JSH]: http://github.com/vitiral/jsh
 [semver]: https://semver.org

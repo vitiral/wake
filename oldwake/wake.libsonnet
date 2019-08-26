@@ -85,8 +85,8 @@ C + { local wake = self
         # packages that this pkg depends on.
         deps=null,
 
-        # Function which returns the exports of this pkg.
-        exports=null,
+        # Function which returns the export of this pkg.
+        export=null,
     ): {
         [C.F_TYPE]: C.T_PKG,
         [C.F_STATE]: C.S_DECLARED,
@@ -96,7 +96,7 @@ C + { local wake = self
         deps: U.objDefault(deps),
 
         # lazy functions
-        exports: exports,
+        export: export,
     }
 
     # Declare dependencies for a package.
@@ -120,7 +120,7 @@ C + { local wake = self
         pkg,
         modules,
         reqFsEntries=null,
-        exports=null,
+        export=null,
         exec=null,
         origin=null,
     ): null # TODO
@@ -187,7 +187,7 @@ C + { local wake = self
             'pkgReq': null,
         }
 
-        # Used to lazily define the exports of the pkg and sub-pkgs.
+        # Used to lazily define the export of the pkg and sub-pkgs.
         , recurseDefinePkg(wake, pkg): {
             local this = self,
             local recurseMaybe = function(depPkg)
@@ -220,11 +220,11 @@ C + { local wake = self
                     for dep in std.objectFields(pkgsPass)
                 }
 
-                , exports:
+                , export:
                     if U.isDefined(this.returnPkg) then
-                        local out = pkg.exports(wake, this.returnPkg);
+                        local out = pkg.export(wake, this.returnPkg);
                         assert std.isObject(out)
-                            : "%s exports did not return an object"
+                            : "%s export did not return an object"
                             % [this.returnPkg.pkgVer];
                         out
                     else
@@ -240,7 +240,7 @@ C + { local wake = self
 
             if U.isAtLeastDefined(execPkg) then
                 getPkg + {
-                    exec: U.getKeys(execPkg.exports, getPkg.from),
+                    exec: U.getKeys(execPkg.export, getPkg.from),
                 }
             else
                 getPkg
@@ -276,7 +276,7 @@ C + { local wake = self
                 [dep]: getIdOrUnresolved(pkg.pkgs[dep])
                 for dep in std.objectFields(pkg.pkgs)
             },
-            exports: pkg.exports,
+            export: pkg.export,
         }
 
         , recurseSimplify(pkg):

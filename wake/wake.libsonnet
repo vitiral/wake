@@ -75,8 +75,8 @@ C + { local wake = self
         # packages that this pkg depends on.
         deps=null,
 
-        # Function which returns the exports of this pkg.
-        exports=null,
+        # Function which returns the export of this pkg.
+        export=null,
     ): {
         [C.F_TYPE]: C.T_PKG,
         [C.F_STATE]: C.S_DECLARED,
@@ -86,13 +86,13 @@ C + { local wake = self
         deps: U.objDefault(deps),
 
         # lazy functions
-        exports: exports,
+        export: export,
     }
 
     # Convert a pkg object into only it's digest elements.
     , pkgDigest(pkg): {
         [k]: pkg[k] for k in std.objectFields(pkg)
-        if k != "exports"
+        if k != "export"
     }
 
     # Declare dependencies for a package.
@@ -116,7 +116,7 @@ C + { local wake = self
         pkg,
         modules,
         reqFsEntries=null,
-        exports=null,
+        export=null,
         exec=null,
         origin=null,
     ): null # TODO
@@ -256,7 +256,7 @@ C + { local wake = self
                 [dep]: getIdOrUnresolved(pkg.pkgs[dep])
                 for dep in std.objectFields(pkg.pkgs)
             },
-            exports: pkg.exports,
+            export: pkg.export,
         }
 
         , recurseSimplify(pkg):
