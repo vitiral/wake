@@ -23,8 +23,8 @@ function(wake)
 
             {
                 int: 3,
-                // libA_export: libA.export.answer,
-                // libA_answer: libA.export.answer,
-                // answer: self.libA_answer / 6,
+                libA_export: libA.export,
+                libA_answer: libA.export.answer,
+                final_answer: self.libA_answer / 6,
             },
     )

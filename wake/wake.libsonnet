@@ -89,7 +89,7 @@ C {
         deps: U.objDefault(deps),
 
         # lazy functions
-        export: export,
+        exportFn:: export,
     }
 
     ,
@@ -288,10 +288,10 @@ C {
                     for lvl in std.objectFields(pkg.deps)
                 },
 
-                export: if pkg.export == null then
+                export: if pkg.exportFn == null then
                     null
                 else
-                    pkg.export(wake, this)
+                    pkg.exportFn(wake, this)
             }
 
         # , simplify(pkg): {
