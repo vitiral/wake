@@ -227,10 +227,10 @@ C {
             }
 
         ,
-        recurseCallExport(wake, pkg): 
+        recurseCallExport(wake, pkg):
             local fnDeps = P.lookupDeps(pkg.pkgVer, pkg.deps);
             local callPkgsExport = function(pkgs) {
-                [k]: P.recurseCallExports(wake, pkgs[k])
+                [k]: P.recurseCallExport(wake, pkgs[k])
                 for k in std.objectFields(pkgs)
             };
             assert fnDeps != null: "fnDeps is null";
