@@ -193,23 +193,11 @@ C {
         ,
         # Looks up all items in the dependency tree
         lookupDeps(requestingPkgVer, deps):
-            # Looks up the pkgReq based on who's asking.
             local lookupPkg = function(requestingPkgVer, category, pkgReq)
                 local pkgKey = std.join(C.WAKE_SEP, [
                     requestingPkgVer,
                     pkgReq,
                 ]);
-
-                # !! NOTE: wake._private.pkgsDefined is **injected** by
-                # !! wake/runWakeExport.jsonnet
-                assert pkgKey in P.pkgsDefined :
-                       '%s requested %s (in %s) but it does not exist in the store:
-                       (pkgKey=%s)' % [
-                    requestingPkgVer,
-                    pkgReq,
-                    category,
-                    pkgKey,
-                ];
 
                 P.pkgsDefined[pkgKey];
 
@@ -229,34 +217,79 @@ C {
             }
 
         ,
-        recurseCallExport(wake, pkg):
-            {
-                local fnDeps = P.lookupDeps(pkg.pkgVer, pkg.deps),
-                local callPkgsExport = function(pkgs) {
-                    [k]: P.recurseCallExport(wake, pkgs[k])
+        # Resolve the dependencies for all sub pkgs
+        recursePkgResolve(wake, pkg): pkg + {
+            local this = self
+
+            # Note: lvl is the "restriction level"
+            ,
+            local lookupPkg = function(lvl, pkgReq)
+                assert std.isString(lvl);
+                assert std.isString(pkgReq);
+
+                local pkgKey = std.join(C.WAKE_SEP, [
+                    this.pkgVer,
+                    pkgReq,
+                ]);
+
+                # NOTE: wake._private.pkgsDefined is **injected** by
+                # wake/runWakeExport.jsonnet
+                assert pkgKey in P.pkgsDefined : 'pkgKey=%s not found' % [pkgKey];
+
+                local return = P.pkgsDefined[pkgKey];
+                assert U.isPkg(return): "lookup not a package";
+                return
+
+            ,
+            local lookupPkgs = function(lvl, pkgs)
+                assert std.isString(lvl);
+                assert std.isObject(pkgs): "%s not object: %s" % [lvl, pkgs];
+                {
+                    [k]: lookupPkg(lvl, pkgs[k])
                     for k in std.objectFields(pkgs)
-                },
-                assert fnDeps != null : 'fnDeps is null',
-                local this = self,
-
-                result: {
-                    # straight copy of pkg
-                    [C.F_TYPE]: pkg[C.F_TYPE],
-                    [C.F_STATE]: C.S_DEFINED,
-                    pkgVer: pkg.pkgVer,
-                    pkgOrigin: pkg.pkgOrigin,
-                    paths: pkg.paths,
-
-                    # Recursively resolve all dependencies
-                    deps:: {
-                        [k]: callPkgsExport(fnDeps[k])
-                        for k in std.objectFields(fnDeps)
-                    },
-
-                    # Use the reference which includes resolved dependencies
-                    export: if pkg.export != null then pkg.export(wake, this.result) else null,
                 }
-            }.result,
+
+            ,
+            # lookup all the depth=1 packages
+            local depsShallow = {
+                [lvl]: lookupPkgs(lvl, pkg.deps[lvl])
+                for lvl in std.objectFields(pkg.deps)
+            }
+
+            ,
+            deps: {
+                [lvl]: P.recursePkgResolve(wake, depsShallow[lvl])
+                for lvl in std.objectFields(depsShallow)
+            }
+        }
+
+        # ,
+        # recurseCallExport(wake, pkg): {
+        #     local this = self,
+        #     result: {
+        #         local callPkgsExport = function(pkgs) {
+        #             [k]: P.recurseCallExport(wake, pkgs[k])
+        #             for k in std.objectFields(pkgs)
+        #         },
+
+        #         # recursively call export on the packages
+        #         local depsPass = {
+        #             [k]: callPkgsExport(fnDeps[k])
+        #             for k in std.objectFields(fnDeps)
+        #         },
+
+        #         [C.F_STATE]: C.S_DEFINED,
+
+        #         # Recursively resolve all dependencies
+        #         deps:: {
+        #             [k]: callPkgsExport(depspass[k])
+        #             for k in std.objectFields(depspass)
+        #         },
+
+        #         # Use the reference which includes resolved dependencies
+        #         export: if pkg.export != null then pkg.export(wake, this.result) else null,
+        #     },
+        # }.result,
 
         # , simplify(pkg): {
         #     [C.F_TYPE]: pkg[C.F_TYPE],

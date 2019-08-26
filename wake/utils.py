@@ -136,6 +136,7 @@ def jsondumpf(path, data, indent=4):
 def manifest_jsonnet(run_path):
     """Manifest a jsonnet run_path."""
     cmd = ["jsonnet", run_path]
+    cmd.extend(['--max-stack', '200', '--max-trace', '200'])
     completed = subprocess.run(
         cmd,
         stdout=subprocess.PIPE,
