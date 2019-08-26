@@ -1,10 +1,10 @@
 
 pkg_file: PKG.libsonnet
-pkgVer: "🌊simple-fake_deps🌊0.1.0🌊md5.45df2d9f984a8250ca21fb54cdda79de"
+pkgVer: "🌊simple-fake_deps🌊0.1.0🌊md5.ab8be1d543f0fcd51324bef38d2add5d"
+
 pkgOrigin: None
 paths: PKG.libsonnet
 deps:
-    __WAKETYPE__: deps
     global: {}
     restricted: {}
     restrictedMajor: {}

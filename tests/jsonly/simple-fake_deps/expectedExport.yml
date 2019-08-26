@@ -1,3 +1,26 @@
-libA_export: {"answer": 42}
-libA_answer: 42
-answer: 77
+
+pkg_file: PKG.libsonnet
+pkgVer: "🌊simple-fake_deps🌊0.1.0🌊md5.ab8be1d543f0fcd51324bef38d2add5d"
+
+pkgOrigin: None
+paths: PKG.libsonnet
+deps:
+    global: {}
+    restricted: {}
+    restrictedMajor: {}
+    restrictedMinor: {}
+    unrestricted:
+        libA: "fake🌊libA🌊>=5.2.0"
+
+paths:
+  - ./PKG.libsonnet
+  - ./README.txt
+  - ./script.py
+
+pkgOrigin: null
+
+export:
+    int: 3
+    libA_export: {"answer": 42}
+    libA_answer: 42
+    final_answer: 7

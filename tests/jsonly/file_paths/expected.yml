@@ -4,7 +4,6 @@ pkgVer: "🌊file_paths🌊0.1.0🌊md5.5487701313a91ae028a3e440f643c948"
 pkgOrigin: None
 paths: PKG.libsonnet
 deps:
-    __WAKETYPE__: deps
     global: {}
     restricted: {}
     restrictedMajor: {}
