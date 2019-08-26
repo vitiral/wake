@@ -105,6 +105,12 @@ def abspath(p):
     return path.abspath(path.expanduser(p))
 
 
+def closefd(fd):
+    """Really close a file descriptor for realz."""
+    fd.flush()
+    os.fsync(fd)
+
+
 def loadf(path):
     with open(path) as fp:
         return fp.read()
@@ -113,8 +119,7 @@ def loadf(path):
 def dumpf(path, text):
     with open(path, 'w') as fp:
         out = fp.write(text)
-        fp.flush()
-        os.fsync(fp)
+        closefd(fp)
         return out
 
 
@@ -126,8 +131,7 @@ def jsonloadf(path):
 def jsondumpf(path, data, indent=4):
     with open(path, 'w') as fp:
         out = json.dump(data, fp, indent=indent, sort_keys=True)
-        fp.flush()
-        os.fsync(fp)
+        closefd(fp)
         return out
 
 
@@ -146,11 +150,19 @@ def manifest_jsonnet(run_path):
     return json.loads(completed.stdout)
 
 
-def format_run_digest(pkg_file):
-    """Returned the wake jsonnet run template with items filled out."""
-    templ = constants.RUN_DIGEST_TEMPLATE.replace("WAKE_LIB",
-                                                  constants.PATH_WAKELIB)
-    return templ.replace("PKG_FILE", pkg_file)
+def format_run_digest(pkgFile):
+    """Returned the wake jsonnet for creating the pkg digest."""
+    templ = constants.RUN_DIGEST_TEMPLATE
+    templ = templ.replace("WAKE_LIB", constants.PATH_WAKELIB)
+    return templ.replace("PKG_FILE", pkgFile)
+
+
+def format_run_export(pkgFile, pkgs_defined_path):
+    """Returned the wake jsonnet for getting pkg exports."""
+    templ = constants.RUN_EXPORT_TEMPLATE
+    templ = templ.replace("WAKE_LIB", constants.PATH_WAKELIB)
+    templ = templ.replace("PKG_FILE", pkgFile)
+    return templ.replace("PKGS_DEFINED", pkgs_defined_path)
 
 
 def fail(msg):

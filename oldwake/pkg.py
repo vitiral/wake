@@ -145,7 +145,7 @@ class Fingerprint(TupleObject):
 class PkgSimple(object):
     """Pull out only the data we care about."""
     def __init__(self, state, pkg_ver, namespace, name, version, description,
-                 fingerprint, pkgs, paths, paths_def, exports):
+                 fingerprint, pkgs, paths, paths_def, export):
         hash_ = fingerprint['hash']
         expected_pkg_ver = [namespace, name, version, hash_]
         assert expected_pkg_ver == pkg_ver.split(WAKE_SEP), (
@@ -180,7 +180,7 @@ class PkgSimple(object):
 
         self.paths = paths
         self.paths_def = paths_def
-        self.exports = exports
+        self.export = export
 
     def get_pkg_key(self):
         return PkgName(self.namespace, self.name)
@@ -205,7 +205,7 @@ class PkgSimple(object):
             pkgs=dct['pkgs'],
             paths=dct['paths'],
             paths_def=dct['pathsDef'],
-            exports=dct['exports'],
+            export=dct['export'],
         )
 
     def to_dict(self):
@@ -215,7 +215,7 @@ class PkgSimple(object):
             'pkgVer': self.pkg_ver,
             'paths': self.paths,
             'pathsDef': self.paths_def,
-            'exports': self.exports,
+            'export': self.export,
             'pkgs': self.pkgs,
         }
 

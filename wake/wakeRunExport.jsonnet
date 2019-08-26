@@ -15,24 +15,21 @@
 # for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 # be dual licensed as above, without any additional terms or conditions.
 
-local wake_noPkgs = (import "WAKE_LIB");
-local pkg_fn = (import "PKG_FILE");
-local pkgsDefined = (import "PKGS_DEFINED");
+local wake_noPkgs = (import 'WAKE_LIB');
+local pkg_fn = (import 'PKG_FILE');
+local pkgsDefined = (import 'PKGS_DEFINED');
 
 local wake =
     wake_noPkgs
-    + {
+    {
         _private+: {
             pkgsDefined: pkgsDefined,
         },
     };
 
-// instantiate and return the root pkg
+# instantiate and return the root pkg
 local pkgInitial = pkg_fn(wake);
 
-local root = wake._private.recurseDefinePkg(wake, pkgInitial);
+local pkgExport = wake._private.recurseCallExport(wake, pkgInitial);
 
-{
-    root: wake._private.simplify(root),
-    all: wake._private.recurseSimplify(root),
-}
+pkgExport

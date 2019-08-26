@@ -1,16 +1,16 @@
 
 pkg_file: PKG.libsonnet
-pkgVer: '@file_paths@0.1.0@md5.698f6d8c37c42373686198b5d4359a48'
+pkgVer: "🌊file_paths🌊0.1.0🌊md5.d41ebd5adadb75f0d714cad0d3f1906a"
 pkgOrigin: None
 paths: PKG.libsonnet
 deps:
     __WAKETYPE__: deps
-    global: null
-    restricted: null
-    restrictedMajor: null
-    restrictedMinor: null
+    global: {}
+    restricted: {}
+    restrictedMajor: {}
+    restrictedMinor: {}
     unrestricted:
-        pytest: pYpI@pytest@>=5.0.0
+        libA: "fake🌊libA🌊>=5.2.0"
 
 paths:
   - ./PKG.libsonnet

@@ -5,10 +5,10 @@ pkgOrigin: None
 paths: PKG.libsonnet
 deps:
     __WAKETYPE__: deps
-    global: null
-    restricted: null
-    restrictedMajor: null
-    restrictedMinor: null
+    global: {}
+    restricted: {}
+    restrictedMajor: {}
+    restrictedMinor: {}
     unrestricted:
         pytest: "pYpI🌊pytest🌊>=5.0.0"
 

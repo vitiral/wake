@@ -32,7 +32,7 @@ function(wake)
         ],
         pkgs= {
         },
-        exports = function(wake, pkg) {
+        export = function(wake, pkg) {
         },
     )
 '''
