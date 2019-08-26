@@ -22,6 +22,8 @@ init:
 
 fix:
 	py3/bin/yapf --in-place -r wake/ tests
+	jsonnetfmt --in-place --indent 4 --comment-style h \
+		$$(find wake -type f \( -name "*.libsonnet" -o -name "*.jsonnet" \))
 
 lint:
 	# TODO: remove -E
