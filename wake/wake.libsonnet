@@ -109,7 +109,6 @@ C {
         restrictedMinor=null,
         global=null,
     ): {
-        [C.F_TYPE]: C.T_DEPS,
         unrestricted: U.objDefault(unrestricted),
         restricted: U.objDefault(restricted),
         restrictedMajor: U.objDefault(restrictedMajor),
@@ -218,17 +217,17 @@ C {
 
         ,
         # Resolve the dependencies for all sub pkgs
-        recursePkgResolve(wake, pkg): pkg + {
-            local this = self
+        recursePkgResolve(wake, pkg):
+            assert U.isPkg(pkg) : 'Not a pkg: %s' % [pkg];
+            local requestingPkgVer = pkg.pkgVer;
 
             # Note: lvl is the "restriction level"
-            ,
             local lookupPkg = function(lvl, pkgReq)
                 assert std.isString(lvl);
                 assert std.isString(pkgReq);
 
                 local pkgKey = std.join(C.WAKE_SEP, [
-                    this.pkgVer,
+                    requestingPkgVer,
                     pkgReq,
                 ]);
 
@@ -236,32 +235,42 @@ C {
                 # wake/runWakeExport.jsonnet
                 assert pkgKey in P.pkgsDefined : 'pkgKey=%s not found' % [pkgKey];
 
-                local return = P.pkgsDefined[pkgKey];
-                assert U.isPkg(return): "lookup not a package";
-                return
+                local result = P.pkgsDefined[pkgKey](wake);
+                assert U.isPkg(result) : "lookupPkg result is not a package";
+                result
 
-            ,
+            ;
             local lookupPkgs = function(lvl, pkgs)
                 assert std.isString(lvl);
-                assert std.isObject(pkgs): "%s not object: %s" % [lvl, pkgs];
+                assert std.isObject(pkgs) : '%s not object: %s' % [lvl, pkgs];
                 {
                     [k]: lookupPkg(lvl, pkgs[k])
                     for k in std.objectFields(pkgs)
                 }
 
-            ,
-            # lookup all the depth=1 packages
+            ;
             local depsShallow = {
                 [lvl]: lookupPkgs(lvl, pkg.deps[lvl])
                 for lvl in std.objectFields(pkg.deps)
             }
 
-            ,
-            deps: {
-                [lvl]: P.recursePkgResolve(wake, depsShallow[lvl])
-                for lvl in std.objectFields(depsShallow)
+            ;
+            local recurseMapResolve = function(pkgs) {
+                [k]: P.recursePkgResolve(wake, pkgs[k])
+                for k in std.objectFields(pkgs)
             }
-        }
+
+            ;
+            # lookup all the depth=1 packages
+            pkg {
+                local this = self
+
+                ,
+                deps: {
+                    [lvl]: recurseMapResolve(depsShallow[lvl])
+                    for lvl in std.objectFields(depsShallow)
+                },
+            },
 
         # ,
         # recurseCallExport(wake, pkg): {
@@ -380,6 +389,7 @@ C {
         ,
         # General Helpers
         boolToInt(bool): if bool then 1 else 0
+
         ,
         containsChr(c, str): !(std.length(std.splitLimit(str, c, 1)) == 1)
 
