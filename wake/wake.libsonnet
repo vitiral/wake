@@ -246,15 +246,14 @@ C {
                 pkgOrigin: pkg.pkgOrigin,
                 paths: pkg.paths,
 
+                # # Recursively resolve all dependencies
+                # deps: {
+                #     [k]: callPkgsExport(fnDeps[k])
+                #     for k in std.objectFields(fnDeps)
+                # },
 
-                # Recursively resolve all dependencies
-                deps: {
-                    [k]: callPkgsExport(fnDeps[k])
-                    for k in std.objectFields(fnDeps)
-                },
-
-                # Use the reference which includes resolved dependencies
-                export: pkg.export(wake, this),
+                # # Use the reference which includes resolved dependencies
+                # export: pkg.export(wake, this),
             },
 
         # , simplify(pkg): {
