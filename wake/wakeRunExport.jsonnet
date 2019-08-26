@@ -32,4 +32,4 @@ local pkgInitial = pkg_fn(wake);
 
 local pkgExport = wake._private.recurseCallExport(wake, pkgInitial);
 
-pkgExport
+std.manifestJsonEx(pkgExport, "  ")

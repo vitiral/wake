@@ -22,8 +22,9 @@ function(wake)
             local libA = pkg.deps.unrestricted.libA;
 
             {
-                libA_export: libA.export,
-                libA_answer: libA.export.answer,
-                answer: self.libA_answer / 6,
-            }
+                int: 3,
+                // libA_export: libA.export,
+                // libA_answer: libA.export.answer,
+                // answer: self.libA_answer / 6,
+            },
     )

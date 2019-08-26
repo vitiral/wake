@@ -230,31 +230,33 @@ C {
 
         ,
         recurseCallExport(wake, pkg):
-            local fnDeps = P.lookupDeps(pkg.pkgVer, pkg.deps);
-            local callPkgsExport = function(pkgs) {
-                [k]: P.recurseCallExport(wake, pkgs[k])
-                for k in std.objectFields(pkgs)
-            };
-            assert fnDeps != null : 'fnDeps is null';
             {
+                local fnDeps = P.lookupDeps(pkg.pkgVer, pkg.deps),
+                local callPkgsExport = function(pkgs) {
+                    [k]: P.recurseCallExport(wake, pkgs[k])
+                    for k in std.objectFields(pkgs)
+                },
+                assert fnDeps != null : 'fnDeps is null',
                 local this = self,
 
-                # straight copy of pkg
-                [C.F_TYPE]: pkg[C.F_TYPE],
-                [C.F_STATE]: C.S_DEFINED,
-                pkgVer: pkg.pkgVer,
-                pkgOrigin: pkg.pkgOrigin,
-                paths: pkg.paths,
+                result: {
+                    # straight copy of pkg
+                    [C.F_TYPE]: pkg[C.F_TYPE],
+                    [C.F_STATE]: C.S_DEFINED,
+                    pkgVer: pkg.pkgVer,
+                    pkgOrigin: pkg.pkgOrigin,
+                    paths: pkg.paths,
 
-                # # Recursively resolve all dependencies
-                # deps: {
-                #     [k]: callPkgsExport(fnDeps[k])
-                #     for k in std.objectFields(fnDeps)
-                # },
+                    # Recursively resolve all dependencies
+                    deps:: {
+                        [k]: callPkgsExport(fnDeps[k])
+                        for k in std.objectFields(fnDeps)
+                    },
 
-                # # Use the reference which includes resolved dependencies
-                # export: pkg.export(wake, this),
-            },
+                    # Use the reference which includes resolved dependencies
+                    export: if pkg.export != null then pkg.export(wake, this.result) else null,
+                }
+            }.result,
 
         # , simplify(pkg): {
         #     [C.F_TYPE]: pkg[C.F_TYPE],

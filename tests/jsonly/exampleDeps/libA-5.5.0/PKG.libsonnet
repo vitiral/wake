@@ -6,5 +6,5 @@ function(wake)
         pkgVer = pkgVer,
         export = function(wake, pkg) {
             answer: 42,
-        }
+        },
     )
