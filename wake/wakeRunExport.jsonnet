@@ -32,9 +32,7 @@ local pkgInitial = pkg_fn(wake);
 
 local pkgResolved = wake._private.recursePkgResolve(wake, pkgInitial);
 
-wake.pkgDigest(pkgResolved)
+local pkgExport = wake._private.recurseCallExport(wake, pkgResolved);
 
-# local pkgExport = wake._private.recurseCallExport(wake, pkgResolved);
-
-# pkgExport
+pkgExport
 

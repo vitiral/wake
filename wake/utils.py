@@ -170,10 +170,10 @@ def fail(msg):
     sys.exit(1)
 
 
-def dumpf(path, s):
+def dumpf(path, string):
     """Dump a string to a file."""
     with open(path, 'w') as f:
-        f.write(s)
+        f.write(string)
 
 
 def copytree(src, dst):

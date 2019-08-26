@@ -100,11 +100,10 @@ def loadPkgExport(state, pkgsDefined, pkgDigest):
             pkgDigest.pkg_file,
             pkgs_defined_path=pkgs_defined_path,
         )
-        utils.dumpf(run_export_path, run_export_text)
+        utils.dumpf(path=run_export_path, string=run_export_text)
 
         # Run the export (includes depenencies) and get result
         pkgExport = utils.manifest_jsonnet(run_export_path)
-
         return pkgExport
     finally:
         if pkgs_defined_path:

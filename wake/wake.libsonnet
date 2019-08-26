@@ -89,7 +89,7 @@ C {
         deps: U.objDefault(deps),
 
         # lazy functions
-        export:: export,
+        export: export,
     }
 
     ,
@@ -260,7 +260,6 @@ C {
             }
 
             ;
-            # lookup all the depth=1 packages
             pkg {
                 local this = self
 
@@ -269,35 +268,31 @@ C {
                     [lvl]: recurseMapResolve(depsShallow[lvl])
                     for lvl in std.objectFields(depsShallow)
                 },
-            },
+            }
 
-        # ,
-        # recurseCallExport(wake, pkg): {
-        #     local this = self,
-        #     result: {
-        #         local callPkgsExport = function(pkgs) {
-        #             [k]: P.recurseCallExport(wake, pkgs[k])
-        #             for k in std.objectFields(pkgs)
-        #         },
+        ,
+        # Note: pkg must have had recursePkgResolve called on it
+        recurseCallExport(wake, pkg):
+            local recurseMapExport = function(pkgs) {
+                [k]: P.recurseCallExport(wake, pkgs[k])
+                for k in std.objectFields(pkgs)
+            }
 
-        #         # recursively call export on the packages
-        #         local depsPass = {
-        #             [k]: callPkgsExport(fnDeps[k])
-        #             for k in std.objectFields(fnDeps)
-        #         },
+            ;
+            pkg {
+                local this = self
 
-        #         [C.F_STATE]: C.S_DEFINED,
+                ,
+                deps: {
+                    [lvl]: recurseMapExport(pkg.deps[lvl])
+                    for lvl in std.objectFields(pkg.deps)
+                },
 
-        #         # Recursively resolve all dependencies
-        #         deps:: {
-        #             [k]: callPkgsExport(depspass[k])
-        #             for k in std.objectFields(depspass)
-        #         },
-
-        #         # Use the reference which includes resolved dependencies
-        #         export: if pkg.export != null then pkg.export(wake, this.result) else null,
-        #     },
-        # }.result,
+                export: if pkg.export == null then
+                    null
+                else
+                    pkg.export(wake, this)
+            }
 
         # , simplify(pkg): {
         #     [C.F_TYPE]: pkg[C.F_TYPE],
