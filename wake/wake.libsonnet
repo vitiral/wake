@@ -75,8 +75,8 @@ C {
         # Local paths (files or dirs) this pkg depends on for building.
         paths=null,
 
-        # packages that this pkg depends on.
-        deps=null,
+        # Requirements for packages that this pkg depends on.
+        depsReq=null,
 
         # Function which returns the export of this pkg.
         export=null,
@@ -86,22 +86,15 @@ C {
         pkgVer: pkgVer,
         pkgOrigin: pkgOrigin,
         paths: U.arrayDefault(paths),
-        deps: U.objDefault(deps),
+        depsReq: U.objDefault(depsReq),
 
         # lazy functions
         exportFn:: export,
     }
 
     ,
-    # Convert a pkg object into only it's digest elements.
-    pkgDigest(pkg): {
-        [k]: pkg[k]
-        for k in std.objectFields(pkg)
-    }
-
-    ,
-    # Declare dependencies for a package.
-    deps(
+    # Declare dependency requirements for a package.
+    depsReq(
         unrestricted=null,
         restricted=null,
         restrictedMajor=null,
@@ -190,7 +183,7 @@ C {
 
         ,
         # Looks up all items in the dependency tree
-        lookupDeps(requestingPkgVer, deps):
+        lookupDeps(requestingPkgVer, depsReq):
             local lookupPkg = function(requestingPkgVer, category, pkgReq)
                 local pkgKey = std.join(C.WAKE_SEP, [
                     requestingPkgVer,
@@ -207,11 +200,11 @@ C {
 
             # Return the looked up dependencies
             {
-                unrestricted: lookupPkgs('unrestricted', deps.unrestricted),
-                restricted: lookupPkgs('restricted', deps.restricted),
-                restrictedMajor: lookupPkgs('restrictedMajor', deps.restrictedMajor),
-                restrictedMinor: lookupPkgs('restrictedMinor', deps.restrictedMinor),
-                global: lookupPkgs('global', deps.global),
+                unrestricted: lookupPkgs('unrestricted', depsReq.unrestricted),
+                restricted: lookupPkgs('restricted', depsReq.restricted),
+                restrictedMajor: lookupPkgs('restrictedMajor', depsReq.restrictedMajor),
+                restrictedMinor: lookupPkgs('restrictedMinor', depsReq.restrictedMinor),
+                global: lookupPkgs('global', depsReq.global),
             }
 
         ,
@@ -235,7 +228,7 @@ C {
                 assert pkgKey in P.pkgsDefined : 'pkgKey=%s not found' % [pkgKey];
 
                 local result = P.pkgsDefined[pkgKey](wake);
-                assert U.isPkg(result) : "lookupPkg result is not a package";
+                assert U.isPkg(result) : 'lookupPkg result is not a package';
                 result
 
             ;
@@ -249,8 +242,8 @@ C {
 
             ;
             local depsShallow = {
-                [lvl]: lookupPkgs(lvl, pkg.deps[lvl])
-                for lvl in std.objectFields(pkg.deps)
+                [lvl]: lookupPkgs(lvl, pkg.depsReq[lvl])
+                for lvl in std.objectFields(pkg.depsReq)
             }
 
             ;
@@ -291,8 +284,8 @@ C {
                 export: if pkg.exportFn == null then
                     null
                 else
-                    pkg.exportFn(wake, this)
-            }
+                    pkg.exportFn(wake, this),
+            },
 
         # , simplify(pkg): {
         #     [C.F_TYPE]: pkg[C.F_TYPE],

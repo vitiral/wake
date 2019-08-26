@@ -72,7 +72,10 @@ class Store(utils.SafeObject):
             # TODO: on exception, delete the file
             pkg_dir = os.path.join(self.dir, pkgVer.serialize())
             pkg_file = os.path.join(pkg_dir, constants.FILE_PKG_DEFAULT)
-            result = load.loadPkgDigest(self.state, pkg_file, calc_digest=True, cleanup=False)
+            result = load.loadPkgDigest(self.state,
+                                        pkg_file,
+                                        calc_digest=True,
+                                        cleanup=False)
             if check_cache:
                 assert result.pkgVer == pkgVer
             return result

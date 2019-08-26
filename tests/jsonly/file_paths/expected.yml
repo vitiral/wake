@@ -1,9 +1,9 @@
 
 pkg_file: PKG.libsonnet
-pkgVer: "🌊file_paths🌊0.1.0🌊md5.5487701313a91ae028a3e440f643c948"
+pkgVer: "🌊file_paths🌊0.1.0🌊md5.3b705fa107637b6820b1efca68f71e8b"
 pkgOrigin: None
 paths: PKG.libsonnet
-deps:
+depsReq:
     global: {}
     restricted: {}
     restrictedMajor: {}

@@ -10,7 +10,16 @@ deps:
     restrictedMajor: {}
     restrictedMinor: {}
     unrestricted:
-        libA: "fake🌊libA🌊>=5.2.0"
+        libA:
+            pkgVer: '🌊libA🌊5.5.0🌊md5.df06b83280600f9df41af881bacc5160'
+            deps: {}
+            export: {'answer': 42}
+            paths: []
+            pkgOrigin: null
+            __WAKESTATE__: 'declared'
+            __WAKETYPE__: 'pkg'
+
+depsReq: {}
 
 paths:
   - ./PKG.libsonnet

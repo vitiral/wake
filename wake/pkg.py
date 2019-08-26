@@ -131,7 +131,7 @@ class PkgDigest(utils.SafeObject):
 
     These items must completely define the package for transport and use.
     """
-    def __init__(self, pkg_file, pkgVer, pkgOrigin, paths, deps):
+    def __init__(self, pkg_file, pkgVer, pkgOrigin, paths, depsReq):
         if pkg_file not in paths:
             paths.add('./' + FILE_PKG_DEFAULT)
 
@@ -141,7 +141,7 @@ class PkgDigest(utils.SafeObject):
         self.pkgVer = pkgVer
         self.pkgOrigin = pkgOrigin
         self.paths = paths
-        self.deps = deps
+        self.depsReq = depsReq
 
     @classmethod
     def deserialize(cls, dct, pkg_file):
@@ -151,7 +151,7 @@ class PkgDigest(utils.SafeObject):
             pkgVer=PkgVer.deserialize(pkg_ver_str),
             pkgOrigin=dct.get('pkgOrigin'),
             paths=set(utils.ensure_valid_paths(dct['paths'])),
-            deps=dct['deps'],
+            depsReq=dct['depsReq'],
         )
 
     def serialize(self):
@@ -162,8 +162,45 @@ class PkgDigest(utils.SafeObject):
             "pkgVer": self.pkgVer.serialize(),
             "pkgOrigin": self.pkgOrigin,
             "paths": relpaths,
-            "deps": self.deps,
+            "depsReq": self.depsReq,
         }
 
     def __repr__(self):
         return 'PkgDigest{}'.format(self.serialize())
+
+
+class PkgExport(PkgDigest):
+    def __init__(self, pkg_file, pkgVer, pkgOrigin, paths, depsReq, deps, export):
+        super(PkgExport, self).__init__(
+            pkg_file=pkg_file,
+            pkgVer=pkgVer,
+            pkgOrigin=pkgOrigin,
+            paths=paths,
+            depsReq=depsReq,
+        )
+
+        self.deps = deps
+        self.export = export
+
+    @classmethod
+    def deserialize(cls, dct, pkg_file):
+        digest = PkgDigest.deserialize(dct, pkg_file)
+        return cls(
+            pkg_file=digest.pkg_file,
+            pkgVer=digest.pkgVer,
+            pkgOrigin=digest.pkgOrigin,
+            paths=digest.paths,
+            depsReq=dct['depsReq'],
+            export=dct['export'],
+        )
+
+    def serialize(self):
+        pdir, pfile = os.path.split(self.pkg_file)
+        relpaths = sorted(self.paths)
+        return {
+            "pkg_file": pfile,
+            "pkgVer": self.pkgVer.serialize(),
+            "pkgOrigin": self.pkgOrigin,
+            "paths": relpaths,
+            "depsReq": self.depsReq,
+        }

@@ -9,7 +9,6 @@
     "T_OBJECT": "object",
     "T_ERR": "err",
     "T_PKG": "pkg",
-    "T_DEPS": "deps",
     "T_GET_EXPORT": "getExport",
     "T_MODULE": "module",
     "T_PATH_REF_PKG": "pathRefPkg",

@@ -35,4 +35,3 @@ local pkgResolved = wake._private.recursePkgResolve(wake, pkgInitial);
 local pkgExport = wake._private.recurseCallExport(wake, pkgResolved);
 
 pkgExport
-

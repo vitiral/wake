@@ -17,4 +17,4 @@
 
 local wake = import 'WAKE_LIB';
 local pkg_fn = (import 'PKG_FILE');
-wake.pkgDigest(pkg_fn(wake))
+pkg_fn(wake)

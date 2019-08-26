@@ -13,7 +13,7 @@ function(wake)
     wake.pkg(
         pkgVer = pkgVer,
         paths = paths,
-        deps = wake.deps(
+        depsReq = wake.depsReq(
             unrestricted={
                 "pytest": wake.pkgReq(null, "pYpI", "pytest@>=5.0.0"),
             },
