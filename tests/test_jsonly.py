@@ -36,3 +36,6 @@ class TestJsonnetOnly(unittest.TestCase):
 
     def test_dir_paths(self):
         self.run_test('dir_paths')
+
+    def test_simple_fake_deps(self):
+        self.run_test('simple-fake_deps')

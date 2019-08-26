@@ -13,7 +13,7 @@ function(wake)
         pkgVer = pkgVer,
         paths = paths,
         deps = wake.deps(
-            global={
+            unrestricted={
                 "libA": wake.pkgReq("fake", "libA", ">=5.2.0"),
             },
         ),
