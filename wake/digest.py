@@ -39,7 +39,7 @@ DIGEST_TYPES = {
 
 def calc_digest(pkgDigest):
     """Calculate the actual hash from a loaded pkgDigest object."""
-    builder = DigestBuilder(pkg_dir=os.path.dirname(pkgDigest.pkg_file))
+    builder = DigestBuilder(pkg_dir=pkgDigest.pkg_dir)
     builder.update_paths(utils.joinpaths(builder.pkg_dir, pkgDigest.paths))
     return builder.build()
 
@@ -115,15 +115,26 @@ class DigestBuilder(utils.SafeObject):
         if not os.path.isdir(dirpath):
             raise TypeError('{} is not a directory.'.format(dirpath))
 
-        walking = os.walk(dirpath, topdown=True, followlinks=True)
-        for root, _walking, files in walking:
+        def _onerror(err):
+            raise err
+
+        for root, dirs, files in utils.walk(dirpath):
             for f in files:
                 fpath = os.path.join(root, f)
-                if fpath in visited:
-                    raise RuntimeError(
-                        "Error: infinite directory recursion detected at {}".
+                if os.path.islink(fpath):
+                    raise ValueError(
+                        "{} is a sybolic link, which is not support in paths.".
                         format(fpath))
+
                 self.update_file(fpath)
+
+            # Just check for symbolic links since walk will touch all directories
+            for d in dirs:
+                dpath = os.path.join(root, d)
+                if os.path.islink(dpath):
+                    raise ValueError(
+                        "{} is a sybolic link, which is not support in paths.".
+                        format(dpath))
 
         return hashmap
 

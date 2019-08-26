@@ -7,7 +7,7 @@ local paths = [
 
 function(wake)
     local digest = import "./.wakeDigest.json";
-    local pkgVer = wake.pkgVer(null, "file_paths", "0.1.0", digest);
+    local pkgVer = wake.pkgVer(null, "simple-fake_deps", "0.1.0", digest);
 
     wake.pkg(
         pkgVer=pkgVer,
@@ -22,8 +22,9 @@ function(wake)
             local libA = pkg.deps.unrestricted.libA;
 
             {
+                int: 3,
                 libA_export: libA.export,
                 libA_answer: libA.export.answer,
-                answer: self.libA_answer / 6,
-            }
+                final_answer: self.libA_answer / 6,
+            },
     )

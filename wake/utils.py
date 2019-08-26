@@ -33,8 +33,6 @@ from pdb import set_trace
 
 from . import constants
 
-path = os.path
-
 
 class SafeObject(object):
     """A safe form of ``object``.
@@ -98,11 +96,11 @@ class TupleObject(object):
 def pjoin(base, p):
     if p.startswith('./'):
         p = p[2:]
-    return path.join(base, p)
+    return os.path.join(base, p)
 
 
 def abspath(p):
-    return path.abspath(path.expanduser(p))
+    return os.path.abspath(path.expanduser(p))
 
 
 def closefd(fd):
@@ -138,6 +136,7 @@ def jsondumpf(path, data, indent=4):
 def manifest_jsonnet(run_path):
     """Manifest a jsonnet run_path."""
     cmd = ["jsonnet", run_path]
+    cmd.extend(['--max-stack', '200', '--max-trace', '200'])
     completed = subprocess.run(
         cmd,
         stdout=subprocess.PIPE,
@@ -171,23 +170,16 @@ def fail(msg):
     sys.exit(1)
 
 
-def dumpf(path, s):
+def dumpf(path, string):
     """Dump a string to a file."""
     with open(path, 'w') as f:
-        f.write(s)
+        f.write(string)
 
 
-def copy_fsentry(src, dst):
-    """Perform a deep copy on the filesystem entry (file, dir, symlink).
-
-    This fully copies all files, following symlinks to copy the data.
-    """
-    dstdir = path.dirname(dst)
-    if dstdir and not os.path.exists(dstdir):
-        os.makedirs(dstdir, exist_ok=True)
-
-    if path.isfile(src):
-        shutil.copy(src, dst)
+def copytree(src, dst):
+    """Allow copytree to copy files."""
+    if os.path.isfile(src):
+        shutil.copy2(src, dst)
     else:
         shutil.copytree(src, dst)
 
@@ -240,5 +232,13 @@ def joinpaths(start, paths):
 
 
 def rmtree(d):
-    if path.exists(d):
+    if os.path.exists(d):
         shutil.rmtree(d)
+
+
+def walk(dirpath):
+    """Walk the directory."""
+    def _onerror(err):
+        raise err
+
+    return os.walk(dirpath, topdown=True, onerror=_onerror)

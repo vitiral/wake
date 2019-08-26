@@ -89,7 +89,7 @@ C {
         deps: U.objDefault(deps),
 
         # lazy functions
-        export: export,
+        exportFn:: export,
     }
 
     ,
@@ -97,7 +97,6 @@ C {
     pkgDigest(pkg): {
         [k]: pkg[k]
         for k in std.objectFields(pkg)
-        if k != 'export'
     }
 
     ,
@@ -109,7 +108,6 @@ C {
         restrictedMinor=null,
         global=null,
     ): {
-        [C.F_TYPE]: C.T_DEPS,
         unrestricted: U.objDefault(unrestricted),
         restricted: U.objDefault(restricted),
         restrictedMajor: U.objDefault(restrictedMajor),
@@ -193,21 +191,11 @@ C {
         ,
         # Looks up all items in the dependency tree
         lookupDeps(requestingPkgVer, deps):
-            # Looks up the pkgReq based on who's asking.
             local lookupPkg = function(requestingPkgVer, category, pkgReq)
                 local pkgKey = std.join(C.WAKE_SEP, [
                     requestingPkgVer,
                     pkgReq,
                 ]);
-
-                # !! NOTE: wake._private.pkgsDefined is **injected** by
-                # !! wake/runWakeExport.jsonnet
-                assert pkgKey in P.pkgsDefined :
-                       '%s requested %s (in %s) but it does not exist in the store' % [
-                    requestingPkgVer,
-                    pkgReq,
-                    category,
-                ];
 
                 P.pkgsDefined[pkgKey];
 
@@ -227,32 +215,83 @@ C {
             }
 
         ,
+        # Resolve the dependencies for all sub pkgs
+        recursePkgResolve(wake, pkg):
+            assert U.isPkg(pkg) : 'Not a pkg: %s' % [pkg];
+            local requestingPkgVer = pkg.pkgVer;
+
+            # Note: lvl is the "restriction level"
+            local lookupPkg = function(lvl, pkgReq)
+                assert std.isString(lvl);
+                assert std.isString(pkgReq);
+
+                local pkgKey = std.join(C.WAKE_SEP, [
+                    requestingPkgVer,
+                    pkgReq,
+                ]);
+
+                # NOTE: wake._private.pkgsDefined is **injected** by
+                # wake/runWakeExport.jsonnet
+                assert pkgKey in P.pkgsDefined : 'pkgKey=%s not found' % [pkgKey];
+
+                local result = P.pkgsDefined[pkgKey](wake);
+                assert U.isPkg(result) : "lookupPkg result is not a package";
+                result
+
+            ;
+            local lookupPkgs = function(lvl, pkgs)
+                assert std.isString(lvl);
+                assert std.isObject(pkgs) : '%s not object: %s' % [lvl, pkgs];
+                {
+                    [k]: lookupPkg(lvl, pkgs[k])
+                    for k in std.objectFields(pkgs)
+                }
+
+            ;
+            local depsShallow = {
+                [lvl]: lookupPkgs(lvl, pkg.deps[lvl])
+                for lvl in std.objectFields(pkg.deps)
+            }
+
+            ;
+            local recurseMapResolve = function(pkgs) {
+                [k]: P.recursePkgResolve(wake, pkgs[k])
+                for k in std.objectFields(pkgs)
+            }
+
+            ;
+            pkg {
+                local this = self
+
+                ,
+                deps: {
+                    [lvl]: recurseMapResolve(depsShallow[lvl])
+                    for lvl in std.objectFields(depsShallow)
+                },
+            }
+
+        ,
+        # Note: pkg must have had recursePkgResolve called on it
         recurseCallExport(wake, pkg):
-            local fnDeps = P.lookupDeps(pkg.pkgVer, pkg.deps);
-            local callPkgsExport = function(pkgs) {
+            local recurseMapExport = function(pkgs) {
                 [k]: P.recurseCallExport(wake, pkgs[k])
                 for k in std.objectFields(pkgs)
-            };
-            assert fnDeps != null: "fnDeps is null";
-            {
-                local this = self,
+            }
 
-                # straight copy of pkg
-                [C.F_TYPE]: pkg[C.F_TYPE],
-                [C.F_STATE]: C.S_DEFINED,
-                pkgVer: pkg.pkgVer,
-                pkgOrigin: pkg.pkgOrigin,
-                paths: pkg.paths,
+            ;
+            pkg {
+                local this = self
 
-
-                # Recursively resolve all dependencies
+                ,
                 deps: {
-                    [k]: callPkgsExport(fnDeps[k])
-                    for k in std.objectFields(fnDeps)
+                    [lvl]: recurseMapExport(pkg.deps[lvl])
+                    for lvl in std.objectFields(pkg.deps)
                 },
 
-                # Use the reference which includes resolved dependencies
-                export: pkg.export(wake, this),
+                export: if pkg.exportFn == null then
+                    null
+                else
+                    pkg.exportFn(wake, this)
             }
 
         # , simplify(pkg): {
@@ -344,6 +383,7 @@ C {
         ,
         # General Helpers
         boolToInt(bool): if bool then 1 else 0
+
         ,
         containsChr(c, str): !(std.length(std.splitLimit(str, c, 1)) == 1)
 

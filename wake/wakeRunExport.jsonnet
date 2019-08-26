@@ -30,6 +30,9 @@ local wake =
 # instantiate and return the root pkg
 local pkgInitial = pkg_fn(wake);
 
-local pkgExport = wake._private.recurseCallExport(wake, pkgInitial);
+local pkgResolved = wake._private.recursePkgResolve(wake, pkgInitial);
+
+local pkgExport = wake._private.recurseCallExport(wake, pkgResolved);
 
 pkgExport
+
