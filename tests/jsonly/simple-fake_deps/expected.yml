@@ -5,10 +5,10 @@ pkgOrigin: None
 paths: PKG.libsonnet
 deps:
     __WAKETYPE__: deps
-    global: null
-    restricted: null
-    restrictedMajor: null
-    restrictedMinor: null
+    global: {}
+    restricted: {}
+    restrictedMajor: {}
+    restrictedMinor: {}
     unrestricted:
         libA: "fake🌊libA🌊>=5.2.0"
 

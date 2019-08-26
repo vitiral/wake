@@ -110,11 +110,11 @@ C {
         global=null,
     ): {
         [C.F_TYPE]: C.T_DEPS,
-        unrestricted: unrestricted,
-        restricted: restricted,
-        restrictedMajor: restrictedMajor,
-        restrictedMinor: restrictedMinor,
-        global: global,
+        unrestricted: U.objDefault(unrestricted),
+        restricted: U.objDefault(restricted),
+        restrictedMajor: U.objDefault(restrictedMajor),
+        restrictedMinor: U.objDefault(restrictedMinor),
+        global: U.objDefault(global),
     }
 
     ,
@@ -227,31 +227,33 @@ C {
             }
 
         ,
-        recurseCallExport(wake, pkg): {
-            local this = self,
-
-            # straight copy of pkg
-            [C.F_TYPE]: pkg[C.F_TYPE],
-            [C.F_STATE]: C.S_DEFINED,
-            pkgVer: pkg.pkgVer,
-            pkgOrigin: pkg.pkgOrigin,
-            paths: pkg.paths,
-
-            local fnDeps = P.lookupDeps(pkg.pkgVer, pkg.deps),
+        recurseCallExport(wake, pkg): 
+            local fnDeps = P.lookupDeps(pkg.pkgVer, pkg.deps);
             local callPkgsExport = function(pkgs) {
                 [k]: P.recurseCallExports(wake, pkgs[k])
                 for k in std.objectFields(pkgs)
-            },
+            };
+            assert fnDeps != null: "fnDeps is null";
+            {
+                local this = self,
 
-            # Recursively resolve all dependencies
-            deps: {
-                [k]: callPkgsExport(fnDeps[k])
-                for k in fnDeps
-            },
+                # straight copy of pkg
+                [C.F_TYPE]: pkg[C.F_TYPE],
+                [C.F_STATE]: C.S_DEFINED,
+                pkgVer: pkg.pkgVer,
+                pkgOrigin: pkg.pkgOrigin,
+                paths: pkg.paths,
 
-            # Use the reference which includes resolved dependencies
-            export: pkg.export(wake, this),
-        },
+
+                # Recursively resolve all dependencies
+                deps: {
+                    [k]: callPkgsExport(fnDeps[k])
+                    for k in std.objectFields(fnDeps)
+                },
+
+                # Use the reference which includes resolved dependencies
+                export: pkg.export(wake, this),
+            }
 
         # , simplify(pkg): {
         #     [C.F_TYPE]: pkg[C.F_TYPE],
