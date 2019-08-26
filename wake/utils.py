@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ⏾🌊🛠 wake software's true potential
 #
 # Copyright (C) 2019 Rett Berg <github.com/vitiral>
@@ -18,6 +19,8 @@
 Debug mode does things like delete folders before starting, etc
 """
 
+from __future__ import unicode_literals
+
 import sys
 import os
 import argparse
@@ -27,11 +30,17 @@ import subprocess
 import shutil
 import itertools
 from collections import OrderedDict
-
 from pprint import pprint as pp
-from pdb import set_trace
+
+import six
 
 from . import constants
+from .constants import loadf
+from .constants import dumpf
+from .constants import jsonloadf
+from .constants import jsondumpf
+from .constants import closefd
+from .constants import force_unicode
 
 
 class SafeObject(object):
@@ -76,6 +85,10 @@ class TupleObject(object):
         self._check_class(other)
         return self._tuple() == other._tuple()
 
+    def __ne__(self, other):
+        self._check_class(other)
+        return self._tuple() != other._tuple()
+
     def __lt__(self, other):
         self._check_class(other)
         return self._tuple() < other._tuple()
@@ -103,50 +116,22 @@ def abspath(p):
     return os.path.abspath(path.expanduser(p))
 
 
-def closefd(fd):
-    """Really close a file descriptor for realz."""
-    fd.flush()
-    os.fsync(fd)
-
-
-def loadf(path):
-    with open(path) as fp:
-        return fp.read()
-
-
-def dumpf(path, text):
-    with open(path, 'w') as fp:
-        out = fp.write(text)
-        closefd(fp)
-        return out
-
-
-def jsonloadf(path):
-    with open(path) as fp:
-        return json.load(fp)
-
-
-def jsondumpf(path, data, indent=4):
-    with open(path, 'w') as fp:
-        out = json.dump(data, fp, indent=indent, sort_keys=True)
-        closefd(fp)
-        return out
-
-
 def manifest_jsonnet(run_path):
     """Manifest a jsonnet run_path."""
     cmd = ["jsonnet", run_path]
-    cmd.extend(['--max-stack', '200', '--max-trace', '200'])
-    completed = subprocess.run(
+    popen = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         universal_newlines=True,
     )
-    if completed.returncode != 0:
+    (stdout_data, stderr_data) = popen.communicate()
+    stdout_data = force_unicode(stdout_data)
+    stderr_data = force_unicode(stderr_data)
+    if popen.returncode != 0:
         fail("Manifesting jsonnet at {}\n## STDOUT:\n{}\n\n## STDERR:\n{}\n".
-             format(run_path, completed.stdout, completed.stderr))
-    return json.loads(completed.stdout)
+             format(run_path, stdout_data, stderr_data))
+    return json.loads(stdout_data)
 
 
 def format_run_digest(pkgFile):
@@ -172,6 +157,9 @@ def fail(msg):
 
 def dumpf(path, string):
     """Dump a string to a file."""
+    if six.PY2 and isinstance(string, six.text_type):
+        string = string.encode('utf-8')
+
     with open(path, 'w') as f:
         f.write(string)
 

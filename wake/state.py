@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ⏾🌊🛠 wake software's true potential
 #
 # Copyright (C) 2019 Rett Berg <github.com/vitiral>
@@ -14,6 +15,8 @@
 # Unless you explicitly state otherwise, any contribution intentionally submitted
 # for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 # be dual licensed as above, without any additional terms or conditions.
+
+from __future__ import unicode_literals
 
 import shutil
 import tempfile
@@ -40,7 +43,7 @@ class State(object):
 
 class TempDir(utils.SafeObject):
     def __init__(self, prefix=None, dir=None):
-        self.dir = tempfile.mkdtemp(prefix=prefix, dir=dir)
+        self.dir = tempfile.mkdtemp(prefix=prefix or '', dir=dir)
 
     def __enter__(self):
         return self.dir

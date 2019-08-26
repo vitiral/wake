@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ⏾🌊🛠 wake software's true potential
 #
 # Copyright (C) 2019 Rett Berg <github.com/vitiral>
@@ -15,6 +16,8 @@
 # for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 # be dual licensed as above, without any additional terms or conditions.
 """Load packages in various states."""
+
+from __future__ import unicode_literals
 
 import os
 import hashlib
@@ -104,7 +107,8 @@ def loadPkgExport(state, pkgsDefined, pkgDigest):
 
         # Run the export (includes depenencies) and get result
         pkgExport = utils.manifest_jsonnet(run_export_path)
-        return pkg.PkgExport.deserialize(pkgExport, pkg_file=pkgDigest.pkg_file)
+        return pkg.PkgExport.deserialize(pkgExport,
+                                         pkg_file=pkgDigest.pkg_file)
     finally:
         if pkgs_defined_path:
             os.remove(pkgs_defined_path)
@@ -117,13 +121,12 @@ def _dump_pkgs_defined(directory, pkgsDefined):
     This allows them to be looked up by key.
     """
     pkgs_defined_path = os.path.join(directory, "pkgsDefined.libsonnet")
-    with open(pkgs_defined_path, 'w') as fd:
-        fd.write("{\n")
+    with open(pkgs_defined_path, 'wb') as fd:
+        fd.write(b"{\n")
         for key, path in sorted(six.iteritems(pkgsDefined)):
-            # TODO: things went bonkers with json format
-            # key, path = json.dumps(key), json.dumps(path)
-            fd.write("  \"{}\": (import \"{}\"),\n\n".format(key, path))
-        fd.write("}\n")
+            line = "  \"{}\": (import \"{}\"),\n\n".format(key, path)
+            fd.write(line.encode('utf-8'))
+        fd.write(b"}\n")
 
         utils.closefd(fd)
 

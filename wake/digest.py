@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ⏾🌊🛠 wake software's true potential
 #
 # Copyright (C) 2019 Rett Berg <github.com/vitiral>
@@ -22,12 +23,15 @@
 # https://pypi.org/project/checksumdir/#files
 """Calaculate the hash digest of a package or module."""
 
+from __future__ import unicode_literals
+
 import os
 import hashlib
 
+import six
+
 from .constants import *
 from . import utils
-from . import pkg
 
 DIGEST_TYPES = {
     'md5': hashlib.md5,
@@ -49,6 +53,11 @@ class Digest(utils.TupleObject):
     SEP = '.'
 
     def __init__(self, digest, digest_type):
+        if not isinstance(digest, six.text_type):
+            raise ValueError(digest)
+        if not isinstance(digest_type, six.text_type):
+            raise ValueError(digest)
+
         self.digest = digest
         if digest_type not in DIGEST_TYPES:
             raise ValueError("digest_type must be one of: {}".format(
@@ -160,7 +169,7 @@ class DigestBuilder(utils.SafeObject):
         for fpath in sorted(hashmap.keys()):
             hasher.update(fpath.encode())
             hasher.update(hashmap[fpath].encode())
-        return hasher.hexdigest()
+        return utils.force_unicode(hasher.hexdigest())
 
     def build(self):
         return Digest(digest=self.reduce(), digest_type=self.digest_type)

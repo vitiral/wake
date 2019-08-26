@@ -1,5 +1,4 @@
-# ⏾🌊🛠 wake software's true potential
-#
+# -*- coding: utf-8 -*-
 # Copyright (C) 2019 Rett Berg <github.com/vitiral>
 #
 # The source code is Licensed under either of

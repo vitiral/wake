@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ⏾🌊🛠 wake software's true potential
 #
 # Copyright (C) 2019 Rett Berg <github.com/vitiral>
@@ -15,6 +16,7 @@
 # for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 # be dual licensed as above, without any additional terms or conditions.
 """Pkg types."""
+from __future__ import unicode_literals
 
 from .constants import *
 from . import utils
@@ -170,7 +172,8 @@ class PkgDigest(utils.SafeObject):
 
 
 class PkgExport(PkgDigest):
-    def __init__(self, pkg_file, pkgVer, pkgOrigin, paths, depsReq, deps, export):
+    def __init__(self, pkg_file, pkgVer, pkgOrigin, paths, depsReq, deps,
+                 export):
         super(PkgExport, self).__init__(
             pkg_file=pkg_file,
             pkgVer=pkgVer,
