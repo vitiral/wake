@@ -1,9 +1,3 @@
-Notes:
-- "local packages" are just "locked packages" and they can only be defined by
-  the root.
-- package manager cmd has to be able to handle local paths (to PKG.libsonnet)
-- these should be specified by `null`/empty as the namespace (maybe?)
-
 # ⏾🌊🛠 **wake** software's true potential
 
 > **!! EXTREMELY EXPERIMENTAL, IN DESIGN !!**
@@ -14,79 +8,58 @@ Notes:
 
 **wake** is a functional package manager and build system for the web. Its
 basic architecture is to enable the utmost _simplicity_ and _extensibility_ in
-a pkg and build system. It is inspired from other build tools such as Nix,
-Bazel and portage but is not related to any of them directly.
+a pkg and build system. It is inspired from other build tools such as [Nix],
+[Bazel] and [portage] but uses [jsonnet] for configuration and is designed
+explicitly for the next generation of portability with [wasi] and [wasm].
 
 Its tennets are:
 - **Simplicity**: pkg retrieval and module builds are fully reproducible and are
   simply inputs and outputs which can be hashed. The build language is
   [jsonnet] which is familiar, full featured, deterministic, hermetic and easy
   to understand.
-- **Orthogonal features**: wake has very few features on its own, letting its
-  simple extensibility provide features for any specific usecase (large or
-  small). Jsonnet is kept pure (no native extenstions), while analyzing the
-  build tree is done in easy to understand (and debug) cycles.
-- **Build once, build anywhere**: specificying containers or pkg retrievers is
-  done inline with the rest of the build system, allowing developers and
-  organizations to fully control how their build system should scale. Once a
-  module is built, it can always be used from the cache without any worry of
-  its determinism.
+- **Orthogonal features**: wake has very few features on its own and intends
+  to only meet the goals of building the next generation of software built
+  on [wasi].
+- **Build once, build anywhere, run everwhere**: The only executable allowed
+  [wasi] which is (\*will be) fast, cross-platform, language agnostic, and
+  (mostly) deterministic. Most binaries will also be [wasi] or [wasm], which
+  means they can be run everywhere.
 
 The basic use cases are:
-- "normal" developers (open source, small companies, etc) should be able to
-  depend on pkgs either localy (via a path) or from a server. Their language
-  of choice should be easily export "plugins" that can retrieve pkgs from the
-  standard pkg server and convert them to PKG.libsonnet. They should be able
-  to run their builds either locally, on the "cloud", or a combination of the
-  above as applicable. It should be easy for them to use their own
-  configurations or get a built solution (examples: build flags, compiler
-  versions, pkg retrievers used, file storage, etc)
-- "large organizational" developers and devops should be able to override
-  how pkgs are defined, retrieved, stored and built to fully control every
-  aspect.
-- Any developer should be able to use caches (public, private, enterprise)
-  which store built modules. wake's determinism allows them to trust these
-  completed builds as API compatibile with the dependency they would build
-  locally.
-
-All of the above features should be "native" to the user -- plugins are defined
-as normal depdendencies of their `PKG.libsonnet` (but overrideable via a
-`$WAKEPATH`). A pkg local directory is its own "environment" that has control
-of exactly how it is built.
+- Easy to use package manager for developers with shared and composable
+  dependencies. Passing configurations to dependencies, and using
+  configurations provided by dependencies is easy.
+- Building can happen locally or in the cloud, and can make use of community
+  resources (i.e. open source cloud services, proprietary company services,
+  IPFS, etc)
+- The source of all packages can be secured by authorizations and cryptographic
+  signatures.
 
 For more information on how wake is being designed, check out the
-[ARCHITECTURE](ARCHITECTURE.md) docs.
+[DESIGN](DESIGN.md) docs.
 
-[jsonnet]: https://jsonnet.org/
-
-
-## Future goals
-Wake is currently in the early implementation phase. The following features are planned
-before version 0.1.0 (alpha):
-
-- (70% complete) `wake.libsonnet` library
-- (90% complete) local pkg resolution overrides
-- (10% complete) pkg version tree resolution
-- (0% complete) `pkg-retrieval` plugin
-- (0% complete) `fsentry-resolver` plugin
-- (0% complete) exec implementation
-- (0% complete) exec.container implementation
-
-It is believed by the author that once the above work is complete, wake will be
-usable as an alpha quality product.
-
-The goals afterwards are:
-- (hopefully) Add a pkg-retriever to retrieve and auto-generate [portage] and ebuild
-  packages, allowing for fast expansion of supported features.
-- (probably) Nix-pkg integration
-- (probably) Create external pkgs to Support common languages, especially the
-  google ones.
-- (pie in the sky) Support an end-to-end wasm build system, whereby all `exec`
-  items are run in a wasm runtime, but which can build for any system. This
-  would achieve the highest possible level of build simplicity (all inputs
-  are wasm, all outputs could be wasm).
-
+[Nix]: https://nixos.org/nix/
+[Bazel]: https://bazel.build
 [portage]: https://wiki.gentoo.org/wiki/Portage
+[jsonnet]: https://jsonnet.org/
+[wasi]: https://wasi.dev
+[wasm]: https://webassembly.org
+
+# Final Goal
+The fundamental goal is to enable the next generation of software to seemelessy
+find and install software efficiently and securely. Software and the libraries
+it depends on can be shipped in small binary modules that can be run anywhere.
+
+For developers, it means that writing and shipping cross-language software
+can be done easily and quickly -- and the work of compiling software can be
+shared. Your project has a large tree of commonly used depenendencies? How
+about would you like never having to compile them again?
+
+For legacy build systems, they still have to compile the OS itself to (platform
+dependent) native code. **wake** doesn't attempt to solve that issue. However,
+those build systems and package manager could use **wake** wasi packages so that
+any number of applications, scripts, etc are wasi modules instead of native code,
+and are therefore easy to pre-buiild and sign and require minimal dependencies.
 
 
 # Notice
