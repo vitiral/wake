@@ -69,9 +69,10 @@ class Store(utils.SafeObject):
 
     def read_pkg(self, pkgVer, skip_cache=False, check_cache=False):
         if skip_cache or check_cache:
+            # TODO: on exception, delete the file
             pkg_dir = os.path.join(self.dir, pkgVer.serialize())
             pkg_file = os.path.join(pkg_dir, constants.FILE_PKG_DEFAULT)
-            result = load.loadPkgDigest(self.state, pkg_file, calc_digest=True)
+            result = load.loadPkgDigest(self.state, pkg_file, calc_digest=True, cleanup=False)
             if check_cache:
                 assert result.pkgVer == pkgVer
             return result

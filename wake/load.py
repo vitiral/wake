@@ -28,7 +28,7 @@ from . import pkg
 from . import digest
 
 
-def loadPkgDigest(state, pkg_file, calc_digest=False):
+def loadPkgDigest(state, pkg_file, calc_digest=False, cleanup=True):
     """Load a package digest, returning PkgDigest.
 
     Note: The `state` is used to create a temporary directory for storing the
@@ -67,7 +67,7 @@ def loadPkgDigest(state, pkg_file, calc_digest=False):
 
         return pkgDigest
     finally:
-        if os.path.exists(digest_path):
+        if cleanup and os.path.exists(digest_path):
             os.remove(digest_path)
         state_dir.cleanup()
 
