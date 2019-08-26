@@ -18,6 +18,7 @@
 
 import os
 import hashlib
+import json
 
 from .constants import *
 from . import utils
@@ -65,3 +66,60 @@ def loadPkgDigest(state, pkg_file):
         if os.path.exists(digest_path):
             os.remove(digest_path)
         state_dir.cleanup()
+
+
+def loadPkgExport(state, pkgsDefined, pkgDigest):
+    """Load the exports of the package.
+
+    Params:
+    State state: used to create a temporary directory for storing the
+        custom-created jsonnet running script.
+    storeMap: dictionary of the expected lookup keys to the location of their PKG files.
+    """
+    pkg_dir = os.path.dirname(pkgDigest.pkg_file)
+    digest_path = os.path.join(pkg_dir, DEFAULT_FILE_DIGEST)
+
+    state_dir = state.create_temp_dir()
+    try:
+        pkgs_defined_path = _dump_pkgs_defined(
+            state_dir.dir,
+            pkgsDefined=pkgsDefined,
+        )
+        run_export_text = utils.format_run_export(
+            pkg_file,
+            pkgs_defined_path=pkgs_defined_path,
+        )
+        run_export_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
+
+        # Dump real `.digest.json`
+        utils.jsondumpf(digest_path, pkgDigest.digest.serialize())
+
+        # Put the jsonnet run file in place
+        utils.dumpf(run_export_path, run_export_text)
+
+        # Run the export (includes depenencies) and get result
+        pkgExport = utils.manifest_jsonnet(run_export_path)
+
+        return pkgExport
+    finally:
+        if os.path.exists(digest_path):
+            os.remove(digest_path)
+        state_dir.cleanup()
+
+
+def _dump_pkgs_defined(directory, pkgsDefined):
+    """Dump all the defined pkgs into a jsonnet file.
+
+    This allows them to be looked up by key.
+    """
+    pkgs_defined_path = os.path.join(directory, "pkgsDefined.libsonnet"), 'w'
+    with open(pkgs_defined_path) as fd:
+        fd.write("{\n")
+        for key, path in sorted(six.iteritems(pkgsDefined)):
+            key, path = json.dumps(key), json.dumps(path)
+            fd.write("  {}: (import {}),\n\n".format(key, path))
+        fd.write("}\n")
+
+        utils.closefd(fd)
+
+    return pkgs_defined_path
