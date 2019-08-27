@@ -1,5 +1,5 @@
-check: fix lint test
-	# SHIP IT!
+check: fix lint test nogit
+	# OK can merge
 
 ship: check
 	rm -rf pycheck/ dist/
@@ -7,6 +7,7 @@ ship: check
 	pycheck/bin/pip install .
 	py3/bin/python setup.py sdist
 	# run: py3/bin/twine upload dist/*
+	# OK can ship
 
 
 init:
@@ -26,8 +27,7 @@ fix:
 		$$(find wake -type f \( -name "*.libsonnet" -o -name "*.jsonnet" \))
 
 lint:
-	# TODO: remove -E
-	py3/bin/pylint wake/ -E
+	py3/bin/pylint wake/
 
 test2:
 	# Testing python2
@@ -44,3 +44,6 @@ test: test3 test2
 
 clean:
 	rm -rf py2 py3 dist wake.egg-info .wake/
+
+nogit:
+	! git status --porcelain | grep .

@@ -30,7 +30,6 @@ import hashlib
 
 import six
 
-from .constants import *
 from . import utils
 
 DIGEST_TYPES = {
@@ -86,9 +85,6 @@ class Digest(utils.TupleObject):
         return (self.digest_type, self.digest)
 
     def __repr__(self):
-        return self.SEP.join(self.digest_type, self.digest)
-
-    def __repr__(self):
         return self.serialize()
 
 
@@ -104,7 +100,6 @@ class DigestBuilder(utils.SafeObject):
         self.digest_type = digest_type
         self.hash_func = DIGEST_TYPES[digest_type]
         self.hashmap = {}
-        self.visited = set()
 
     def update_paths(self, paths):
         paths = sorted(paths)
@@ -115,11 +110,8 @@ class DigestBuilder(utils.SafeObject):
                 self.update_file(p)
 
     def update_dir(self, dirpath):
+        """Add the items in the directory to the digest."""
         assert os.path.isabs(dirpath), dirpath
-
-        hash_func = self.hash_func
-        hashmap = self.hashmap
-        visited = self.visited
 
         if not os.path.isdir(dirpath):
             raise TypeError('{} is not a directory.'.format(dirpath))
@@ -145,13 +137,9 @@ class DigestBuilder(utils.SafeObject):
                         "{} is a sybolic link, which is not support in paths.".
                         format(dpath))
 
-        return hashmap
-
     def update_file(self, fpath):
+        """Add the file to the digest."""
         assert os.path.isabs(fpath)
-        if fpath in self.visited:
-            return
-        self.visited.add(fpath)
         hasher = self.hash_func()
         blocksize = 64 * 1024
         with open(fpath, 'rb') as fp:

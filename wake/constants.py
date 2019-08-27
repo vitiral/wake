@@ -12,6 +12,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+"""Constants."""
 from __future__ import unicode_literals
 
 import os
@@ -46,11 +47,13 @@ def loadf(path):
         return force_unicode(fp.read())
 
 
-def dumpf(path, text):
-    with open(path, 'w') as fp:
-        out = fp.write(text)
-        closefd(fp)
-        return out
+def dumpf(path, string):
+    """Dump a string to a file."""
+    if isinstance(string, six.text_type):
+        string = string.encode('utf-8')
+
+    with open(path, 'wb') as f:
+        f.write(string)
 
 
 def jsonloadf(path):
@@ -60,9 +63,8 @@ def jsonloadf(path):
 
 def jsondumpf(path, data, indent=4):
     with open(path, 'w') as fp:
-        out = json.dump(data, fp, indent=indent, sort_keys=True)
+        json.dump(data, fp, indent=indent, sort_keys=True)
         closefd(fp)
-        return out
 
 
 def closefd(fd):

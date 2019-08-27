@@ -18,21 +18,15 @@
 """
 Debug mode does things like delete folders before starting, etc
 """
+# pylint: disable=unused-import
 
 from __future__ import unicode_literals
 
 import sys
 import os
-import argparse
-import hashlib
 import json
 import subprocess
 import shutil
-import itertools
-from collections import OrderedDict
-from pprint import pprint as pp
-
-import six
 
 from . import constants
 from .constants import loadf
@@ -67,6 +61,7 @@ class SafeObject(object):
         raise TypeError("{} cannot be compared".format(self))
 
 
+# pylint: disable=protected-access
 class TupleObject(object):
     """An object which can be represented as a tuple for comparisons."""
     def _tuple(self):
@@ -112,10 +107,6 @@ def pjoin(base, p):
     return os.path.join(base, p)
 
 
-def abspath(p):
-    return os.path.abspath(path.expanduser(p))
-
-
 def manifest_jsonnet(run_path):
     """Manifest a jsonnet run_path."""
     cmd = ["jsonnet", run_path]
@@ -155,15 +146,6 @@ def fail(msg):
     sys.exit(1)
 
 
-def dumpf(path, string):
-    """Dump a string to a file."""
-    if six.PY2 and isinstance(string, six.text_type):
-        string = string.encode('utf-8')
-
-    with open(path, 'w') as f:
-        f.write(string)
-
-
 def copytree(src, dst):
     """Allow copytree to copy files."""
     if os.path.isfile(src):
@@ -191,12 +173,6 @@ def ensure_str(name, value, allow_none=False):
     if value is None and not allow_none:
         raise ValueError("{} not be null".format(name))
     return value
-
-
-def assert_not_wake(p):
-    if p.startswith(DIR_WAKE_REL):
-        raise ValueError("paths must not start with {}: {}".format(
-            DIR_WAKE_REL, p))
 
 
 def is_pkg(dct):

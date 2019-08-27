@@ -20,12 +20,10 @@
 from __future__ import unicode_literals
 
 import os
-import hashlib
-import json
 
 import six
 
-from .constants import *
+from . import constants
 from . import utils
 from . import pkg
 from . import digest
@@ -38,7 +36,7 @@ def loadPkgDigest(state, pkg_file, calc_digest=False, cleanup=True):
     custom-created jsonnet running script.
     """
     pkg_dir = os.path.dirname(pkg_file)
-    digest_path = os.path.join(pkg_dir, DEFAULT_FILE_DIGEST)
+    digest_path = os.path.join(pkg_dir, constants.DEFAULT_FILE_DIGEST)
     run_digest_text = utils.format_run_digest(pkg_file)
 
     state_dir = state.create_temp_dir()
@@ -48,7 +46,8 @@ def loadPkgDigest(state, pkg_file, calc_digest=False, cleanup=True):
             utils.jsondumpf(digest_path, digest.Digest.fake().serialize())
 
         # Put the jsonnet run file in place
-        run_digest_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
+        run_digest_path = os.path.join(state_dir.dir,
+                                       constants.FILE_RUN_DIGEST)
         utils.dumpf(run_digest_path, run_digest_text)
 
         # Get a pkgDigest with (potentially) the wrong digest value
@@ -98,7 +97,8 @@ def loadPkgExport(state, pkgsDefined, pkgDigest):
                         pkgDigest.pkgVer.digest.serialize())
 
         # Put the jsonnet run file in place
-        run_export_path = os.path.join(state_dir.dir, FILE_RUN_DIGEST)
+        run_export_path = os.path.join(state_dir.dir,
+                                       constants.FILE_RUN_DIGEST)
         run_export_text = utils.format_run_export(
             pkgDigest.pkg_file,
             pkgs_defined_path=pkgs_defined_path,

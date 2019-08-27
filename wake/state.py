@@ -15,6 +15,7 @@
 # Unless you explicitly state otherwise, any contribution intentionally submitted
 # for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 # be dual licensed as above, without any additional terms or conditions.
+"""Filesystem state."""
 
 from __future__ import unicode_literals
 
@@ -42,13 +43,16 @@ class State(object):
 
 
 class TempDir(utils.SafeObject):
+    """Manage a temporary directory (python2 or 3)"""
+
+    # pylint: disable=redefined-builtin
     def __init__(self, prefix=None, dir=None):
         self.dir = tempfile.mkdtemp(prefix=prefix or '', dir=dir)
 
     def __enter__(self):
         return self.dir
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type_, value, traceback):
         self.cleanup()
 
     def cleanup(self):

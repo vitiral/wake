@@ -21,11 +21,9 @@ from __future__ import unicode_literals
 
 import os
 import shutil
-import copy
 
 from . import constants
 from . import utils
-from . import digest
 from . import load
 
 
@@ -38,7 +36,7 @@ class Store(utils.SafeObject):
         self.packages = {}
 
     def create_pkg(self, pkgDigest):
-        """Insert a package into the store and return the result."""
+        """Insert a pkgDigest into the store and return with updated paths."""
         pkgVerStr = pkgDigest.pkgVer.serialize()
         pkg_dir = os.path.join(self.dir, pkgVerStr)
 
@@ -46,9 +44,11 @@ class Store(utils.SafeObject):
             assert os.path.exists(pkg_dir)
             existing = self.read_pkg(pkgDigest.pkgVer)
             if existing == pkgDigest.pkgVer:
+                # it already exists
                 return existing
-            else:
-                shutil.rmtree(pkg_dir)
+
+            # It exists but is invalid. Start from scratch.
+            shutil.rmtree(pkg_dir)
 
         os.mkdir(pkg_dir)
         for path in pkgDigest.paths:
@@ -71,6 +71,10 @@ class Store(utils.SafeObject):
         return result
 
     def read_pkg(self, pkgVer, skip_cache=False, check_cache=False):
+        """Get a package from the store.
+
+        The cache can also be skipped and optionally checked.
+        """
         if skip_cache or check_cache:
             # TODO: on exception, delete the file
             pkg_dir = os.path.join(self.dir, pkgVer.serialize())
