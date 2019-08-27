@@ -64,6 +64,34 @@ C {
         ])
 
     ,
+    # Declare the root (application) package.
+    pkgRoot(
+        # The package itself
+        pkg,
+
+        # The pkgManager override to use.
+        pkgManager=null,
+
+        # Any global dependencies (i.e. compiler versions)
+        global=null,
+
+        # A pkgName/value pair of locked dependencies.
+        #
+        # The value must be one of:
+        #   - a pkgVer
+        #   - a pathRef with `ref=wake.ROOT`.
+        locked=null,
+    ):
+        assert U.isPkg(pkg) : 'pkg must be a package.';
+        {
+            pkg: pkg,
+            pkgManager: pkgManager,
+            global: global,
+            locked: locked,
+        }
+
+
+    ,
     # Declare a pkg (in PKG.libsonnet)
     pkg(
         pkgVer,
@@ -131,50 +159,28 @@ C {
 
         local vals = if U.isPkg(ref) then
             { type: C.T_PATH_REF_PKG, id: ref.pkgVer }
+        else if ref == C.ROOT then
+            C.ROOT
         else
             assert false : 'ref must be a pkg or a module.';
             null,
 
         [C.F_TYPE]: vals.type,
         [C.F_STATE]: C.S_DEFINED,
-        [if U.isPkg(ref) then 'pkgVer' else 'modVer']: vals.id,
+        ref: vals.id,
         path: path,
     }
 
     ,
-    # Specify an executable from within a pkg and container.
-    exec(
-        # is not necessarily the exec's
-        # is determined by the container.
-        pathRef,
-
-        # or pkg should be executed, or
-        # executed "anywhere."
-        # must == `wake.LOCAL_CONTAINER`
-        container,
-
-        # List of strings to pass as arguments to the executable.
-        params=null,
-    ): {
-        [C.F_TYPE]: C.T_EXEC,
-        [C.F_STATE]: C.S_DEFINED,
-
+    # Specify a wasi executable and the jsh params and inputs.
+    exec(pathRef, params=null, inputs=null): {
         assert U.isPathRef(pathRef) : 'pathRef is wrong type',
-        assert container == C.EXEC_LOCAL || U.isExecLocal(container) :
-               'container must == EXEC_LOCAL or a container which is EXEC_LOCAL',
 
+        [C.F_TYPE]: C.T_EXEC,
         pathRef: pathRef,
-        container: container,
-        params: U.defaultObj(params),
+        params: params,
+        inputs: inputs,
     }
-
-    ,
-    # An error object. Will cause build to fail.
-    err(msg): {
-        [C.F_TYPE]: C.T_ERROR,
-        msg: msg,
-    }
-
 
     ,
     _private: {

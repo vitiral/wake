@@ -1,5 +1,6 @@
 {
     "WAKE_SEP": "🌊",
+    "ROOT": "root",
 
     "F_TYPE": "__WAKETYPE__",
     "F_STATE": "__WAKESTATE__",
