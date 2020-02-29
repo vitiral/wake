@@ -25,7 +25,7 @@ C {
 
   ,
   // The package's namespace and name.
-  pkgName(namespace, name, patch=''):
+  pkgName(namespace, name):
     local namespaceStr = U.stringDefault(namespace);
     local namespaceLen = std.length(namespaceStr);
 
@@ -33,18 +33,68 @@ C {
     assert !U.hasSep(namespaceStr) : "namespace must not contain '#'";
     assert std.length(name) > 3 : 'name length must be > 3';
     assert !U.hasSep(name) : "name must not contain '#'";
-    assert !U.hasSep(patch) : "patch must not contain '#'";
 
     std.join(C.WAKE_SEP, [
       namespaceStr,
       name,
-      patch,
     ])
+
+  ,
+  // Specifies what versions of a package are required using a semver.
+  pkgReq(namespace, name, semver=null): {
+    local semverStr = U.stringDefault(semver),
+
+    assert !U.hasSep(semverStr) : "semver must not contain '@'",
+
+    result: std.join(C.WAKE_SEP, [
+      wake.pkgName(namespace, name),
+      semverStr,
+    ]),
+  }.result
+
+  ,
+  // An exact version of a pkgName, including the digest.
+  pkgVer(namespace, name, version, digest):
+    assert std.isString(digest) : 'digest must be a string';
+    // Note: the version must be an exact semver, but is checked later.
+    std.join(C.WAKE_SEP, [
+      wake.pkgName(namespace, name),
+      version,
+      digest,
+    ])
+
+  ,
+  // Declare the root (application) package.
+  pkgRoot(
+    // The package itself
+    pkg,
+
+    // The pkgManager override to use.
+    pkgManager=null,
+
+    // Any global dependencies (i.e. compiler versions)
+    global=null,
+
+    // A pkgName/value pair of locked dependencies.
+    //
+    // The value must be one of:
+    //   - a pkgVer
+    //   - a pathRef with `ref=wake.ROOT`.
+    locked=null,
+  ):
+    assert U.isPkg(pkg) : 'pkg must be a package.';
+    {
+      pkg: pkg,
+      pkgManager: pkgManager,
+      global: global,
+      locked: locked,
+    }
+
 
   ,
   // Declare a pkg (in PKG.libsonnet)
   pkg(
-    pkgName,
+    pkgVer,
 
     // Description and other metadata regarding the origin of the package.
     pkgOrigin=null,
@@ -52,21 +102,37 @@ C {
     // Local paths (files or dirs) this pkg depends on for building.
     paths=null,
 
-    // Packages that this pkg depends on.
-    depNames=null,
+    // Requirements for packages that this pkg depends on.
+    depsReq=null,
 
     // Function which returns the export of this pkg.
     export=null,
   ): {
     [C.F_TYPE]: C.T_PKG,
     [C.F_STATE]: C.S_DECLARED,
-    pkgName: pkgName,
+    pkgVer: pkgVer,
     pkgOrigin: pkgOrigin,
     paths: U.arrayDefault(paths),
-    depNames: U.objDefault(depNames),
+    depsReq: U.objDefault(depsReq),
 
     // lazy functions
     exportFn:: export,
+  }
+
+  ,
+  // Declare dependency requirements for a package.
+  depsReq(
+    unrestricted=null,
+    restricted=null,
+    restrictedMajor=null,
+    restrictedMinor=null,
+    global=null,
+  ): {
+    unrestricted: U.objDefault(unrestricted),
+    restricted: U.objDefault(restricted),
+    restrictedMajor: U.objDefault(restrictedMajor),
+    restrictedMinor: U.objDefault(restrictedMinor),
+    global: U.objDefault(global),
   }
 
   ,
@@ -92,7 +158,7 @@ C {
     assert U.isAtLeastDefined(ref) : 'ref must be defined',
 
     local vals = if U.isPkg(ref) then
-      { type: C.T_PATH_REF_PKG, id: ref.pkgName }
+      { type: C.T_PATH_REF_PKG, id: ref.pkgVer }
     else if ref == C.ROOT then
       C.ROOT
     else
@@ -118,124 +184,124 @@ C {
 
   ,
   _private: {
-    local P = self,
+    local P = self
 
-    // ,
-    // // Looks up all items in the dependency tree
-    // lookupDeps(requestingPkg, depNames):
-    //   local lookupPkg = function(requestingPkg, category, pkgReq)
-    //     local pkgKey = std.join(C.WAKE_SEP, [
-    //       requestingPkg,
-    //       pkgReq,
-    //     ]);
+    ,
+    // Looks up all items in the dependency tree
+    lookupDeps(requestingPkgVer, depsReq):
+      local lookupPkg = function(requestingPkgVer, category, pkgReq)
+        local pkgKey = std.join(C.WAKE_SEP, [
+          requestingPkgVer,
+          pkgReq,
+        ]);
 
-    //     P.pkgsDefined[pkgKey];
+        P.pkgsDefined[pkgKey];
 
-    //   // Lookup all packages in deps
-    //   local lookupPkgs = function(category, depPkgs) {
-    //     [k]: lookupPkg(requestingPkg, category, depPkgs[k])
-    //     for k in std.objectFields(depPkgs)
-    //   };
+      // Lookup all packages in deps
+      local lookupPkgs = function(category, depPkgs) {
+        [k]: lookupPkg(requestingPkgVer, category, depPkgs[k])
+        for k in std.objectFields(depPkgs)
+      };
 
-    //   // Return the looked up dependencies
-    //   {
-    //     unrestricted: lookupPkgs('unrestricted', depsReq.unrestricted),
-    //     restricted: lookupPkgs('restricted', depsReq.restricted),
-    //     restrictedMajor: lookupPkgs('restrictedMajor', depsReq.restrictedMajor),
-    //     restrictedMinor: lookupPkgs('restrictedMinor', depsReq.restrictedMinor),
-    //     global: lookupPkgs('global', depsReq.global),
-    //   }
+      // Return the looked up dependencies
+      {
+        unrestricted: lookupPkgs('unrestricted', depsReq.unrestricted),
+        restricted: lookupPkgs('restricted', depsReq.restricted),
+        restrictedMajor: lookupPkgs('restrictedMajor', depsReq.restrictedMajor),
+        restrictedMinor: lookupPkgs('restrictedMinor', depsReq.restrictedMinor),
+        global: lookupPkgs('global', depsReq.global),
+      }
 
-    // ,
-    // // Resolve the dependencies for all sub pkgs
-    // recursePkgResolve(wake, pkg):
-    //   assert U.isPkg(pkg) : 'Not a pkg: %s' % [pkg];
-    //   local requestingPkg = pkg.pkgName;
+    ,
+    // Resolve the dependencies for all sub pkgs
+    recursePkgResolve(wake, pkg):
+      assert U.isPkg(pkg) : 'Not a pkg: %s' % [pkg];
+      local requestingPkgVer = pkg.pkgVer;
 
-    //   // Note: lvl is the "restriction level"
-    //   local lookupPkg = function(lvl, pkgReq)
-    //     assert std.isString(lvl);
-    //     assert std.isString(pkgReq);
+      // Note: lvl is the "restriction level"
+      local lookupPkg = function(lvl, pkgReq)
+        assert std.isString(lvl);
+        assert std.isString(pkgReq);
 
-    //     local pkgKey = std.join(C.WAKE_SEP, [
-    //       requestingPkg,
-    //       pkgReq,
-    //     ]);
+        local pkgKey = std.join(C.WAKE_SEP, [
+          requestingPkgVer,
+          pkgReq,
+        ]);
 
-    //     // NOTE: wake._private.pkgsDefined is **injected** by
-    //     // wake/runWakeExport.jsonnet
-    //     assert pkgKey in P.pkgsDefined : 'pkgKey=%s not found' % [pkgKey];
+        // NOTE: wake._private.pkgsDefined is **injected** by
+        // wake/runWakeExport.jsonnet
+        assert pkgKey in P.pkgsDefined : 'pkgKey=%s not found' % [pkgKey];
 
-    //     local result = P.pkgsDefined[pkgKey](wake);
-    //     assert U.isPkg(result) : 'lookupPkg result is not a package';
-    //     result
+        local result = P.pkgsDefined[pkgKey](wake);
+        assert U.isPkg(result) : 'lookupPkg result is not a package';
+        result
 
-    //   ;
-    //   local lookupPkgs = function(lvl, pkgs)
-    //     assert std.isString(lvl);
-    //     assert std.isObject(pkgs) : '%s not object: %s' % [lvl, pkgs];
-    //     {
-    //       [k]: lookupPkg(lvl, pkgs[k])
-    //       for k in std.objectFields(pkgs)
-    //     }
+      ;
+      local lookupPkgs = function(lvl, pkgs)
+        assert std.isString(lvl);
+        assert std.isObject(pkgs) : '%s not object: %s' % [lvl, pkgs];
+        {
+          [k]: lookupPkg(lvl, pkgs[k])
+          for k in std.objectFields(pkgs)
+        }
 
-    //   ;
-    //   local depsShallow = {
-    //     [lvl]: lookupPkgs(lvl, pkg.depsReq[lvl])
-    //     for lvl in std.objectFields(pkg.depsReq)
-    //   }
+      ;
+      local depsShallow = {
+        [lvl]: lookupPkgs(lvl, pkg.depsReq[lvl])
+        for lvl in std.objectFields(pkg.depsReq)
+      }
 
-    //   ;
-    //   local recurseMapResolve = function(pkgs) {
-    //     [k]: P.recursePkgResolve(wake, pkgs[k])
-    //     for k in std.objectFields(pkgs)
-    //   }
+      ;
+      local recurseMapResolve = function(pkgs) {
+        [k]: P.recursePkgResolve(wake, pkgs[k])
+        for k in std.objectFields(pkgs)
+      }
 
-    //   ;
-    //   pkg {
-    //     local this = self
+      ;
+      pkg {
+        local this = self
 
-    //     ,
-    //     deps: {
-    //       [lvl]: recurseMapResolve(depsShallow[lvl])
-    //       for lvl in std.objectFields(depsShallow)
-    //     },
-    //   }
+        ,
+        deps: {
+          [lvl]: recurseMapResolve(depsShallow[lvl])
+          for lvl in std.objectFields(depsShallow)
+        },
+      }
 
-    // ,
-    // // Note: pkg must have had recursePkgResolve called on it
-    // recurseCallExport(wake, pkg):
-    //   local recurseMapExport = function(pkgs) {
-    //     [k]: P.recurseCallExport(wake, pkgs[k])
-    //     for k in std.objectFields(pkgs)
-    //   }
+    ,
+    // Note: pkg must have had recursePkgResolve called on it
+    recurseCallExport(wake, pkg):
+      local recurseMapExport = function(pkgs) {
+        [k]: P.recurseCallExport(wake, pkgs[k])
+        for k in std.objectFields(pkgs)
+      }
 
-    //   ;
-    //   pkg {
-    //     local this = self
+      ;
+      pkg {
+        local this = self
 
-    //     ,
-    //     deps: {
-    //       [lvl]: recurseMapExport(pkg.deps[lvl])
-    //       for lvl in std.objectFields(pkg.deps)
-    //     },
+        ,
+        deps: {
+          [lvl]: recurseMapExport(pkg.deps[lvl])
+          for lvl in std.objectFields(pkg.deps)
+        },
 
-    //     export: if pkg.exportFn == null then
-    //       null
-    //     else
-    //       pkg.exportFn(wake, this),
-    //   },
+        export: if pkg.exportFn == null then
+          null
+        else
+          pkg.exportFn(wake, this),
+      },
 
     // , simplify(pkg): {
     //     [C.F_TYPE]: pkg[C.F_TYPE],
     //     [C.F_STATE]: pkg[C.F_STATE],
-    //     pkgName: pkg.pkgName,
+    //     pkgVer: pkg.pkgVer,
 
     //     local getIdOrUnresolved = function(dep)
     //         if U.isUnresolved(dep) then
     //             dep
     //         else
-    //             dep.pkgName,
+    //             dep.pkgVer,
 
     //     pathsDef: pkg.pathsDef,
     //     paths: pkg.paths,

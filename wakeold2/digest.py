@@ -42,8 +42,8 @@ DIGEST_TYPES = {
 
 def calc_digest(pkgDigest):
     """Calculate the actual hash from a loaded pkgDigest object."""
-    builder = DigestBuilder(digest_dir=pkgDigest.pkg_dir)
-    builder.update_paths(utils.joinpaths(builder.digest_dir, pkgDigest.paths))
+    builder = DigestBuilder(pkg_dir=pkgDigest.pkg_dir)
+    builder.update_paths(utils.joinpaths(builder.pkg_dir, pkgDigest.paths))
     return builder.build()
 
 
@@ -90,13 +90,13 @@ class Digest(utils.TupleObject):
 
 class DigestBuilder(utils.SafeObject):
     """Build a digest from input files and directories."""
-    def __init__(self, digest_dir, digest_type='md5'):
-        assert os.path.isabs(digest_dir)
+    def __init__(self, pkg_dir, digest_type='md5'):
+        assert os.path.isabs(pkg_dir)
         if digest_type not in DIGEST_TYPES:
             raise NotImplementedError(
                 'Hasher {} not implemented.'.format(digest_type))
 
-        self.digest_dir = digest_dir
+        self.pkg_dir = pkg_dir
         self.digest_type = digest_type
         self.hash_func = DIGEST_TYPES[digest_type]
         self.hashmap = {}
@@ -148,7 +148,7 @@ class DigestBuilder(utils.SafeObject):
                 if not data:
                     break
                 hasher.update(data)
-        pkey = os.path.relpath(fpath, self.digest_dir)
+        pkey = os.path.relpath(fpath, self.pkg_dir)
         self.hashmap[pkey] = hasher.hexdigest()
 
     def reduce(self):

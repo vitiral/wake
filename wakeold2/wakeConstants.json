@@ -1,0 +1,37 @@
+{
+    "WAKE_SEP": "🌊",
+    "ROOT": "root",
+
+    "F_TYPE": "__WAKETYPE__",
+    "F_STATE": "__WAKESTATE__",
+    "F_DIGEST": "hashType",
+    "F_DIGESTTYPE": "hashType",
+
+    "T_OBJECT": "object",
+    "T_ERR": "err",
+    "T_PKG": "pkg",
+    "T_GET_EXPORT": "getExport",
+    "T_MODULE": "module",
+    "T_PATH_REF_PKG": "pathRefPkg",
+    "T_PATH_REF_MODULE": "pathRefModule",
+    "T_EXEC": "exec",
+
+    "S_UNRESOLVED": "TODO-REMOVE-unresolved",
+    "S_DECLARED": "declared",
+    "S_DEFINED": "defined",
+    "S_COMPLETED": "completed",
+
+    "C_READ_PKGS": "readPkgs",
+    "C_READ_PKGS_REQ": "readPkgsReq",
+
+    "DIR_WAKE": ".wake",
+    "FILE_WAKELIB": "wake.libsonnet",
+    "FILE_PKG_DEFAULT": "PKG.libsonnet",
+    "FILE_PKGS": "pkgs.libsonnet",
+    "FILE_EXEC": "exec.json",
+
+    "FILE_FINGERPRINT": "fingerprint.json",
+    "FILE_LOCAL_DEPENDENCIES": "localDependencies.json",
+
+    "EXEC_LOCAL": "execLocal"
+}

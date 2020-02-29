@@ -20,130 +20,26 @@ from __future__ import unicode_literals
 
 import os
 
-from . import constants
+from . import constants as C
 from . import utils
 from . import digest
 
 
 class PkgName(utils.TupleObject):
     """The namespace and name of a package."""
-    def __init__(self, namespace, name):
+    def __init__(self, namespace, name, patch):
         self.namespace = namespace
         self.name = name
+        self.patch = patch
 
     def __str__(self):
-        return constants.WAKE_SEP.join((self.namespace, self.name))
+        return C.WAKE_SEP.join((self.namespace, self.name, self.patch))
 
     def __repr__(self):
         return "name:{}".format(self)
 
     def _tuple(self):
-        return (self.namespace, self.name)
-
-
-class PkgReq(utils.TupleObject):
-    """A semver requirement for a package.
-
-    Used to specify a dependency.
-    """
-    def __init__(self, namespace, name, semver):
-        self.namespace = namespace
-        self.name = name
-        self.semver = semver
-
-    @classmethod
-    def deserialize(cls, string):
-        """Deserialize."""
-        split = string.split(constants.WAKE_SEP)
-        if len(split) > 3:
-            raise ValueError("Must have 3 components split by {}: {}".format(
-                constants.WAKE_SEP, string))
-
-        namespace, name, semver = split
-        return cls(namespace=namespace, name=name, semver=semver)
-
-    def serialize(self):
-        """Serialize."""
-        return constants.WAKE_SEP.join(self._tuple())
-
-    def __str__(self):
-        return self.serialize()
-
-    def __repr__(self):
-        return "req:{}".format(self)
-
-    def _tuple(self):
-        return (self.namespace, self.name, self.semver)
-
-
-class PkgRequest(utils.TupleObject):
-    """A request from a package for a package requirement semver.
-
-    Used as a key in jsonnet when associating dependencies.
-    """
-    def __init__(self, requestingPkgVer, pkgReq):
-        self.requestingPkgVer = requestingPkgVer
-        self.pkgReq = pkgReq
-
-    def serialize(self):
-        return constants.WAKE_SEP.join((
-            self.requestingPkgVer.serialize(),
-            self.pkgReq.serialize(),
-        ))
-
-    def __str__(self):
-        return self.serialize()
-
-    def __repr__(self):
-        return "pkgRequest:{}".format(self)
-
-    def _tuple(self):
-        return (self.requestingPkgVer, self.pkgReq)
-
-
-class PkgVer(utils.TupleObject):
-    """A pkg at a specific version and hashed digest."""
-
-    # pylint: disable=redefined-outer-name
-    def __init__(self, namespace, name, version, digest):
-        self.namespace = namespace
-        self.name = name
-        self.version = version
-        self.digest = digest
-
-    @classmethod
-    def deserialize(cls, string):
-        """Deserialize."""
-        split = string.split(constants.WAKE_SEP)
-        if len(split) > 4:
-            raise ValueError("Must have 4 components split by {}: {}".format(
-                constants.WAKE_SEP, string))
-
-        namespace, name, version, digest_str = split
-        return cls(
-            namespace=namespace,
-            name=name,
-            version=version,
-            digest=digest.Digest.deserialize(digest_str),
-        )
-
-    def serialize(self):
-        """Serialize."""
-        return constants.WAKE_SEP.join((
-            self.namespace,
-            self.name,
-            self.version,
-            self.digest.serialize(),
-        ))
-
-    def __str__(self):
-        return self.serialize()
-
-    def __repr__(self):
-        return "ver:{}".format(self)
-
-    def _tuple(self):
-        return (self.namespace, self.name, self.version, self.digest)
+        return (self.namespace, self.name, self.patch)
 
 
 class PkgDigest(utils.SafeObject):
@@ -153,29 +49,31 @@ class PkgDigest(utils.SafeObject):
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, pkg_file, pkgVer, pkgOrigin, paths, depsReq):
+    def __init__(self, pkg_file, pkgName, pkgOrigin, paths, depNames, digest):
         if pkg_file not in paths:
-            paths.add('./' + constants.FILE_PKG_DEFAULT)
+            paths.add('./' + C.FILE_PKG_DEFAULT)
 
         self.pkg_file = pkg_file
         self.pkg_dir = os.path.dirname(pkg_file)
         self.pkg_digest = os.path.join(self.pkg_dir,
-                                       constants.DEFAULT_FILE_DIGEST)
-        self.pkgVer = pkgVer
+                                       C.DEFAULT_FILE_DIGEST)
+        self.pkgName = pkgName
         self.pkgOrigin = pkgOrigin
         self.paths = paths
-        self.depsReq = depsReq
+        self.depNames = depNames
+        self.digest = digest
 
     @classmethod
     def deserialize(cls, dct, pkg_file):
         """Derialize."""
-        pkg_ver_str = utils.ensure_str('pkgVer', dct['pkgVer'])
+        pkg_ver_str = utils.ensure_str(C.K_PKG_NAME, dct[C.K_PKG_NAME])
         return cls(
             pkg_file=pkg_file,
-            pkgVer=PkgVer.deserialize(pkg_ver_str),
+            pkgName=PkgVer.deserialize(pkg_ver_str),
             pkgOrigin=dct.get('pkgOrigin'),
-            paths=set(utils.ensure_valid_paths(dct['paths'])),
-            depsReq=dct['depsReq'],
+            paths=utils.ensure_valid_paths(dct['paths']),
+            depNames=dct[C.K_DEP_NAMES],
+            digest=digest.Digest.deserialize(dct[C.K_DIGEST]),
         )
 
     def serialize(self):
@@ -183,10 +81,11 @@ class PkgDigest(utils.SafeObject):
         pfile = os.path.basename(self.pkg_file)
         return {
             "pkg_file": pfile,
-            "pkgVer": self.pkgVer.serialize(),
-            "pkgOrigin": self.pkgOrigin,
-            "paths": sorted(self.paths),
-            "depsReq": self.depsReq,
+            C.K_PKG_NAME: self.pkgName.serialize(),
+            C.K_PKG_ORIGIN: self.pkgOrigin,
+            C.K_PATH: self.paths,
+            C.K_DEP_NAMES: self.depNames,
+            C.K_DIGEST: self.digest.serialize(),
         }
 
     def __repr__(self):
@@ -197,14 +96,13 @@ class PkgExport(PkgDigest):
     """Pkg with self.export and depdency's export fields resolved."""
 
     # pylint: disable=too-many-arguments
-    def __init__(self, pkg_file, pkgVer, pkgOrigin, paths, depsReq, deps,
-                 export):
+    def __init__(self, pkg_file, pkgName, pkgOrigin, paths, depNames, deps, export):
         super(PkgExport, self).__init__(
             pkg_file=pkg_file,
-            pkgVer=pkgVer,
+            pkgName=pkgName,
             pkgOrigin=pkgOrigin,
             paths=paths,
-            depsReq=depsReq,
+            depNames=depNames,
         )
 
         self.deps = deps
@@ -215,16 +113,17 @@ class PkgExport(PkgDigest):
         dig = PkgDigest.deserialize(dct, pkg_file)
         return cls(
             pkg_file=dig.pkg_file,
-            pkgVer=dig.pkgVer,
+            pkgName=dig.pkgName,
             pkgOrigin=dig.pkgOrigin,
             paths=dig.paths,
-            depsReq=dig.depsReq,
-            deps=dct['deps'],
-            export=dct['export'],
+            depNames=dig.depNames,
+            digest=dig.digest,
+            deps=dct[C.K_DEPS],
+            export=dct[C.K_EXPORT],
         )
 
     def serialize(self):
         dct = super(PkgExport, self).serialize()
-        dct['deps'] = self.deps
-        dct['export'] = self.export
+        dct[C.K_DEPS] = self.deps
+        dct[C.K_EXPORT] = self.export
         return dct

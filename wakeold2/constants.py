@@ -107,16 +107,8 @@ FILE_PKGS = _wakeConstants["FILE_PKGS"]
 FILE_RUN_DIGEST = "wakeRunDigest.jsonnet"
 FILE_RUN_EXPORT = "wakeRunExport.jsonnet"
 
-# Common paths and data
+# Commong paths and data
 PATH_WAKELIB = os.path.join(DIR_WAKELIB, FILE_WAKELIB)
 _load_template = lambda f: loadf(os.path.join(DIR_WAKELIB, f))
 RUN_DIGEST_TEMPLATE = _load_template(FILE_RUN_DIGEST)
 RUN_EXPORT_TEMPLATE = _load_template(FILE_RUN_EXPORT)
-
-# Common keys
-K_DEP_NAMES = "depNames"
-K_DEPS = "deps"
-K_PKG_NAME = "pkgName"
-K_PKG_ORIGIN = "pkgOrigin"
-K_PATHS = "paths"
-K_EXPORT = "export"
