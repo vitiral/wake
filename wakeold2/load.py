@@ -29,8 +29,8 @@ from . import pkg
 from . import digest
 
 
-def loadPkgDigest(state, pkg_file, calc_digest=False, cleanup=True):
-    """Load a package digest, returning PkgDigest.
+def loadPkgDeclared(state, pkg_file, calc_digest=False, cleanup=True):
+    """Load a package digest, returning PkgDeclared.
 
     Note: The `state` is used to create a temporary directory for storing the
     custom-created jsonnet running script.
@@ -50,31 +50,31 @@ def loadPkgDigest(state, pkg_file, calc_digest=False, cleanup=True):
                                        constants.FILE_RUN_DIGEST)
         utils.dumpf(run_digest_path, run_digest_text)
 
-        # Get a pkgDigest with (potentially) the wrong digest value
-        pkgDigest = pkg.PkgDigest.deserialize(
+        # Get a pkgDeclared with (potentially) the wrong digest value
+        pkgDeclared = pkg.PkgDeclared.deserialize(
             utils.manifest_jsonnet(run_digest_path),
             pkg_file=pkg_file,
         )
 
         if calc_digest:
             # Dump real `.digest.json`
-            digest_value = digest.calc_digest(pkgDigest)
+            digest_value = digest.calc_digest(pkgDeclared)
             utils.jsondumpf(digest_path, digest_value.serialize())
 
-            pkgDigest = pkg.PkgDigest.deserialize(
+            pkgDeclared = pkg.PkgDeclared.deserialize(
                 utils.manifest_jsonnet(run_digest_path),
                 pkg_file=pkg_file,
             )
-            assert pkgDigest.pkgVer.digest == digest_value
+            assert pkgDeclared.digest == digest_value
 
-        return pkgDigest
+        return pkgDeclared
     finally:
         if cleanup and os.path.exists(digest_path):
             os.remove(digest_path)
         state_dir.cleanup()
 
 
-def loadPkgExport(state, pkgsDefined, pkgDigest):
+def loadPkgExport(state, pkgsDefined, pkgDeclared):
     """Load the exports of the package.
 
     Params:
@@ -93,14 +93,14 @@ def loadPkgExport(state, pkgsDefined, pkgDigest):
         )
 
         # Dump real `.digest.json`
-        utils.jsondumpf(pkgDigest.pkg_digest,
-                        pkgDigest.pkgVer.digest.serialize())
+        utils.jsondumpf(pkgDeclared.pkg_digest,
+                        pkgDeclared.digest.serialize())
 
         # Put the jsonnet run file in place
         run_export_path = os.path.join(state_dir.dir,
                                        constants.FILE_RUN_DIGEST)
         run_export_text = utils.format_run_export(
-            pkgDigest.pkg_file,
+            pkgDeclared.pkg_file,
             pkgs_defined_path=pkgs_defined_path,
         )
         utils.dumpf(path=run_export_path, string=run_export_text)
@@ -108,7 +108,7 @@ def loadPkgExport(state, pkgsDefined, pkgDigest):
         # Run the export (includes depenencies) and get result
         pkgExport = utils.manifest_jsonnet(run_export_path)
         return pkg.PkgExport.deserialize(pkgExport,
-                                         pkg_file=pkgDigest.pkg_file)
+                                         pkg_file=pkgDeclared.pkg_file)
     finally:
         if pkgs_defined_path:
             os.remove(pkgs_defined_path)

@@ -114,8 +114,8 @@ RUN_DIGEST_TEMPLATE = _load_template(FILE_RUN_DIGEST)
 RUN_EXPORT_TEMPLATE = _load_template(FILE_RUN_EXPORT)
 
 # Common keys
-K_DEP_NAMES = "depNames"
 K_DEPS = "deps"
+K_DEPS_STR = "depsStrs"
 K_PKG_NAME = "pkgName"
 K_PKG_ORIGIN = "pkgOrigin"
 K_PATHS = "paths"

@@ -46,6 +46,8 @@ C {
   pkg(
     pkgName,
 
+    ver,
+
     // Description and other metadata regarding the origin of the package.
     pkgOrigin=null,
 
@@ -53,7 +55,7 @@ C {
     paths=null,
 
     // Packages that this pkg depends on.
-    depNames=null,
+    deps=null,
 
     // Function which returns the export of this pkg.
     export=null,
@@ -61,13 +63,18 @@ C {
     [C.F_TYPE]: C.T_PKG,
     [C.F_STATE]: C.S_DECLARED,
     pkgName: pkgName,
+    ver: ver,
     pkgOrigin: pkgOrigin,
     paths: U.arrayDefault(paths),
-    depNames: U.objDefault(depNames),
+    depsStr: U.objDefault(deps),
 
     // lazy functions
     exportFn:: export,
   }
+
+  ,
+  // Declare a dependency as a semver requirement.
+  req(pkgName, semver): std.join(C.WAKE_SEP, [pkgName.namespace, pkgName.name, semver])
 
   ,
   // Declare how to build a module.
@@ -122,7 +129,7 @@ C {
 
     // ,
     // // Looks up all items in the dependency tree
-    // lookupDeps(requestingPkg, depNames):
+    // lookupDeps(requestingPkg, deps):
     //   local lookupPkg = function(requestingPkg, category, pkgReq)
     //     local pkgKey = std.join(C.WAKE_SEP, [
     //       requestingPkg,
@@ -139,11 +146,11 @@ C {
 
     //   // Return the looked up dependencies
     //   {
-    //     unrestricted: lookupPkgs('unrestricted', depsReq.unrestricted),
-    //     restricted: lookupPkgs('restricted', depsReq.restricted),
-    //     restrictedMajor: lookupPkgs('restrictedMajor', depsReq.restrictedMajor),
-    //     restrictedMinor: lookupPkgs('restrictedMinor', depsReq.restrictedMinor),
-    //     global: lookupPkgs('global', depsReq.global),
+    //     unrestricted: lookupPkgs('unrestricted', deps.unrestricted),
+    //     restricted: lookupPkgs('restricted', deps.restricted),
+    //     restrictedMajor: lookupPkgs('restrictedMajor', deps.restrictedMajor),
+    //     restrictedMinor: lookupPkgs('restrictedMinor', deps.restrictedMinor),
+    //     global: lookupPkgs('global', deps.global),
     //   }
 
     // ,
@@ -181,8 +188,8 @@ C {
 
     //   ;
     //   local depsShallow = {
-    //     [lvl]: lookupPkgs(lvl, pkg.depsReq[lvl])
-    //     for lvl in std.objectFields(pkg.depsReq)
+    //     [lvl]: lookupPkgs(lvl, pkg.deps[lvl])
+    //     for lvl in std.objectFields(pkg.deps)
     //   }
 
     //   ;

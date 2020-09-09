@@ -49,7 +49,7 @@ class PkgDigest(utils.SafeObject):
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, pkg_file, pkgName, pkgOrigin, paths, depNames, digest):
+    def __init__(self, pkg_file, pkgName, pkgOrigin, paths, depsStr, digest):
         if pkg_file not in paths:
             paths.add('./' + C.FILE_PKG_DEFAULT)
 
@@ -60,7 +60,7 @@ class PkgDigest(utils.SafeObject):
         self.pkgName = pkgName
         self.pkgOrigin = pkgOrigin
         self.paths = paths
-        self.depNames = depNames
+        self.depsStr = depsStr
         self.digest = digest
 
     @classmethod
@@ -72,7 +72,7 @@ class PkgDigest(utils.SafeObject):
             pkgName=PkgVer.deserialize(pkg_ver_str),
             pkgOrigin=dct.get('pkgOrigin'),
             paths=utils.ensure_valid_paths(dct['paths']),
-            depNames=dct[C.K_DEP_NAMES],
+            depsStr=dct[C.K_DEPS_STR],
             digest=digest.Digest.deserialize(dct[C.K_DIGEST]),
         )
 
@@ -84,7 +84,7 @@ class PkgDigest(utils.SafeObject):
             C.K_PKG_NAME: self.pkgName.serialize(),
             C.K_PKG_ORIGIN: self.pkgOrigin,
             C.K_PATH: self.paths,
-            C.K_DEP_NAMES: self.depNames,
+            C.K_DEPS_STR: self.depsStr,
             C.K_DIGEST: self.digest.serialize(),
         }
 
@@ -96,13 +96,13 @@ class PkgExport(PkgDigest):
     """Pkg with self.export and depdency's export fields resolved."""
 
     # pylint: disable=too-many-arguments
-    def __init__(self, pkg_file, pkgName, pkgOrigin, paths, depNames, deps, export):
+    def __init__(self, pkg_file, pkgName, pkgOrigin, paths, depsStr, deps, export):
         super(PkgExport, self).__init__(
             pkg_file=pkg_file,
             pkgName=pkgName,
             pkgOrigin=pkgOrigin,
             paths=paths,
-            depNames=depNames,
+            depsStr=depsStr,
         )
 
         self.deps = deps
@@ -116,7 +116,7 @@ class PkgExport(PkgDigest):
             pkgName=dig.pkgName,
             pkgOrigin=dig.pkgOrigin,
             paths=dig.paths,
-            depNames=dig.depNames,
+            depsStr=dig.depsStr,
             digest=dig.digest,
             deps=dct[C.K_DEPS],
             export=dct[C.K_EXPORT],

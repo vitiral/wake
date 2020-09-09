@@ -146,7 +146,7 @@ class PkgVer(utils.TupleObject):
         return (self.namespace, self.name, self.version, self.digest)
 
 
-class PkgDigest(utils.SafeObject):
+class PkgDeclared(utils.SafeObject):
     """The items which are used in the pkg digest.
 
     These items must completely define the package for transport and use.
@@ -190,10 +190,10 @@ class PkgDigest(utils.SafeObject):
         }
 
     def __repr__(self):
-        return 'PkgDigest{}'.format(self.serialize())
+        return 'PkgDeclared{}'.format(self.serialize())
 
 
-class PkgExport(PkgDigest):
+class PkgExport(PkgDeclared):
     """Pkg with self.export and depdency's export fields resolved."""
 
     # pylint: disable=too-many-arguments
@@ -212,7 +212,7 @@ class PkgExport(PkgDigest):
 
     @classmethod
     def deserialize(cls, dct, pkg_file):
-        dig = PkgDigest.deserialize(dct, pkg_file)
+        dig = PkgDeclared.deserialize(dct, pkg_file)
         return cls(
             pkg_file=dig.pkg_file,
             pkgVer=dig.pkgVer,
